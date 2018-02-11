@@ -1,2 +1,2 @@
 # Phomeme
-COMING SOON
+This project will be public sooner or later.
