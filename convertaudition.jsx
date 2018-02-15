@@ -43,10 +43,10 @@
 					layer.name = clip.attribute("name").toString();
 					var ratio = Number(clip.clipStretch.attribute("stretchRatio")) || 1;
 					layer.stretch = ratio * 100;
-					var startTime = (Number(clip.attribute("sourceInPoint")) / rate) / ratio;
+					var startTime = Number(clip.attribute("sourceInPoint")) / rate;
 					var inPoint = Number(clip.attribute("startPoint")) / rate;
 					var outPoint = Number(clip.attribute("endPoint")) / rate;
-					layer.startTime = inPoint - startTime;
+					layer.startTime = (inPoint / ratio) - (startTime / ratio);
 					layer.inPoint = inPoint;
 					layer.outPoint = outPoint;
 				}
