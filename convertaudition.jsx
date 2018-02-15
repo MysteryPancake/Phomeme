@@ -41,12 +41,11 @@
 					var file = clip.attribute("fileID").toString();
 					var layer = comp.layers.add(files[file]);
 					layer.name = clip.attribute("name").toString();
-					var ratio = Number(clip.clipStretch.attribute("stretchRatio")) || 1;
-					layer.stretch = ratio * 100;
+					layer.stretch = (Number(clip.clipStretch.attribute("stretchRatio")) || 1) * 100;
 					var startTime = Number(clip.attribute("sourceInPoint")) / rate;
 					var inPoint = Number(clip.attribute("startPoint")) / rate;
 					var outPoint = Number(clip.attribute("endPoint")) / rate;
-					layer.startTime = (inPoint / ratio) - (startTime / ratio);
+					layer.startTime = inPoint - startTime;
 					layer.inPoint = inPoint;
 					layer.outPoint = outPoint;
 				}
