@@ -2,10 +2,6 @@
 	function absolutePath(base, relative) {
 		var stack = base.split("/");
 		var parts = relative.split("/");
-		stack.pop();
-		if (parts[0] === "..") {
-			stack.pop();
-		}
 		for (var i = 0; i < parts.length; i++) {
 			if (parts[i] === ".") {
 				continue;
@@ -19,51 +15,77 @@
 		return stack.join("/");
 	}
 
+	function gainToDecibels(num) {
+		return (Math.log(num) / Math.log(10)) * 20;
+	}
+
+	function panVolume(pan, volume) {
+		var normal = pan * 0.01;
+		var left = gainToDecibels(volume * Math.min(1, normal + 1));
+		var right = gainToDecibels(volume * Math.min(1, -normal + 1));
+		return [left, right];
+	}
+
 	function parse(xml, session) {
 		var master;
 		var comps = [];
 		var files = {};
 		var itemList = app.project.items;
 		for each (var audio in xml.files) {
-			var path = audio.attribute("relativePath").toString();
-			var file = File(audio.attribute("absolutePath").toString());
+			var path = audio.@relativePath.toString();
+			var file = File(audio.@absolutePath.toString());
 			var backup = new File(absolutePath(session.path, path));
 			var io = new ImportOptions(file.exists && file || backup);
-			files[audio.attribute("id").toString()] = app.project.importFile(io);
+			files[audio.@id.toString()] = app.project.importFile(io);
 		}
 		for each (var prop in xml.session.tracks) {
 			var label = prop.trackParameters.name.toString();
-			var rate = Number(xml.session.attribute("sampleRate"));
-			var duration = Number(xml.session.attribute("duration"));
+			var rate = Number(xml.session.@sampleRate);
+			var duration = Number(xml.session.@duration);
 			var comp = itemList.addComp(label, 1920, 1080, 1, duration / rate, 60);
-			for each (var clip in prop) {
-				if (clip.name().toString() === "audioClip") {
-					var file = clip.attribute("fileID").toString();
-					var layer = comp.layers.add(files[file]);
-					layer.name = clip.attribute("name").toString();
-					layer.stretch = (Number(clip.clipStretch.attribute("stretchRatio")) || 1) * 100;
-					var startTime = Number(clip.attribute("sourceInPoint")) / rate;
-					var inPoint = Number(clip.attribute("startPoint")) / rate;
-					var outPoint = Number(clip.attribute("endPoint")) / rate;
-					layer.startTime = inPoint - startTime;
-					layer.inPoint = inPoint;
-					layer.outPoint = outPoint;
-				}
+			for each (var clip in prop..audioClip) {
+				var file = clip.@fileID.toString();
+				var layer = comp.layers.add(files[file]);
+				layer.name = clip.@name.toString();
+				layer.stretch = (Number(clip.clipStretch.@stretchRatio) || 1) * 100;
+				var startTime = Number(clip.@sourceInPoint) / rate;
+				var inPoint = Number(clip.@startPoint) / rate;
+				var outPoint = Number(clip.@endPoint) / rate;
+				layer.startTime = inPoint - startTime;
+				layer.inPoint = inPoint;
+				layer.outPoint = outPoint;
+				layer.locked = clip.@lockedInTime.toString() === "true";
+				layer.audioEnabled = clip.component.(@name == "Mute").parameter.(@index == "1").@parameterValue.toString() === "0";
+				var pan = Number(clip.component.(@name == "StereoPanner").parameter.(@name == "Pan").@parameterValue);
+				var volume = Number(clip.component.(@name == "volume").parameter.(@name == "volume").@parameterValue);
+				layer.audio.audioLevels.setValue(panVolume(pan, volume));
 			}
-			if (label.toString() === "Master") {
+			if (label === "Master") {
 				master = comp;
 			} else {
-				comps.unshift(comp);
+				comps.unshift({
+					comp: comp,
+					solo: prop.trackAudioParameters.@solo.toString() === "true",
+					pan: Number(prop.trackAudioParameters.component.(@name == "StereoPanner").parameter.(@name == "Pan").@parameterValue),
+					volume: Number(prop.trackAudioParameters.component.(@name == "volume").parameter.(@name == "volume").@parameterValue),
+					mute: prop.trackAudioParameters.component.(@name == "Mute").parameter.(@index == "1").@parameterValue.toString() === "0"
+				});
 			}
 		}
 		if (master) {
 			for (var i = 0; i < comps.length; i++) {
-				master.layers.add(comps[i]);
+				var comp = master.layers.add(comps[i].comp);
+				comp.solo = comps[i].solo;
+				comp.enabled = comps[i].mute;
+				comp.audioEnabled = comps[i].mute;
+				try {
+					comp.audio.audioLevels.setValue(panVolume(comps[i].pan, comps[i].volume));
+				} catch(error) {}
 			}
 		}
 	}
 
-	function importFile() {
+	function importSession() {
 		var session = File.openDialog("Import Session");
 		if (session && session.open("r")) {
 			var content = session.read();
@@ -72,5 +94,5 @@
 		}
 	}
 
-	importFile();
+	importSession();
 }
