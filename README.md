@@ -1,2 +1,2 @@
 # Phomeme
-This project will be public sooner or later.
+This thing will become public once it works easily and gets enough interest.
