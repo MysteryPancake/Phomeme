@@ -58,7 +58,8 @@
 				layer.audioEnabled = clip.component.(@name == "Mute").parameter.(@index == "1").@parameterValue.toString() === "0";
 				var pan = Number(clip.component.(@name == "StereoPanner").parameter.(@name == "Pan").@parameterValue);
 				var volume = Number(clip.component.(@name == "volume").parameter.(@name == "volume").@parameterValue);
-				layer.audio.audioLevels.setValue(panVolume(pan, volume));
+				var gain = Number(clip.component.(@name == "volume").parameter.(@name == "static gain").@parameterValue);
+				layer.audio.audioLevels.setValue(panVolume(pan, volume * gain));
 			}
 			if (label === "Master") {
 				master = comp;
@@ -66,9 +67,10 @@
 				comps.unshift({
 					comp: comp,
 					solo: prop.trackAudioParameters.@solo.toString() === "true",
+					mute: prop.trackAudioParameters.component.(@name == "Mute").parameter.(@index == "1").@parameterValue.toString() === "0",
 					pan: Number(prop.trackAudioParameters.component.(@name == "StereoPanner").parameter.(@name == "Pan").@parameterValue),
 					volume: Number(prop.trackAudioParameters.component.(@name == "volume").parameter.(@name == "volume").@parameterValue),
-					mute: prop.trackAudioParameters.component.(@name == "Mute").parameter.(@index == "1").@parameterValue.toString() === "0"
+					gain: Number(prop.trackAudioParameters.component.(@name == "volume").parameter.(@name == "static gain").@parameterValue)
 				});
 			}
 		}
@@ -79,7 +81,7 @@
 				comp.enabled = comps[i].mute;
 				comp.audioEnabled = comps[i].mute;
 				if (comp.hasAudio) {
-					comp.audio.audioLevels.setValue(panVolume(comps[i].pan, comps[i].volume));
+					comp.audio.audioLevels.setValue(panVolume(comps[i].pan, comps[i].volume * comps[i].gain));
 				}
 			}
 		}
