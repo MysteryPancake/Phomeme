@@ -78,9 +78,9 @@
 				comp.solo = comps[i].solo;
 				comp.enabled = comps[i].mute;
 				comp.audioEnabled = comps[i].mute;
-				try {
+				if (comp.hasAudio) {
 					comp.audio.audioLevels.setValue(panVolume(comps[i].pan, comps[i].volume));
-				} catch(error) {}
+				}
 			}
 		}
 	}
