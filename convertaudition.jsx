@@ -43,6 +43,7 @@
 			var rate = Number(xml.session.@sampleRate);
 			var duration = Number(xml.session.@duration);
 			var comp = itemList.addComp(label, 1920, 1080, 1, duration / rate, 60);
+			comp.time = Number(xml.session.sessionState.@ctiPosition) / rate;
 			for each (var clip in prop..audioClip) {
 				var file = clip.@fileID.toString();
 				var layer = comp.layers.add(files[file]);
