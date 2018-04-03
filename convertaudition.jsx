@@ -90,10 +90,17 @@
 
 	function importSession() {
 		var session = File.openDialog("Import Session");
-		if (session && session.open("r")) {
-			var content = session.read();
-			session.close();
-			parse(new XML(content), session);
+		if (!session) return;
+		if (session.open("r")) {
+			if (session.name.slice(-5) === ".sesx") {
+				var content = session.read();
+				session.close();
+				parse(new XML(content), session);
+			} else {
+				alert("Not an Audition Session (.sesx)!");
+			}
+		} else {
+			alert("Couldn't read the file!");
 		}
 	}
 
