@@ -99,6 +99,7 @@
 				parse(new XML(content), session);
 			} else {
 				alert("Not an Audition Session!\nPlease open .sesx files, not ." + extension + " files!");
+				importSession();
 			}
 		} else {
 			alert("Couldn't read the file!");
