@@ -92,12 +92,13 @@
 		var session = File.openDialog("Import Session");
 		if (!session) return;
 		if (session.open("r")) {
-			if (session.name.slice(-5) === ".sesx") {
+			var extension = session.name.split(".").pop();
+			if (extension === "sesx") {
 				var content = session.read();
 				session.close();
 				parse(new XML(content), session);
 			} else {
-				alert("Not an Audition Session (.sesx)!");
+				alert("Not an Audition Session!\nPlease open .sesx files, not ." + extension + " files!");
 			}
 		} else {
 			alert("Couldn't read the file!");
