@@ -1,5 +1,5 @@
 {
-	function absolute(base, relative) {
+	function absolutePath(base, relative) {
 		var stack = base.split("/");
 		var parts = relative.split("/");
 		for (var i = 0; i < parts.length; i++) {
@@ -13,6 +13,20 @@
 			}
 		}
 		return stack.join("/");
+	}
+
+	function importBackup(absolute, relative, session, duration) {
+		var path = new File(absolute);
+		var backup = new File(absolutePath(session, relative));
+		if (path.exists) {
+			var options = new ImportOptions(path);
+			return app.project.importFile(options);
+		} else if (backup.exists) {
+			var options = new ImportOptions(backup);
+			return app.project.importFile(options);
+		} else {
+			return app.project.importPlaceholder(absolute || relative, 1920, 1080, 60, duration);
+		}
 	}
 
 	function gainToDecibels(num) {
@@ -30,19 +44,18 @@
 		var master;
 		var comps = [];
 		var files = {};
+		var rate = Number(xml.session.@sampleRate) || 44100;
+		var duration = Number(xml.session.@duration) || 1323000;
 		var folder = app.project.items.addFolder(session.name);
+		folder.selected = true;
 		for each (var audio in xml.files) {
-			var path = new File(audio.@absolutePath.toString());
-			var backup = new File(absolute(session.path, audio.@relativePath.toString()));
-			var options = new ImportOptions(path.exists && path || backup);
-			var file = app.project.importFile(options);
+			var file = importBackup(audio.@absolutePath.toString(), audio.@relativePath.toString(), session.path, duration / rate);
 			files[audio.@id.toString()] = file;
 			file.parentFolder = folder;
+			file.selected = false;
 		}
 		for each (var prop in xml.session.tracks) {
 			var label = prop.trackParameters.name.toString();
-			var rate = Number(xml.session.@sampleRate);
-			var duration = Number(xml.session.@duration);
 			var comp = app.project.items.addComp(label, 1920, 1080, 1, duration / rate, 60);
 			comp.time = Number(xml.session.sessionState.@ctiPosition) / rate;
 			comp.parentFolder = folder;
@@ -62,7 +75,9 @@
 				var pan = Number(clip.component.(@name == "StereoPanner").parameter.(@name == "Pan").@parameterValue);
 				var volume = Number(clip.component.(@name == "volume").parameter.(@name == "volume").@parameterValue);
 				var gain = Number(clip.component.(@name == "volume").parameter.(@name == "static gain").@parameterValue);
-				layer.audio.audioLevels.setValue(panVolume(pan, volume * gain));
+				if (layer.hasAudio) {
+					layer.audio.audioLevels.setValue(panVolume(pan, volume * gain));
+				}
 			}
 			if (label === "Master") {
 				master = comp;
