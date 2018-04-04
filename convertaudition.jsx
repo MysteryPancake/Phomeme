@@ -1,5 +1,5 @@
 {
-	function absolutePath(base, relative) {
+	function absolute(base, relative) {
 		var stack = base.split("/");
 		var parts = relative.split("/");
 		for (var i = 0; i < parts.length; i++) {
@@ -32,8 +32,8 @@
 		var files = {};
 		var folder = app.project.items.addFolder(session.name);
 		for each (var audio in xml.files) {
-			var path = File(audio.@absolutePath.toString());
-			var backup = new File(absolutePath(session.path, audio.@relativePath.toString()));
+			var path = new File(audio.@absolutePath.toString());
+			var backup = new File(absolute(session.path, audio.@relativePath.toString()));
 			var options = new ImportOptions(path.exists && path || backup);
 			var file = app.project.importFile(options);
 			files[audio.@id.toString()] = file;
