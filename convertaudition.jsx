@@ -18,11 +18,8 @@
 	function importBackup(absolute, relative, session, duration) {
 		var path = new File(absolute);
 		var backup = new File(absolutePath(session, relative));
-		if (path.exists) {
-			var options = new ImportOptions(path);
-			return app.project.importFile(options);
-		} else if (backup.exists) {
-			var options = new ImportOptions(backup);
+		if (path.exists || backup.exists) {
+			var options = new ImportOptions(path.exists && path || backup);
 			return app.project.importFile(options);
 		} else {
 			return app.project.importPlaceholder(absolute || relative, 1920, 1080, 60, duration);
