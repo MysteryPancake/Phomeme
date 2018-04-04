@@ -91,7 +91,7 @@
 	}
 
 	function importSession() {
-		var session = File.openDialog("Import Session");
+		var session = File.openDialog("Import Audition Session");
 		if (!session) return;
 		if (session.open("r")) {
 			var extension = session.name.split(".").pop();
