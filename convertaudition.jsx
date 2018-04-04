@@ -30,20 +30,22 @@
 		var master;
 		var comps = [];
 		var files = {};
-		var itemList = app.project.items;
+		var folder = app.project.items.addFolder(session.name);
 		for each (var audio in xml.files) {
-			var path = audio.@relativePath.toString();
-			var file = File(audio.@absolutePath.toString());
-			var backup = new File(absolutePath(session.path, path));
-			var io = new ImportOptions(file.exists && file || backup);
-			files[audio.@id.toString()] = app.project.importFile(io);
+			var path = File(audio.@absolutePath.toString());
+			var backup = new File(absolutePath(session.path, audio.@relativePath.toString()));
+			var options = new ImportOptions(path.exists && path || backup);
+			var file = app.project.importFile(options);
+			files[audio.@id.toString()] = file;
+			file.parentFolder = folder;
 		}
 		for each (var prop in xml.session.tracks) {
 			var label = prop.trackParameters.name.toString();
 			var rate = Number(xml.session.@sampleRate);
 			var duration = Number(xml.session.@duration);
-			var comp = itemList.addComp(label, 1920, 1080, 1, duration / rate, 60);
+			var comp = app.project.items.addComp(label, 1920, 1080, 1, duration / rate, 60);
 			comp.time = Number(xml.session.sessionState.@ctiPosition) / rate;
+			comp.parentFolder = folder;
 			for each (var clip in prop..audioClip) {
 				var file = clip.@fileID.toString();
 				var layer = comp.layers.add(files[file]);
@@ -96,7 +98,8 @@
 			if (extension === "sesx") {
 				var content = session.read();
 				session.close();
-				parse(new XML(content), session);
+				var xml = new XML(content);
+				parse(xml, session);
 			} else {
 				alert("Not an Audition Session!\nPlease open .sesx files, not ." + extension + " files!");
 				importSession();
