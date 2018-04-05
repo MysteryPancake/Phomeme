@@ -52,8 +52,7 @@
 			file.selected = false;
 		}
 		for each (var prop in xml.session.tracks) {
-			var label = prop.trackParameters.name.toString();
-			var comp = app.project.items.addComp(label, 1920, 1080, 1, duration / rate, 60);
+			var comp = app.project.items.addComp(prop.trackParameters.name.toString(), 1920, 1080, 1, duration / rate, 60);
 			comp.time = Number(xml.session.sessionState.@ctiPosition) / rate;
 			comp.parentFolder = folder;
 			for each (var clip in prop..audioClip) {
@@ -76,7 +75,7 @@
 					layer.audio.audioLevels.setValue(panVolume(pan, volume * gain));
 				}
 			}
-			if (label === "Master") {
+			if (prop.name() == "masterTrack") {
 				master = comp;
 			} else {
 				comps.unshift({
