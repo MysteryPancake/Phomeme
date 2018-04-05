@@ -43,7 +43,7 @@
 		var files = {};
 		var rate = Number(xml.session.@sampleRate) || 44100;
 		var duration = Number(xml.session.@duration) || 1323000;
-		var folder = app.project.items.addFolder(session.name);
+		var folder = app.project.items.addFolder(decodeURIComponent(session.name));
 		folder.selected = true;
 		for each (var audio in xml.files) {
 			var file = importBackup(audio.@absolutePath.toString(), audio.@relativePath.toString(), session.path, duration / rate);
