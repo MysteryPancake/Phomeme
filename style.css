@@ -1,0 +1,120 @@
+* {
+	font-family: Verdana, Geneva, sans-serif;
+}
+
+html, body {
+	background-color: #004080;
+}
+
+h1, h2, h3, img, select, input, audio {
+	margin: 6px 0;
+}
+
+h1 {
+	color: white;
+	text-align: center;
+}
+
+img, input[type="image"] {
+	vertical-align: middle;
+}
+
+input[type="file"], input[type="checkbox"], input[type="submit"], label, select {
+	cursor: pointer;
+}
+
+input[type="submit"] {
+	background-color: #007EFF;
+	border: none;
+	box-shadow: 0 2px 6px black;
+	box-sizing: border-box;
+	color: white;
+	font-size: large;
+	height: 48px;
+	width: 100%;
+}
+
+input[type="submit"]:hover {
+	background-color: #00AAFF;
+}
+
+input[type="submit"]:active {
+	background-color: #007EFF;
+	box-shadow: none;
+}
+
+input[type="number"] {
+	border: 1px solid black;
+	box-sizing: border-box;
+	height: 24px;
+	padding: 8px;
+	width: 100%;
+}
+
+textarea {
+	border: none;
+	box-shadow: inset 0 0 12px black;
+	box-sizing: border-box;
+	display: block;
+	height: 10em;
+	margin-bottom: 8px;
+	padding: 12px;
+	resize: vertical;
+	width: 100%;
+}
+
+textarea:focus {
+	box-shadow: none;
+}
+
+select {
+	border: 1px solid black;
+	box-sizing: border-box;
+	font-size: medium;
+	height: 32px;
+	width: 100%;
+}
+
+select:hover {
+	background-color: #007EFF;
+	color: white;
+}
+
+form, #result {
+	background-color: #F0F7FF;
+	box-shadow: 0 0 32px black;
+	margin: 8px 5%;
+	padding: 12px 24px;
+}
+
+#result, #options, #inputPlayer, #outputPlayer, #vocals, #acapella, #rosen, #disillusion {
+	display: none;
+}
+
+#spinner {
+	animation: spin 1s linear infinite;
+	border: 8px solid #004080;
+	border-radius: 50%;
+	border-top: 8px solid #00AAFF;
+	float: right;
+	height: 16px;
+	width: 16px;
+}
+
+@-webkit-keyframes spin {
+	0% {
+		-webkit-transform: rotate(0deg);
+	}
+	100% {
+		-webkit-transform: rotate(360deg);
+	}
+}
+
+@keyframes spin {
+	0% {
+		transform: rotate(0deg);
+	}
+	100% {
+		transform: rotate(360deg);
+	}
+}
