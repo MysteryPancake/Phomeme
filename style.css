@@ -7,15 +7,15 @@ html, body {
 	background-color: black;
 }
 
-h1, h2, h3, audio, img, input, select {
-	margin: 6px 0;
-}
-
 h1 {
 	text-align: center;
 }
 
-img, input[type="image"] {
+h1, h2, h3, img, input, select {
+	margin: 6px 0;
+}
+
+audio, img, input[type="image"] {
 	outline: none;
 	vertical-align: middle;
 }
@@ -62,7 +62,7 @@ textarea {
 	display: block;
 	font-size: small;
 	height: 16em;
-	margin-bottom: 12px;
+	margin: 6px 0 12px 0px;
 	padding: 12px;
 	resize: vertical;
 }
@@ -71,7 +71,7 @@ form, #result {
 	border: 1px solid #00FF00;
 	border-radius: 8px;
 	box-shadow: 0 0 32px #00FF00;
-	margin: 8px 10%;
+	margin: 8px 8%;
 	padding: 12px 24px;
 }
 
