@@ -1,0 +1,379 @@
+{
+  "transcript": "Puzzle Two. He was so tempted, he couldn't help himself. So he helped himself.",
+  "words": [
+    {
+      "alignedWord": "puzzle",
+      "case": "success",
+      "end": 0.9400000000000001,
+      "endOffset": 6,
+      "phones": [
+        {
+          "duration": 0.09,
+          "phone": "p_B"
+        },
+        {
+          "duration": 0.07,
+          "phone": "ah_I"
+        },
+        {
+          "duration": 0.03,
+          "phone": "z_I"
+        },
+        {
+          "duration": 0.08,
+          "phone": "ah_I"
+        },
+        {
+          "duration": 0.01,
+          "phone": "l_E"
+        }
+      ],
+      "start": 0.66,
+      "startOffset": 0,
+      "word": "Puzzle"
+    },
+    {
+      "alignedWord": "two",
+      "case": "success",
+      "end": 1.3,
+      "endOffset": 10,
+      "phones": [
+        {
+          "duration": 0.07,
+          "phone": "t_B"
+        },
+        {
+          "duration": 0.24,
+          "phone": "uw_E"
+        }
+      ],
+      "start": 0.99,
+      "startOffset": 7,
+      "word": "Two"
+    },
+    {
+      "alignedWord": "he",
+      "case": "success",
+      "end": 1.94,
+      "endOffset": 14,
+      "phones": [
+        {
+          "duration": 0.17,
+          "phone": "hh_B"
+        },
+        {
+          "duration": 0.07,
+          "phone": "iy_E"
+        }
+      ],
+      "start": 1.7,
+      "startOffset": 12,
+      "word": "He"
+    },
+    {
+      "alignedWord": "was",
+      "case": "success",
+      "end": 2.12,
+      "endOffset": 18,
+      "phones": [
+        {
+          "duration": 0.04,
+          "phone": "w_B"
+        },
+        {
+          "duration": 0.06,
+          "phone": "ah_I"
+        },
+        {
+          "duration": 0.08,
+          "phone": "z_E"
+        }
+      ],
+      "start": 1.94,
+      "startOffset": 15,
+      "word": "was"
+    },
+    {
+      "alignedWord": "so",
+      "case": "success",
+      "end": 2.3200000000000003,
+      "endOffset": 21,
+      "phones": [
+        {
+          "duration": 0.07,
+          "phone": "s_B"
+        },
+        {
+          "duration": 0.13,
+          "phone": "ow_E"
+        }
+      ],
+      "start": 2.12,
+      "startOffset": 19,
+      "word": "so"
+    },
+    {
+      "alignedWord": "tempted",
+      "case": "success",
+      "end": 3.03,
+      "endOffset": 29,
+      "phones": [
+        {
+          "duration": 0.1,
+          "phone": "t_B"
+        },
+        {
+          "duration": 0.08,
+          "phone": "eh_I"
+        },
+        {
+          "duration": 0.01,
+          "phone": "m_I"
+        },
+        {
+          "duration": 0.03,
+          "phone": "p_I"
+        },
+        {
+          "duration": 0.01,
+          "phone": "t_I"
+        },
+        {
+          "duration": 0.27,
+          "phone": "ih_I"
+        },
+        {
+          "duration": 0.21,
+          "phone": "d_E"
+        }
+      ],
+      "start": 2.32,
+      "startOffset": 22,
+      "word": "tempted"
+    },
+    {
+      "alignedWord": "he",
+      "case": "success",
+      "end": 3.63,
+      "endOffset": 33,
+      "phones": [
+        {
+          "duration": 0.07,
+          "phone": "hh_B"
+        },
+        {
+          "duration": 0.06,
+          "phone": "iy_E"
+        }
+      ],
+      "start": 3.5,
+      "startOffset": 31,
+      "word": "he"
+    },
+    {
+      "alignedWord": "couldn't",
+      "case": "success",
+      "end": 3.9299999999999997,
+      "endOffset": 42,
+      "phones": [
+        {
+          "duration": 0.06,
+          "phone": "k_B"
+        },
+        {
+          "duration": 0.08,
+          "phone": "uh_I"
+        },
+        {
+          "duration": 0.01,
+          "phone": "d_I"
+        },
+        {
+          "duration": 0.08,
+          "phone": "ah_I"
+        },
+        {
+          "duration": 0.07,
+          "phone": "n_E"
+        }
+      ],
+      "start": 3.63,
+      "startOffset": 34,
+      "word": "couldn't"
+    },
+    {
+      "alignedWord": "help",
+      "case": "success",
+      "end": 4.17,
+      "endOffset": 47,
+      "phones": [
+        {
+          "duration": 0.06,
+          "phone": "hh_B"
+        },
+        {
+          "duration": 0.07,
+          "phone": "eh_I"
+        },
+        {
+          "duration": 0.04,
+          "phone": "l_I"
+        },
+        {
+          "duration": 0.07,
+          "phone": "p_E"
+        }
+      ],
+      "start": 3.93,
+      "startOffset": 43,
+      "word": "help"
+    },
+    {
+      "alignedWord": "himself",
+      "case": "success",
+      "end": 4.76,
+      "endOffset": 55,
+      "phones": [
+        {
+          "duration": 0.03,
+          "phone": "hh_B"
+        },
+        {
+          "duration": 0.06,
+          "phone": "ih_I"
+        },
+        {
+          "duration": 0.08,
+          "phone": "m_I"
+        },
+        {
+          "duration": 0.08,
+          "phone": "s_I"
+        },
+        {
+          "duration": 0.12,
+          "phone": "eh_I"
+        },
+        {
+          "duration": 0.06,
+          "phone": "l_I"
+        },
+        {
+          "duration": 0.16,
+          "phone": "f_E"
+        }
+      ],
+      "start": 4.17,
+      "startOffset": 48,
+      "word": "himself"
+    },
+    {
+      "alignedWord": "so",
+      "case": "success",
+      "end": 5.84,
+      "endOffset": 59,
+      "phones": [
+        {
+          "duration": 0.14,
+          "phone": "s_B"
+        },
+        {
+          "duration": 0.06,
+          "phone": "ow_E"
+        }
+      ],
+      "start": 5.64,
+      "startOffset": 57,
+      "word": "So"
+    },
+    {
+      "alignedWord": "he",
+      "case": "success",
+      "end": 5.9399999999999995,
+      "endOffset": 62,
+      "phones": [
+        {
+          "duration": 0.06,
+          "phone": "hh_B"
+        },
+        {
+          "duration": 0.04,
+          "phone": "iy_E"
+        }
+      ],
+      "start": 5.84,
+      "startOffset": 60,
+      "word": "he"
+    },
+    {
+      "alignedWord": "helped",
+      "case": "success",
+      "end": 6.19,
+      "endOffset": 69,
+      "phones": [
+        {
+          "duration": 0.05,
+          "phone": "hh_B"
+        },
+        {
+          "duration": 0.06,
+          "phone": "eh_I"
+        },
+        {
+          "duration": 0.03,
+          "phone": "l_I"
+        },
+        {
+          "duration": 0.06,
+          "phone": "p_I"
+        },
+        {
+          "duration": 0.05,
+          "phone": "t_E"
+        }
+      ],
+      "start": 5.94,
+      "startOffset": 63,
+      "word": "helped"
+    },
+    {
+      "alignedWord": "himself",
+      "case": "success",
+      "end": 6.78,
+      "endOffset": 77,
+      "phones": [
+        {
+          "duration": 0.03,
+          "phone": "hh_B"
+        },
+        {
+          "duration": 0.06,
+          "phone": "ih_I"
+        },
+        {
+          "duration": 0.08,
+          "phone": "m_I"
+        },
+        {
+          "duration": 0.07,
+          "phone": "s_I"
+        },
+        {
+          "duration": 0.12,
+          "phone": "eh_I"
+        },
+        {
+          "duration": 0.06,
+          "phone": "l_I"
+        },
+        {
+          "duration": 0.17,
+          "phone": "f_E"
+        }
+      ],
+      "start": 6.19,
+      "startOffset": 70,
+      "word": "himself"
+    }
+  ]
+}
