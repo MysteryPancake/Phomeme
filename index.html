@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html lang="en">
+	<head>
+		<meta charset="utf-8">
+		<title>Phomeme</title>
+		<meta name="viewport" content="width=device-width, initial-scale=1">
+		<link rel="stylesheet" type="text/css" href="style.css">
+		<script defer src="scripts/Triphone.js"></script>
+		<script defer src="scripts/Session.js"></script>
+		<script defer src="scripts/Convert.js"></script>
+		<script defer src="scripts/Sing.js"></script>
+		<script defer src="scripts/Main.js"></script>
+	</head>
+	<body>
+		<h1>Phomeme</h1>
+		<form id="form" onsubmit="return phomeme();">
+			<h3>Vocals (Input)</h3>
+			<select id="preset" onchange="updatePresets(this);" onfocus="previousPreset(this);">
+				<option selected value="custom">Custom</option>
+				<option value="rosen">Michael Rosen</option>
+				<option disabled value="disillusion">Captain Disillusion - COMING SOON</option>
+				<option disabled value="kaplan">Jeff Kaplan - COMING SOON</option>
+			</select>
+			<div id="custom">
+				<input required type="file" id="inputAudio" accept="audio/*,application/json,.json" onchange="checkJson(this);">
+				<input type="image" alt="Microphone" id="inputMic" src="microphone.png" width="24" height="24" onclick="return microphone(this);">
+				<audio controls id="inputPlayer"></audio>
+				<textarea required id="inputScript" placeholder="Type the transcript of the vocals here"></textarea>
+			</div>
+			<div id="rosen">
+				<div>
+					<input checked type="checkbox" id="rosen1">
+					<label for="rosen1">Series 1 (2008)</label>
+				</div>
+				<div>
+					<input disabled type="checkbox" id="rosen2">
+					<label for="rosen2">Series 2 (2011) - COMING SOON</label>
+				</div>
+				<div>
+					<input disabled type="checkbox" id="rosen3">
+					<label for="rosen3">Series 3 (2016) - COMING SOON</label>
+				</div>
+				<div>
+					<input disabled type="checkbox" id="rosen4">
+					<label for="rosen4">Series 4 (2016) - COMING SOON</label>
+				</div>
+			</div>
+			<div id="disillusion">
+				<div>
+					<input disabled type="checkbox" id="disillusion1">
+					<label for="disillusion1">Debunks - COMING SOON</label>
+				</div>
+				<div>
+					<input disabled type="checkbox" id="disillusion2">
+					<label for="disillusion2">Quick D - COMING SOON</label>
+				</div>
+				<div>
+					<input disabled type="checkbox" id="disillusion3">
+					<label for="disillusion3">Tutorials - COMING SOON</label>
+				</div>
+			</div>
+			<h3>Acapella (Output)</h3>
+			<input required type="file" id="outputAudio" accept="audio/*,application/json,.json" onchange="checkJson(this);">
+			<input type="image" alt="Microphone" id="outputMic" src="microphone.png" width="24" height="24" onclick="return microphone(this);">
+			<audio controls id="outputPlayer"></audio>
+			<textarea required id="outputScript" placeholder="Type the transcript of the acapella here"></textarea>
+			<input type="submit" value="Submit">
+		</form>
+		<div id="result">
+			<h2>Result</h2>
+			<div id="spinner"></div>
+			<p id="waiting">Waiting for the first response. Please be patient, this can take ages...</p>
+			<div id="options">
+				<div>
+					<label for="chooseMethod">Choose Method</label>
+					<select id="chooseMethod" onchange="updateDownloads();">
+						<option selected value="duration">Duration</option>
+						<option value="longest">Longest</option>
+						<option value="shortest">Shortest</option>
+						<option value="first">First</option>
+						<option value="last">Last</option>
+						<option value="random">Random</option>
+					</select>
+				</div>
+				<div>
+					<input checked type="checkbox" id="matchWords" onchange="updateDownloads();">
+					<label for="matchWords">Match Words</label>
+				</div>
+				<div>
+					<input checked type="checkbox" id="matchDiphones" onchange="updateDownloads();">
+					<label for="matchDiphones">Match Diphones</label>
+				</div>
+				<div>
+					<input checked type="checkbox" id="matchTriphones" onchange="updateDownloads();">
+					<label for="matchTriphones">Match Triphones</label>
+				</div>
+				<div>
+					<label for="overlapStart">Start Overlap</label>
+					<input type="number" id="overlapStart" value="0" step="0.01">
+				</div>
+				<div>
+					<label for="overlapEnd">End Overlap</label>
+					<input type="number" id="overlapEnd" value="0.025" step="0.01">
+				</div>
+				<h3>Downloads</h3>
+				<div>
+					<a id="session">
+						<img src="audition.png" alt="Adobe Audition Icon" height="64" width="64">
+						<span>Download for Adobe Audition</span>
+					</a>
+				</div>
+				<div>
+					<a download href="../convertaudition.jsx">
+						<img src="aftereffects.png" alt="Adobe After Effects Icon" height="64" width="64">
+						<span>Convert to Adobe After Effects</span>
+					</a>
+				</div>
+				<h3>Extras</h3>
+				<div>
+					<a id="input">
+						<img src="json.png" alt="JSON Icon" height="64" width="64">
+						<span>Vocals JSON</span>
+					</a>
+				</div>
+				<div>
+					<a id="output">
+						<img src="json.png" alt="JSON Icon" height="64" width="64">
+						<span>Acapella JSON</span>
+					</a>
+				</div>
+				<div>
+					<a id="vocals">
+						<img src="audio.png" alt="Audio Icon" height="64" width="64">
+						<span>Vocals Audio</span>
+					</a>
+				</div>
+				<div>
+					<a id="acapella">
+						<img src="audio.png" alt="Audio Icon" height="64" width="64">
+						<span>Acapella Audio</span>
+					</a>
+				</div>
+			</div>
+		</div>
+	</body>
+</html>
