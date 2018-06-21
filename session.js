@@ -35,7 +35,7 @@ module.exports = function(name, bitDepth, sampleRate) {
 	this.files = [];
 	this.addFile = function(path) {
 		return this.files.push({
-			xml: `\t\t<file id="${this.files.length}" importerPrivateSettings="Compression:0:0;LargeFileSupport:0:0;SampleType:0:40;" mediaHandler="AmioWav" relativePath="${path}.wav"/>\n`,
+			xml: `\t\t<file id="${this.files.length}" importerPrivateSettings="Compression:0:0;LargeFileSupport:0:0;SampleType:0:40;" mediaHandler="AmioWav" relativePath="${path}"/>\n`,
 			path: path
 		});
 	};
