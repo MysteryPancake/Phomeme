@@ -15,6 +15,7 @@
 		<script defer src="scripts/Triphone.js"></script>
 		<script defer src="scripts/Session.js"></script>
 		<script defer src="scripts/Convert.js"></script>
+		<script defer src="scripts/Speak.js"></script>
 		<script defer src="scripts/Sing.js"></script>
 		<script defer src="scripts/Main.js"></script>
 	</head>
@@ -22,19 +23,20 @@
 		<h1>Phomeme</h1>
 		<form id="form" onsubmit="return phomeme();">
 			<h3>Vocals (Input)</h3>
-			<select id="preset" onchange="updatePresets(this);" onfocus="previousPreset(this);">
+			<select id="preset" onchange="updatePresets(this);">
 				<option selected value="custom">Custom</option>
 				<option value="rosen">Michael Rosen</option>
+				<option value="donkeykong">Donkey Kong</option>
 				<option disabled value="disillusion">Captain Disillusion - COMING SOON</option>
 				<option disabled value="kaplan">Jeff Kaplan - COMING SOON</option>
 			</select>
-			<div id="custom">
+			<div id="custom" class="preset">
 				<input required type="file" id="inputAudio" accept="audio/*,application/json,.json" onchange="checkJson(this);">
 				<input type="image" alt="Microphone" id="inputMic" src="microphone.png" width="24" height="24" onclick="return microphone(this);">
 				<audio controls id="inputPlayer"></audio>
 				<textarea required id="inputScript" placeholder="Type the transcript of the vocals here"></textarea>
 			</div>
-			<div id="rosen">
+			<div id="rosen" class="preset">
 				<div>
 					<input checked type="checkbox" id="rosen1">
 					<label for="rosen1">Series 1 (2008)</label>
@@ -52,7 +54,7 @@
 					<label for="rosen4">Series 4 (2016) - COMING SOON</label>
 				</div>
 			</div>
-			<div id="disillusion">
+			<div id="disillusion" class="preset">
 				<div>
 					<input disabled type="checkbox" id="disillusion1">
 					<label for="disillusion1">Debunks - COMING SOON</label>
@@ -67,7 +69,7 @@
 				</div>
 			</div>
 			<h3>Acapella (Output)</h3>
-			<input required type="file" id="outputAudio" accept="audio/*,application/json,.json" onchange="checkJson(this);">
+			<input type="file" id="outputAudio" accept="audio/*,application/json,.json" onchange="checkJson(this);">
 			<input type="image" alt="Microphone" id="outputMic" src="microphone.png" width="24" height="24" onclick="return microphone(this);">
 			<audio controls id="outputPlayer"></audio>
 			<textarea required id="outputScript" placeholder="Type the transcript of the acapella here"></textarea>
@@ -82,9 +84,9 @@
 					<label for="chooseMethod">Choose Method</label>
 					<select id="chooseMethod" onchange="updateDownloads();">
 						<option selected value="duration">Duration</option>
+						<option value="average">Average</option>
 						<option value="longest">Longest</option>
 						<option value="shortest">Shortest</option>
-						<option value="average">Average</option>
 						<option value="first">First</option>
 						<option value="last">Last</option>
 						<option value="random">Random</option>
@@ -118,7 +120,7 @@
 					</a>
 				</div>
 				<div>
-					<a download href="../convertaudition.jsx">
+					<a download href="convertaudition.jsx">
 						<img src="aftereffects.png" alt="Adobe After Effects Icon" height="64" width="64">
 						<span>Convert to Adobe After Effects</span>
 					</a>

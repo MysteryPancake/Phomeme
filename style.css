@@ -68,7 +68,7 @@ textarea {
 }
 
 form, #result {
-	border: 1px solid #00FF00;
+	border: 2px solid #00FF00;
 	border-radius: 8px;
 	box-shadow: 0 0 32px #00FF00;
 	margin: 8px 8%;
