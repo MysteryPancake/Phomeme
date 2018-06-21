@@ -1,7 +1,5 @@
 "use strict";
 
-var length = 0;
-
 function convertSentence(sentence, dict) {
 	var words = sentence.toLowerCase().match(/\w+(?:'\w+)*/g);
 	var transcript = {
@@ -39,7 +37,7 @@ function convertSentence(sentence, dict) {
 	return transcript;
 }
 
-function addClips(targets, phones, mix, method, diphones, triphones, func) {
+function addClips(targets, phones, mix, method, diphones, triphones, length, func) {
 	for (var i = 0; i < targets.length; i++) {
 		var target = targets[i];
 		var words = phones[target.phone];
@@ -48,9 +46,10 @@ function addClips(targets, phones, mix, method, diphones, triphones, func) {
 			mix.addClip(match.file, target.phone, length, length + match.dur, match.start, match.end, 1);
 			length += match.dur;
 		} else {
-			func(target);
+			length = func(target, length) || length;
 		}
 	}
+	return length;
 }
 
 function speak(input, output, dict, matchWords, matchDiphones, matchTriphones, chooseMethod, overlapStart, overlapEnd) {
@@ -60,10 +59,10 @@ function speak(input, output, dict, matchWords, matchDiphones, matchTriphones, c
 	mix.overlapStart = overlapStart;
 	mix.overlapEnd = overlapEnd;
 	if (matchWords && acapella.words && vocals.words) {
-		addClips(acapella.words, vocals.words, mix, chooseMethod, matchDiphones, matchTriphones, function(target) {
+		addClips(acapella.words, vocals.words, mix, chooseMethod, matchDiphones, matchTriphones, 0, function(target, length) {
 			console.log("USING PHONES FOR: " + target.phone);
 			if (target.phones) {
-				addClips(target.phones, vocals.phones, mix, chooseMethod, matchDiphones, matchTriphones, function(data) {
+				return addClips(target.phones, vocals.phones, mix, chooseMethod, matchDiphones, matchTriphones, length, function(data) {
 					console.log("MISSING PHONE: " + data.phone);
 				});
 			} else {
@@ -71,7 +70,7 @@ function speak(input, output, dict, matchWords, matchDiphones, matchTriphones, c
 			}
 		});
 	} else {
-		addClips(acapella.phones, vocals.phones, mix, chooseMethod, matchDiphones, matchTriphones, function(target) {
+		addClips(acapella.phones, vocals.phones, mix, chooseMethod, matchDiphones, matchTriphones, 0, function(target) {
 			console.log("MISSING PHONE: " + target.phone);
 		});
 	}
