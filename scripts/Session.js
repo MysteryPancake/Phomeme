@@ -5,7 +5,7 @@ function xmlSafe(str) {
 }
 
 function session(name, bitDepth, sampleRate) {
-	this.name = name || "test";
+	this.name = name || "Untitled Session";
 	this.depth = bitDepth || 16;
 	this.rate = sampleRate || 16000;
 	this.before = `<?xml version="1.0" encoding="UTF-8" standalone="no" ?>
