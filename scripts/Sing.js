@@ -10,20 +10,20 @@ function addClip(target, phones, mix, method, diphones, triphones, func) {
 	}
 }
 
-function sing(input, output, matchWords, matchDiphones, matchTriphones, chooseMethod, overlapStart, overlapEnd) {
-	var vocals = convert(input, "input.wav");
-	var acapella = convert(output, "output.wav");
-	var mix = new session("vocals", 32, 44100);
+function sing(vocals, acapella, matchWords, matchDiphones, matchTriphones, chooseMethod, overlapStart, overlapEnd) {
+	var input = convert(vocals, "input.wav");
+	var output = convert(acapella, "output.wav");
+	var mix = new session("input", 32, 44100);
 	mix.overlapStart = overlapStart;
 	mix.overlapEnd = overlapEnd;
-	if (matchWords && acapella.words && vocals.words) {
-		for (var word in acapella.words) {
-			for (var i = 0; i < acapella.words[word].length; i++) {
-				addClip(acapella.words[word][i], vocals.words[word], mix, chooseMethod, matchDiphones, matchTriphones, function(target) {
+	if (matchWords && input.words && output.words) {
+		for (var word in output.words) {
+			for (var i = 0; i < output.words[word].length; i++) {
+				addClip(output.words[word][i], input.words[word], mix, chooseMethod, matchDiphones, matchTriphones, function(target) {
 					console.log("USING PHONES FOR: " + target.phone);
 					for (var j = 0; j < target.phones.length; j++) {
 						var data = target.phones[j];
-						addClip(data, vocals.phones[data.phone], mix, chooseMethod, matchDiphones, matchTriphones, function(phone) {
+						addClip(data, input.phones[data.phone], mix, chooseMethod, matchDiphones, matchTriphones, function(phone) {
 							console.log("MISSING PHONE: " + phone.phone);
 						});
 					}
@@ -31,9 +31,9 @@ function sing(input, output, matchWords, matchDiphones, matchTriphones, chooseMe
 			}
 		}
 	} else {
-		for (var phone in acapella.phones) {
-			for (var j = 0; j < acapella.phones[phone].length; j++) {
-				addClip(acapella.phones[phone][j], vocals.phones[phone], mix, chooseMethod, matchDiphones, matchTriphones, function(target) {
+		for (var phone in output.phones) {
+			for (var j = 0; j < output.phones[phone].length; j++) {
+				addClip(output.phones[phone][j], input.phones[phone], mix, chooseMethod, matchDiphones, matchTriphones, function(target) {
 					console.log("MISSING PHONE: " + target.phone);
 				});
 			}

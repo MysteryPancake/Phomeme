@@ -3,6 +3,7 @@
 function convertSentence(sentence, dict) {
 	var words = sentence.toLowerCase().match(/\w+(?:'\w+)*/g);
 	var transcript = {
+		transcript: sentence,
 		words: [],
 		phones: []
 	};
@@ -52,17 +53,16 @@ function addClips(targets, phones, mix, method, diphones, triphones, length, fun
 	return length;
 }
 
-function speak(input, output, dict, matchWords, matchDiphones, matchTriphones, chooseMethod, overlapStart, overlapEnd) {
-	var vocals = convert(input, "input.wav");
-	var acapella = convertSentence(output, dict);
-	var mix = new session("vocals", 32, 44100);
+function speak(vocals, output, matchWords, matchDiphones, matchTriphones, chooseMethod, overlapStart, overlapEnd) {
+	var input = convert(vocals, "input.wav");
+	var mix = new session("input", 32, 44100);
 	mix.overlapStart = overlapStart;
 	mix.overlapEnd = overlapEnd;
-	if (matchWords && acapella.words && vocals.words) {
-		addClips(acapella.words, vocals.words, mix, chooseMethod, matchDiphones, matchTriphones, 0, function(target, length) {
+	if (matchWords && input.words && output.words) {
+		addClips(output.words, input.words, mix, chooseMethod, matchDiphones, matchTriphones, 0, function(target, length) {
 			console.log("USING PHONES FOR: " + target.phone);
 			if (target.phones) {
-				return addClips(target.phones, vocals.phones, mix, chooseMethod, matchDiphones, matchTriphones, length, function(data) {
+				return addClips(target.phones, input.phones, mix, chooseMethod, matchDiphones, matchTriphones, length, function(data) {
 					console.log("MISSING PHONE: " + data.phone);
 				});
 			} else {
@@ -70,7 +70,7 @@ function speak(input, output, dict, matchWords, matchDiphones, matchTriphones, c
 			}
 		});
 	} else {
-		addClips(acapella.phones, vocals.phones, mix, chooseMethod, matchDiphones, matchTriphones, 0, function(target) {
+		addClips(output.phones, input.phones, mix, chooseMethod, matchDiphones, matchTriphones, 0, function(target) {
 			console.log("MISSING PHONE: " + target.phone);
 		});
 	}
