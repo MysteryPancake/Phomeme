@@ -1,9 +1,10 @@
 "use strict";
 
+var length = 0;
+
 function convertSentence(sentence, dict) {
 	var words = sentence.toLowerCase().match(/\w+(?:'\w+)*/g);
 	var transcript = {
-		transcript: sentence,
 		words: [],
 		phones: []
 	};
@@ -38,7 +39,7 @@ function convertSentence(sentence, dict) {
 	return transcript;
 }
 
-function addClips(targets, phones, mix, method, diphones, triphones, length, func) {
+function addClips(targets, phones, mix, method, diphones, triphones, func) {
 	for (var i = 0; i < targets.length; i++) {
 		var target = targets[i];
 		var words = phones[target.phone];
@@ -47,22 +48,22 @@ function addClips(targets, phones, mix, method, diphones, triphones, length, fun
 			mix.addClip(match.file, target.phone, length, length + match.dur, match.start, match.end, 1);
 			length += match.dur;
 		} else {
-			length = func(target, length) || length;
+			func(target);
 		}
 	}
-	return length;
 }
 
-function speak(vocals, output, matchWords, matchDiphones, matchTriphones, chooseMethod, overlapStart, overlapEnd) {
+function speak(vocals, acapella, dict, matchWords, matchDiphones, matchTriphones, chooseMethod, overlapStart, overlapEnd) {
 	var input = convert(vocals, "input.wav");
+	var output = convertSentence(acapella, dict);
 	var mix = new session("session", 32, 44100);
 	mix.overlapStart = overlapStart;
 	mix.overlapEnd = overlapEnd;
 	if (matchWords && input.words && output.words) {
-		addClips(output.words, input.words, mix, chooseMethod, matchDiphones, matchTriphones, 0, function(target, length) {
+		addClips(output.words, input.words, mix, chooseMethod, matchDiphones, matchTriphones, function(target) {
 			console.log("USING PHONES FOR: " + target.phone);
 			if (target.phones) {
-				return addClips(target.phones, input.phones, mix, chooseMethod, matchDiphones, matchTriphones, length, function(data) {
+				addClips(target.phones, input.phones, mix, chooseMethod, matchDiphones, matchTriphones, function(data) {
 					console.log("MISSING PHONE: " + data.phone);
 				});
 			} else {
@@ -70,7 +71,7 @@ function speak(vocals, output, matchWords, matchDiphones, matchTriphones, choose
 			}
 		});
 	} else {
-		addClips(output.phones, input.phones, mix, chooseMethod, matchDiphones, matchTriphones, 0, function(target) {
+		addClips(output.phones, input.phones, mix, chooseMethod, matchDiphones, matchTriphones, function(target) {
 			console.log("MISSING PHONE: " + target.phone);
 		});
 	}

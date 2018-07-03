@@ -8,38 +8,15 @@ function choosePhone(method, target, phones) {
 	} else if (method === "random") {
 		return phones[Math.floor(Math.random() * phones.length)];
 	} else if (method === "duration") {
-		var match, difference;
+		var match, distance;
 		for (var i = 0; i < phones.length; i++) {
-			var diff = Math.abs(target - phones[i].dur);
-			if (difference === undefined || diff < difference) {
-				difference = diff;
+			var difference = Math.abs(target.dur - phones[i].dur);
+			if (distance === undefined || difference < distance) {
+				distance = difference;
 				match = phones[i];
 			}
 		}
 		return match;
-	} else if (method === "longest") {
-		var match = phones[0];
-		for (var i = 0; i < phones.length; i++) {
-			if (phones[i].dur > match.dur) {
-				match = phones[i];
-			}
-		}
-		return match;
-	} else if (method === "shortest") {
-		var match = phones[0];
-		for (var i = 0; i < phones.length; i++) {
-			if (phones[i].dur < match.dur) {
-				match = phones[i];
-			}
-		}
-		return match;
-	} else if (method === "average") {
-		var sum = 0;
-		for (var i = 0; i < phones.length; i++) {
-			sum += phones[i].dur;
-		}
-		var average = sum / phones.length;
-		return choosePhone("duration", average, phones);
 	} else {
 		return phones[0];
 	}
@@ -67,10 +44,10 @@ function triphone(target, phones, method, matchDiphones, matchTriphones) {
 		}
 	}
 	if (triphones.length > 0) {
-		return choosePhone(method, target.dur, triphones);
+		return choosePhone(method, target, triphones);
 	} else if (diphones.length > 0) {
-		return choosePhone(method, target.dur, diphones);
+		return choosePhone(method, target, diphones);
 	} else {
-		return choosePhone(method, target.dur, phones);
+		return choosePhone(method, target, phones);
 	}
 }

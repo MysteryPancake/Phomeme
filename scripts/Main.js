@@ -140,7 +140,7 @@ function microphone(element) {
 				recorder.onstop = function() {
 					stream.getTracks()[0].stop();
 					var blob = new Blob(chunks, { type: "audio/ogg; codecs=opus" });
-					document.getElementById(isInput ? "inputAudio" : "outputAudio").files = blob;
+					//document.getElementById(isInput ? "inputAudio" : "outputAudio").files = blob;
 					addBlob(blob, "ogg", isInput);
 				};
 				recorder.start();
