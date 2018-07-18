@@ -32,7 +32,7 @@ function convertSentence(sentence, dict) {
 				prevPhone = phone;
 			}
 		} else {
-			console.log("MISSING DEFINITION: " + word);
+			console.warn("MISSING DEFINITION: " + word);
 		}
 	}
 	return transcript;
@@ -63,15 +63,15 @@ function speak(vocals, output, matchWords, matchDiphones, matchTriphones, choose
 			console.log("USING PHONES FOR: " + target.phone);
 			if (target.phones) {
 				return addClips(target.phones, input.phones, mix, chooseMethod, matchDiphones, matchTriphones, length, function(data) {
-					console.log("MISSING PHONE: " + data.phone);
+					console.warn("MISSING PHONE: " + data.phone);
 				});
 			} else {
-				console.log("MISSING DEFINITION: " + target.phone);
+				console.warn("MISSING DEFINITION: " + target.phone);
 			}
 		});
 	} else {
 		addClips(output.phones, input.phones, mix, chooseMethod, matchDiphones, matchTriphones, 0, function(target) {
-			console.log("MISSING PHONE: " + target.phone);
+			console.warn("MISSING PHONE: " + target.phone);
 		});
 	}
 	return mix.compile();

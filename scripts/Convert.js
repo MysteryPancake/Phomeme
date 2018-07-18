@@ -31,22 +31,23 @@ function convert(json, file) {
 		var start = word.start;
 		for (var j = 0; j < word.phones.length; j++) {
 			var phone = word.phones[j];
+			var simple = phone.phone.split("_").shift().toUpperCase();
 			if (prevPhone) {
-				transcript.phones[prevPhone][transcript.phones[prevPhone].length - 1].next = phone.phone;
+				transcript.phones[prevPhone][transcript.phones[prevPhone].length - 1].next = simple;
 			}
-			transcript.phones[phone.phone] = transcript.phones[phone.phone] || [];
+			transcript.phones[simple] = transcript.phones[simple] || [];
 			var data = {
 				start: start,
 				end: start + phone.duration,
 				dur: phone.duration,
-				phone: phone.phone,
+				phone: simple,
 				prev: prevPhone,
 				file: file
 			};
 			transcript.words[aligned][transcript.words[aligned].length - 1].phones.push(data);
-			transcript.phones[phone.phone].push(data);
+			transcript.phones[simple].push(data);
 			start += phone.duration;
-			prevPhone = phone.phone;
+			prevPhone = simple;
 		}
 	}
 	return transcript;

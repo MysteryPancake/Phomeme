@@ -144,9 +144,7 @@ function microphone(element) {
 					addBlob(blob, "ogg", isInput);
 				};
 				recorder.start();
-			}).catch(function(error) {
-				console.log(error);
-			});
+			}).catch(console.error);
 		}
 		element.src = "micactive.png";
 		element.active = true;

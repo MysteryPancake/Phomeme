@@ -24,7 +24,7 @@ function sing(vocals, acapella, matchWords, matchDiphones, matchTriphones, choos
 					for (var j = 0; j < target.phones.length; j++) {
 						var data = target.phones[j];
 						addClip(data, input.phones[data.phone], mix, chooseMethod, matchDiphones, matchTriphones, function(phone) {
-							console.log("MISSING PHONE: " + phone.phone);
+							console.warn("MISSING PHONE: " + phone.phone);
 						});
 					}
 				});
@@ -34,7 +34,7 @@ function sing(vocals, acapella, matchWords, matchDiphones, matchTriphones, choos
 		for (var phone in output.phones) {
 			for (var j = 0; j < output.phones[phone].length; j++) {
 				addClip(output.phones[phone][j], input.phones[phone], mix, chooseMethod, matchDiphones, matchTriphones, function(target) {
-					console.log("MISSING PHONE: " + target.phone);
+					console.warn("MISSING PHONE: " + target.phone);
 				});
 			}
 		}
