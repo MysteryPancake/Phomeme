@@ -26,7 +26,7 @@ module.exports = function(json, file) {
 		words: {},
 		phones: {}
 	};
-	let prevWord, prevPhone;
+	let prevWord;
 	for (let i = 0; i < json.words.length; i++) {
 		const word = json.words[i];
 		if (word.case === "not-found-in-audio") continue;
@@ -46,6 +46,7 @@ module.exports = function(json, file) {
 		});
 		prevWord = aligned;
 		let start = word.start;
+		let prevPhone;
 		for (let j = 0; j < word.phones.length; j++) {
 			const phone = word.phones[j];
 			const simple = phone.phone.split("_").shift().toUpperCase();

@@ -30,7 +30,6 @@ function convertSentence(sentence) {
 		words: [],
 		phones: []
 	};
-	let prevPhone;
 	for (let i = 0; i < words.length; i++) {
 		const word = words[i];
 		transcript.words.push({
@@ -42,17 +41,13 @@ function convertSentence(sentence) {
 		if (phones) {
 			transcript.words[transcript.words.length - 1].phones = [];
 			for (let j = 0; j < phones.length; j++) {
-				const phone = phones[j];
-				if (prevPhone) {
-					transcript.phones[transcript.phones.length - 1].next = phone;
-				}
 				const data = {
-					prev: prevPhone,
-					phone: phone
+					prev: phones[j - 1],
+					next: phones[j + 1],
+					phone: phones[j]
 				};
 				transcript.words[transcript.words.length - 1].phones.push(data);
 				transcript.phones.push(data);
-				prevPhone = phone;
 			}
 		} else {
 			console.warn("MISSING DEFINITION: " + word);

@@ -9,7 +9,7 @@ function convert(json, file) {
 		words: {},
 		phones: {}
 	};
-	var prevWord, prevPhone;
+	var prevWord;
 	for (var i = 0; i < json.words.length; i++) {
 		var word = json.words[i];
 		if (word.case === "not-found-in-audio") continue;
@@ -29,6 +29,7 @@ function convert(json, file) {
 		});
 		prevWord = aligned;
 		var start = word.start;
+		var prevPhone;
 		for (var j = 0; j < word.phones.length; j++) {
 			var phone = word.phones[j];
 			var simple = phone.phone.split("_").shift().toUpperCase();
