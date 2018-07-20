@@ -8,7 +8,7 @@ const convert = require("./convert.js");
 const matchWords = true;
 const matchDiphones = true;
 const matchTriphones = true;
-const chooseMethod = "average";
+const chooseMethod = "longest";
 const overlapStart = 0;
 const overlapEnd = 0.025;
 
@@ -50,7 +50,7 @@ function convertSentence(sentence) {
 				transcript.phones.push(data);
 			}
 		} else {
-			console.warn("MISSING DEFINITION: " + word);
+			console.log("MISSING DEFINITION: " + word);
 		}
 	}
 	return transcript;
@@ -72,7 +72,7 @@ function addClips(targets, phones, mix, method, diphones, triphones, length, fun
 }
 
 function sayWords(sentence) {
-	const input = convert(JSON.parse(fs.readFileSync("input.json")), "input");
+	const input = convert(JSON.parse(fs.readFileSync("input.json")), "input.wav");
 	const output = convertSentence(sentence);
 	const mix = new session("session", 32, 44100);
 	mix.overlapStart = overlapStart;
@@ -82,15 +82,15 @@ function sayWords(sentence) {
 			console.log("USING PHONES FOR: " + target.phone);
 			if (target.phones) {
 				return addClips(target.phones, input.phones, mix, chooseMethod, matchDiphones, matchTriphones, length, function(data) {
-					console.warn("MISSING PHONE: " + data.phone);
+					console.log("MISSING PHONE: " + data.phone);
 				});
 			} else {
-				console.warn("MISSING DEFINITION: " + target.phone);
+				console.log("MISSING DEFINITION: " + target.phone);
 			}
 		});
 	} else {
 		addClips(output.phones, input.phones, mix, chooseMethod, matchDiphones, matchTriphones, 0, function(target) {
-			console.warn("MISSING PHONE: " + target.phone);
+			console.log("MISSING PHONE: " + target.phone);
 		});
 	}
 	mix.save();

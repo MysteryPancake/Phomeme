@@ -23,8 +23,8 @@ function addClip(target, phones, mix, method, diphones, triphones, func) {
 }
 
 function sing(vocals, acapella) {
-	const input = convert(JSON.parse(fs.readFileSync(vocals + ".json")), vocals);
-	const output = convert(JSON.parse(fs.readFileSync(acapella + ".json")), acapella);
+	const input = convert(JSON.parse(fs.readFileSync(vocals + ".json")), vocals + ".wav");
+	const output = convert(JSON.parse(fs.readFileSync(acapella + ".json")), acapella + ".wav");
 	const mix = new session("session", 32, 44100);
 	mix.overlapStart = overlapStart;
 	mix.overlapEnd = overlapEnd;
@@ -36,7 +36,7 @@ function sing(vocals, acapella) {
 					for (let j = 0; j < target.phones.length; j++) {
 						const data = target.phones[j];
 						addClip(data, input.phones[data.phone], mix, chooseMethod, matchDiphones, matchTriphones, function(phone) {
-							console.warn("MISSING PHONE: " + phone.phone);
+							console.log("MISSING PHONE: " + phone.phone);
 						});
 					}
 				});
@@ -46,7 +46,7 @@ function sing(vocals, acapella) {
 		for (let phone in output.phones) {
 			for (let j = 0; j < output.phones[phone].length; j++) {
 				addClip(output.phones[phone][j], input.phones[phone], mix, chooseMethod, matchDiphones, matchTriphones, function(target) {
-					console.warn("MISSING PHONE: " + target.phone);
+					console.log("MISSING PHONE: " + target.phone);
 				});
 			}
 		}

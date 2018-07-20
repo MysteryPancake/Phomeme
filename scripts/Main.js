@@ -16,7 +16,7 @@ function requestFile(method, file, error, func, data) {
 	};
 	request.onerror = function() {
 		document.getElementById("title").innerHTML = "Error";
-		document.getElementById("waiting").innerHTML = error + " Try using a cross-origin extension.";
+		document.getElementById("waiting").innerHTML = error + " Try installing a cross-origin extension.";
 		document.getElementById("spinner").style.display = "none";
 	};
 	request.send(data);
@@ -198,23 +198,45 @@ function addInput(data) {
 	finalResponse();
 }
 
-function phomeme() {
-	var preset = document.getElementById("preset").value;
-	if (preset === "custom") {
-		var file = document.getElementById("inputAudio").files[0];
-		if (file.type === "application/json") {
-			readJson(file, addInput);
-		} else {
-			var input = new FormData();
-			input.append("audio", file);
-			input.append("transcript", document.getElementById("inputScript").value);
-			requestFile("POST", "http://gentle-demo.lowerquality.com/transcriptions?async=false", "Couldn't receive a response!", addInput, input);
-		}
+function crossOrigin(func) {
+	var input = document.getElementById("inputAudio").files[0];
+	var output = document.getElementById("outputAudio").files[0];
+	if (input && input.type.startsWith("audio") || output && output.type.startsWith("audio")) {
+		var request = new XMLHttpRequest();
+		request.open("GET", "http://gentle-demo.lowerquality.com", true);
+		request.onreadystatechange = function() {
+			if (this.readyState === 4 && this.status === 200) {
+				func();
+			}
+		};
+		request.onerror = function() {
+			window.alert("Please install a cross-origin extension for this to work!");
+		};
+		request.send();
 	} else {
-		document.getElementById("waiting").innerHTML = "Loading " + preset + "...";
-		requestFile("GET", preset + "/complete.json", "Couldn't load " + preset + "!", addInput);
+		func();
 	}
-	document.getElementById("form").style.display = "none";
-	document.getElementById("result").style.display = "block";
+}
+
+function phomeme() {
+	crossOrigin(function() {
+		var preset = document.getElementById("preset").value;
+		if (preset === "custom") {
+			var file = document.getElementById("inputAudio").files[0];
+			if (file.type === "application/json") {
+				readJson(file, addInput);
+			} else {
+				var input = new FormData();
+				input.append("audio", file);
+				input.append("transcript", document.getElementById("inputScript").value);
+				requestFile("POST", "http://gentle-demo.lowerquality.com/transcriptions?async=false", "Couldn't receive a response!", addInput, input);
+			}
+		} else {
+			document.getElementById("waiting").innerHTML = "Loading " + preset + "...";
+			requestFile("GET", preset + "/complete.json", "Couldn't load " + preset + "!", addInput);
+		}
+		document.getElementById("form").style.display = "none";
+		document.getElementById("result").style.display = "block";
+	});
 	return false;
 }
