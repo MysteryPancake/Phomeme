@@ -59,11 +59,6 @@ function checkJson(element) {
 	} else if (file.type.startsWith("audio")) {
 		addBlob(file, file.name.split(".").pop(), isInput);
 	}
-	/*var isInput = element.id === "inputAudio";
-	for (var i = 0; i < element.files.length; i++) {
-		var file = element.files[i];
-		// todo
-	}*/
 }
 
 function updatePresets(element) {
@@ -179,7 +174,7 @@ function finalResponse() {
 		}
 	} else {
 		document.getElementById("waiting").innerHTML = "Loading phone dictionary...";
-		document.getElementById("chooseMethod").value = "average";
+		document.getElementById("chooseMethod").value = "longest";
 		requestFile("GET", "phonedictionary.txt", "Couldn't load phone dictionary!", function(response) {
 			dictionary = {};
 			var lines = response.split("\n");
@@ -201,7 +196,7 @@ function addInput(data) {
 function crossOrigin(func) {
 	var input = document.getElementById("inputAudio").files[0];
 	var output = document.getElementById("outputAudio").files[0];
-	if (input && input.type.startsWith("audio") || output && output.type.startsWith("audio")) {
+	if ((input && input.type.startsWith("audio")) || (output && output.type.startsWith("audio"))) {
 		var request = new XMLHttpRequest();
 		request.open("GET", "http://gentle-demo.lowerquality.com", true);
 		request.onreadystatechange = function() {
