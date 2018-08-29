@@ -22,7 +22,7 @@
 	<body>
 		<h1>Phomeme</h1>
 		<form id="form" onsubmit="return phomeme();">
-			<h3>Vocals (Input)</h3>
+			<h3>Input (Vocals)</h3>
 			<select id="preset" onchange="updatePresets(this);">
 				<option selected value="custom">Custom</option>
 				<option value="rosen">Michael Rosen</option>
@@ -34,7 +34,7 @@
 				<input multiple required type="file" id="inputAudio" accept="audio/*,application/json,.json" onchange="checkJson(this);">
 				<input type="image" alt="Microphone" id="inputMic" src="microphone.png" width="24" height="24" onclick="return microphone(this);">
 				<audio controls id="inputPlayer"></audio>
-				<textarea required id="inputScript" placeholder="Type the transcript of the vocals here"></textarea>
+				<code required contenteditable="true" id="inputScript" data-placeholder="Type the transcript of the input here"></code>
 			</div>
 			<div id="rosen" class="preset">
 				<div>
@@ -68,11 +68,11 @@
 					<label for="disillusion3">Tutorials - COMING SOON</label>
 				</div>
 			</div>
-			<h3>Acapella (Output)</h3>
+			<h3>Output (Acapella)</h3>
 			<input multiple type="file" id="outputAudio" accept="audio/*,application/json,.json" onchange="checkJson(this);">
 			<input type="image" alt="Microphone" id="outputMic" src="microphone.png" width="24" height="24" onclick="return microphone(this);">
 			<audio controls id="outputPlayer"></audio>
-			<textarea required id="outputScript" placeholder="Type the transcript of the acapella here"></textarea>
+			<code required contenteditable="true" id="outputScript" data-placeholder="Type the transcript of the output here"></code>
 			<input type="submit" value="Submit">
 		</form>
 		<div id="result">
@@ -105,12 +105,20 @@
 					<label for="matchTriphones">Match Triphones</label>
 				</div>
 				<div>
+					<input checked type="checkbox" id="matchPunctuation" onchange="updateDownloads();">
+					<label for="matchPunctuation">Match Punctuation</label>
+				</div>
+				<div>
+					<input checked type="checkbox" id="matchReverse" onchange="updateDownloads();">
+					<label for="matchReverse">Reverse Match</label>
+				</div>
+				<div>
 					<label for="overlapStart">Start Overlap</label>
-					<input type="number" id="overlapStart" value="0" step="0.01">
+					<input type="number" id="overlapStart" value="0" step="0.01" onchange="updateDownloads();">
 				</div>
 				<div>
 					<label for="overlapEnd">End Overlap</label>
-					<input type="number" id="overlapEnd" value="0.025" step="0.01">
+					<input type="number" id="overlapEnd" value="0.025" step="0.01" onchange="updateDownloads();">
 				</div>
 				<h3>Downloads</h3>
 				<div>

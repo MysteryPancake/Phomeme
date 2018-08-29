@@ -22,8 +22,10 @@ function dictionary() {
 	return dict;
 }
 
+const punctuation = { "!": true, "?": true, ".": true };
+
 function convertSentence(sentence) {
-	const words = sentence.toLowerCase().match(/\w+(?:'\w+)*/g);
+	const words = sentence.toLowerCase().match(/\w+(?:'\w+)*|(?<![!?.])[!?.]/g);
 	const dict = dictionary();
 	const transcript = {
 		transcript: sentence,
@@ -32,6 +34,7 @@ function convertSentence(sentence) {
 	};
 	for (let i = 0; i < words.length; i++) {
 		const word = words[i];
+		if (punctuation[word]) continue;
 		transcript.words.push({
 			prev: words[i - 1],
 			next: words[i + 1],

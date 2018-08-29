@@ -46,29 +46,25 @@ function choose(method, target, phones) {
 }
 
 module.exports = function(target, phones, method, matchDiphones, matchTriphones) {
-	let matching = 0;
 	const diphones = [];
 	const triphones = [];
 	for (let i = 0; i < phones.length; i++) {
 		const matchPrev = phones[i].prev === target.prev;
 		const matchNext = phones[i].next === target.next;
-		if (matchTriphones && matchPrev && matchNext && matching <= 2) {
-			matching = 2;
+		if (matchTriphones && matchPrev && matchNext) {
 			triphones.push(phones[i]);
 			console.log("MATCHED TRIPHONE: " + target.prev + " " + target.phone + " " + target.next);
-		} else if (matchDiphones && matchPrev && matching <= 1) {
-			matching = 1;
+		} else if (matchDiphones && matchPrev) {
 			diphones.push(phones[i]);
 			console.log("MATCHED DIPHONE: " + target.prev + " " + target.phone);
-		} else if (matchDiphones && matchNext && matching <= 1) {
-			matching = 1;
+		} else if (matchDiphones && matchNext) {
 			diphones.push(phones[i]);
 			console.log("MATCHED DIPHONE: " + target.phone + " " + target.next);
 		}
 	}
-	if (triphones.length > 0) {
+	if (triphones.length) {
 		return choose(method, target.dur, triphones);
-	} else if (diphones.length > 0) {
+	} else if (diphones.length) {
 		return choose(method, target.dur, diphones);
 	} else {
 		return choose(method, target.dur, phones);

@@ -1,7 +1,9 @@
 "use strict";
 
+var punctuation = { "!": true, "?": true, ".": true };
+
 function convertSentence(sentence, dict) {
-	var words = sentence.toLowerCase().match(/\w+(?:'\w+)*/g);
+	var words = sentence.toLowerCase().match(/\w+(?:'\w+)*|(?<![!?.])[!?.]/g);
 	var transcript = {
 		transcript: sentence,
 		words: [],
@@ -9,6 +11,7 @@ function convertSentence(sentence, dict) {
 	};
 	for (var i = 0; i < words.length; i++) {
 		var word = words[i];
+		if (punctuation[word]) continue;
 		transcript.words.push({
 			prev: words[i - 1],
 			next: words[i + 1],

@@ -1,10 +1,8 @@
 "use strict";
 
-var recorder;
 var inputJson;
 var outputJson;
 var dictionary;
-var recognition;
 
 function requestFile(method, file, error, func, data) {
 	var request = new XMLHttpRequest();
@@ -54,7 +52,7 @@ function checkJson(element) {
 	if (file.type === "application/json") {
 		readJson(file, function(content) {
 			var transcript = document.getElementById(isInput ? "inputScript" : "outputScript");
-			transcript.value = JSON.parse(content).transcript;
+			transcript.innerHTML = JSON.parse(content).transcript;
 		});
 	} else if (file.type.startsWith("audio")) {
 		addBlob(file, file.name.split(".").pop(), isInput);
@@ -73,6 +71,14 @@ function updatePresets(element) {
 	}
 }
 
+function getText(node) {
+	var result = "";
+	for (var i = 0; i < node.childNodes.length; i++) {
+		result += node.childNodes[i].textContent + " ";
+	}
+	return result;
+}
+
 function updateDownloads() {
 	var matchWords = document.getElementById("matchWords").checked;
 	var matchDiphones = document.getElementById("matchDiphones").checked;
@@ -82,8 +88,7 @@ function updateDownloads() {
 	var overlapEnd = parseFloat(document.getElementById("overlapEnd").value);
 	var final;
 	if (dictionary) {
-		var sentence = document.getElementById("outputScript").value;
-		outputJson = convertSentence(sentence, dictionary);
+		outputJson = convertSentence(getText(document.getElementById("outputScript")), dictionary);
 		addLink("output", JSON.stringify(outputJson), "application/json", "json");
 		final = speak(inputJson, outputJson, matchWords, matchDiphones, matchTriphones, chooseMethod, overlapStart, overlapEnd);
 	} else {
@@ -93,52 +98,58 @@ function updateDownloads() {
 }
 
 function microphone(element) {
+	var isInput = element.id === "inputMic";
+	var transcript = document.getElementById(isInput ? "inputScript" : "outputScript");
 	if (element.active) {
-		if (recognition) {
-			recognition.stop();
+		if (element.recognition) {
+			element.recognition.stop();
 		}
-		if (recorder) {
-			recorder.stop();
+		if (element.recorder) {
+			element.recorder.stop();
 		}
+		transcript.setAttribute("contenteditable", true);
 		element.src = "microphone.png";
 		element.active = false;
 	} else {
-		var isInput = element.id === "inputMic";
-		if (window.webkitSpeechRecognition) {
-			recognition = new (window.SpeechRecognition || window.webkitSpeechRecognition)();
-			recognition.continuous = true;
-			recognition.interimResults = true;
-			var script = "";
-			var transcript = document.getElementById(isInput ? "inputScript" : "outputScript");
-			recognition.onresult = function(e) {
-				var temp = script;
-				for (var i = e.resultIndex; i < e.results.length; i++) {
-					temp += e.results[i][0].transcript;
-					if (event.results[i].isFinal) {
-						script += e.results[i][0].transcript;
+		var speech = window.SpeechRecognition || window.webkitSpeechRecognition || window.mozSpeechRecognition || window.oSpeechRecognition || window.msSpeechRecognition;
+		if (speech) {
+			transcript.setAttribute("contenteditable", false);
+			if (!element.recognition) {
+				element.recognition = new speech();
+				element.recognition.continuous = true;
+				element.recognition.interimResults = true;
+				var final = transcript.innerHTML;
+				element.recognition.onresult = function(e) {
+					var temp = "";
+					for (var i = e.resultIndex; i < e.results.length; i++) {
+						if (event.results[i].isFinal) {
+							final += event.results[i][0].transcript;
+						} else {
+							temp += event.results[i][0].transcript;
+						}
 					}
-				}
-				transcript.value = temp;
-			};
-			recognition.onend = function() {
-				transcript.value = script;
-			};
-			recognition.start();
+					transcript.innerHTML = final + "<span>" + temp + "</span>";
+				};
+				element.recognition.onend = function() {
+					transcript.innerHTML = final;
+				};
+			}
+			element.recognition.start();
 		}
 		if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
 			navigator.mediaDevices.getUserMedia({ audio: true, video: false }).then(function(stream) {
-				recorder = new MediaRecorder(stream);
+				element.recorder = new MediaRecorder(stream);
 				var chunks = [];
-				recorder.ondataavailable = function(e) {
+				element.recorder.ondataavailable = function(e) {
 					chunks.push(e.data);
 				};
-				recorder.onstop = function() {
+				element.recorder.onstop = function() {
 					stream.getTracks()[0].stop();
 					var blob = new Blob(chunks, { type: "audio/ogg; codecs=opus" });
-					//document.getElementById(isInput ? "inputAudio" : "outputAudio").files = blob;
+					//document.getElementById(isInput ? "inputAudio" : "outputAudio").files = new FileList(new File([blob], "filename"));
 					addBlob(blob, "ogg", isInput);
 				};
-				recorder.start();
+				element.recorder.start();
 			}).catch(console.error);
 		}
 		element.src = "micactive.png";
@@ -169,7 +180,7 @@ function finalResponse() {
 		} else {
 			var output = new FormData();
 			output.append("audio", file);
-			output.append("transcript", document.getElementById("outputScript").value);
+			output.append("transcript", getText(document.getElementById("outputScript")));
 			requestFile("POST", "http://gentle-demo.lowerquality.com/transcriptions?async=false", "Couldn't receive a response!", addOutput, output);
 		}
 	} else {
@@ -223,7 +234,7 @@ function phomeme() {
 			} else {
 				var input = new FormData();
 				input.append("audio", file);
-				input.append("transcript", document.getElementById("inputScript").value);
+				input.append("transcript", getText(document.getElementById("inputScript")));
 				requestFile("POST", "http://gentle-demo.lowerquality.com/transcriptions?async=false", "Couldn't receive a response!", addInput, input);
 			}
 		} else {
