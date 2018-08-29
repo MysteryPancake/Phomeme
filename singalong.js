@@ -5,13 +5,6 @@ const session = require("./session.js");
 const triphone = require("./triphone.js");
 const convert = require("./convert.js");
 
-const matchWords = true;
-const matchDiphones = true;
-const matchTriphones = true;
-const chooseMethod = "duration";
-const overlapStart = 0;
-const overlapEnd = 0.025;
-
 function addClip(target, phones, mix, method, diphones, triphones, func) {
 	if (phones) {
 		const match = triphone(target, phones, method, diphones, triphones);
@@ -22,7 +15,7 @@ function addClip(target, phones, mix, method, diphones, triphones, func) {
 	}
 }
 
-function sing(vocals, acapella) {
+function sing(vocals, acapella, matchWords, matchDiphones, matchTriphones, chooseMethod, overlapStart, overlapEnd) {
 	const input = convert(JSON.parse(fs.readFileSync(vocals + ".json")), vocals + ".wav");
 	const output = convert(JSON.parse(fs.readFileSync(acapella + ".json")), acapella + ".wav");
 	const mix = new session("session", 32, 44100);
@@ -54,4 +47,4 @@ function sing(vocals, acapella) {
 	mix.save();
 }
 
-sing("input", "output");
+sing("input", "output", true, true, true, "duration", 0, 0.025);

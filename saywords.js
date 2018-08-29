@@ -5,13 +5,6 @@ const session = require("./session.js");
 const triphone = require("./triphone.js");
 const convert = require("./convert.js");
 
-const matchWords = true;
-const matchDiphones = true;
-const matchTriphones = true;
-const chooseMethod = "longest";
-const overlapStart = 0;
-const overlapEnd = 0.025;
-
 function dictionary() {
 	const dict = {};
 	const lines = fs.readFileSync("WEBSITE/phonedictionary.txt", "utf8").split("\n");
@@ -74,7 +67,7 @@ function addClips(targets, phones, mix, method, diphones, triphones, length, fun
 	return length;
 }
 
-function sayWords(sentence) {
+function speak(sentence, matchWords, matchDiphones, matchTriphones, chooseMethod, overlapStart, overlapEnd) {
 	const input = convert(JSON.parse(fs.readFileSync("input.json")), "input.wav");
 	const output = convertSentence(sentence);
 	const mix = new session("session", 32, 44100);
@@ -99,4 +92,4 @@ function sayWords(sentence) {
 	mix.save();
 }
 
-sayWords("sample text");
+speak("sample text", true, true, true, "longest", 0, 0.025);
