@@ -29,7 +29,7 @@ function setup() {
 		window.addEventListener("mouseup", ended);
 	}
 	var audioRequest = new XMLHttpRequest();
-	audioRequest.open("GET", "../donkeykong/input.wav", true);
+	audioRequest.open("GET", "donkeykong/input.wav", true);
 	audioRequest.responseType = "arraybuffer";
 	audioRequest.onreadystatechange = function() {
 		if (this.readyState === 4 && this.status === 200) {
@@ -40,7 +40,7 @@ function setup() {
 	};
 	audioRequest.send();
 	var jsonRequest = new XMLHttpRequest();
-	jsonRequest.open("GET", "../donkeykong/complete.json", true);
+	jsonRequest.open("GET", "donkeykong/complete.json", true);
 	jsonRequest.onreadystatechange = function() {
 		if (this.readyState === 4 && this.status === 200) {
 			json = JSON.parse(this.responseText);
@@ -162,6 +162,7 @@ function wheel(e) {
 
 function clicked(e) {
 	e.preventDefault();
+	if (!json || !json.words) return;
 	if (e.pageY > yPos && e.pageY < yPos + height) {
 		var match;
 		for (var i = 0; i < json.words.length; i++) {
