@@ -89,7 +89,7 @@ function updateDownloads() {
 	var final;
 	if (dictionary) {
 		outputJson = convertSentence(getText(document.getElementById("outputScript")), dictionary);
-		addLink("output", JSON.stringify(outputJson), "application/json", "json");
+		addLink("output", JSON.stringify(outputJson, undefined, "\t"), "application/json", "json");
 		final = speak(inputJson, outputJson, matchWords, matchDiphones, matchTriphones, chooseMethod, overlapStart, overlapEnd);
 	} else {
 		final = sing(inputJson, outputJson, matchWords, matchDiphones, matchTriphones, chooseMethod, overlapStart, overlapEnd);

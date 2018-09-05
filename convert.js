@@ -4,7 +4,7 @@ const fs = require("fs");
 const session = require("./session.js");
 
 function saveJson(transcript) {
-	fs.writeFileSync("input.json", JSON.stringify(transcript));
+	fs.writeFileSync("input.json", JSON.stringify(transcript, undefined, "\t"));
 }
 
 function process(phones) {

@@ -18,7 +18,7 @@ function setup() {
 	resize();
 	player = new (window.AudioContext || window.webkitAudioContext)();
 	sampleRate = player.sampleRate;
-	window.addEventListener("mousewheel", wheel);
+	window.addEventListener("wheel", wheel);
 	if (window.ontouchstart) {
 		window.addEventListener("touchstart", clicked);
 		window.addEventListener("touchmove", moved);
@@ -105,8 +105,8 @@ function drawBoxes(json, audio) {
 		}
 	}
 	if (audio) {
-		var detail = 4;
-		var lines = canvas.width * detail;
+		var detail = 2;
+		var lines = canvas.width * detail; // Todo: Find a better drawing method
 		context.lineWidth = 1;
 		context.strokeStyle = "white";
 		context.beginPath();
@@ -132,7 +132,7 @@ function drawScroll(audio) {
 	context.lineWidth = 1;
 	context.strokeStyle = "white";
 	context.beginPath();
-	var lines = canvas.width * 8;
+	var lines = canvas.width * 8; // Todo: Find a better drawing method
 	for (var k = 0; k < lines; k++) {
 		var x = k / lines * canvas.width;
 		var y = scrollHeight * 0.5;
@@ -194,9 +194,9 @@ function clicked(e) {
 		var start = (offset * sampleRate * canvas.width) / (sample.data.length * scale);
 		var end = (canvas.width * sampleRate * canvas.width) / (sample.data.length * scale);
 		if (near(e.pageX, start)) {
-			dragging = { initial: scale, direction: true };
+			dragging = { initial: offset, direction: true };
 		} else if (near(e.pageX, start + end)) {
-			dragging = { initial: scale, direction: false };
+			dragging = { initial: offset, direction: false };
 		} else {
 			offset = clamp((e.pageX * sample.data.length * scale) / (sampleRate * canvas.width) - (0.5 * canvas.width));
 			canvas.style.cursor = "grabbing";
@@ -240,11 +240,11 @@ function moved(e) {
 			canvas.style.cursor = "col-resize";
 		} else if (dragging.direction !== undefined) {
 			if (dragging.direction) {
-				//scale = (sampleRate * canvas.width * canvas.width) / (sample.data.length * e.pageX);
-				//offset = clamp((e.pageX * sample.data.length * scale) / (sampleRate * canvas.width));
+				//scale = (sampleRate * canvas.width * canvas.width) / (sample.data.length * e.pageX); // todo
+				offset = clamp((e.pageX * sample.data.length * scale) / (sampleRate * canvas.width));
 			} else {
-				//scale = (sampleRate * canvas.width * canvas.width) / (sample.data.length * e.pageX);
-				//offset = dragging.initial - scale; // todo
+				scale = (sampleRate * canvas.width * canvas.width) / (sample.data.length * e.pageX);
+				//offset = (dragging.initial / offset); // todo
 			}
 		} else {
 			offset = clamp((e.pageX * sample.data.length * scale) / (sampleRate * canvas.width) - (0.5 * canvas.width));

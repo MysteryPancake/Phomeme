@@ -11,7 +11,7 @@ function multiple(path) {
 			transcripts.push({ script: JSON.parse(fs.readFileSync(path + "/" + name + ".json")), file: name + ".wav" });
 		}
 	}
-	fs.writeFileSync("complete.json", JSON.stringify(transcripts));
+	fs.writeFileSync("complete.json", JSON.stringify(transcripts, undefined, "\t"));
 }
 
 multiple("./WEBSITE/rosen");
