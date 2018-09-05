@@ -34,7 +34,7 @@
 				<input multiple required type="file" id="inputAudio" accept="audio/*,application/json,.json" onchange="checkJson(this);">
 				<input type="image" alt="Microphone" id="inputMic" src="microphone.png" width="24" height="24" onclick="return microphone(this);">
 				<audio controls id="inputPlayer"></audio>
-				<code required contenteditable="true" id="inputScript" data-placeholder="Type the transcript of the input here"></code>
+				<code contenteditable="true" id="inputScript" data-placeholder="Type the transcript of the input here"></code>
 			</div>
 			<div id="rosen" class="preset">
 				<div>
@@ -72,7 +72,7 @@
 			<input multiple type="file" id="outputAudio" accept="audio/*,application/json,.json" onchange="checkJson(this);">
 			<input type="image" alt="Microphone" id="outputMic" src="microphone.png" width="24" height="24" onclick="return microphone(this);">
 			<audio controls id="outputPlayer"></audio>
-			<code required contenteditable="true" id="outputScript" data-placeholder="Type the transcript of the output here"></code>
+			<code contenteditable="true" id="outputScript" data-placeholder="Type the transcript of the output here"></code>
 			<input type="submit" value="Submit">
 		</form>
 		<div id="result">
