@@ -1,9 +1,8 @@
 "use strict";
 
-var punctuation = { "!": true, "?": true, ".": true };
-
-function convertSentence(sentence, dict) {
+function convertSentence(sentence, dict, matchPunctuation) {
 	var words = sentence.toLowerCase().match(/\w+(?:'\w+)*|(?<![!?.])[!?.]/g);
+	var punctuation = { "!": true, "?": true, ".": true };
 	var transcript = {
 		transcript: sentence,
 		words: [],
@@ -13,8 +12,8 @@ function convertSentence(sentence, dict) {
 		var word = words[i];
 		if (punctuation[word]) continue;
 		transcript.words.push({
-			prev: words[i - 1],
-			next: words[i + 1],
+			prev: words[i - (matchPunctuation && punctuation[words[i - 1]] ? 1 : 2)],
+			next: words[i + (matchPunctuation && punctuation[words[i + 1]] ? 1 : 2)],
 			phone: word
 		});
 		var phones = dict[word];
@@ -51,8 +50,8 @@ function addClips(targets, phones, mix, method, diphones, triphones, length, fun
 	return length;
 }
 
-function speak(vocals, output, matchWords, matchDiphones, matchTriphones, chooseMethod, overlapStart, overlapEnd) {
-	var input = convert(vocals, "input.wav");
+function speak(vocals, output, chooseMethod, matchWords, matchDiphones, matchTriphones, matchPunctuation, matchReverse, overlapStart, overlapEnd) {
+	var input = convert(vocals, "input.wav", matchPunctuation);
 	var mix = new session("session", 32, 44100);
 	mix.overlapStart = overlapStart;
 	mix.overlapEnd = overlapEnd;

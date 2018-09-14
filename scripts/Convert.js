@@ -1,8 +1,6 @@
 "use strict";
 
-var punctuation = { "?": true, "!": true, ".": true };
-
-function convert(json, file) {
+function convert(json, file, matchPunctuation) {
 	var transcript = {
 		words: {},
 		phones: {}
@@ -24,14 +22,15 @@ function convert(json, file) {
 			}
 		}
 	} else {
-		var prev;
+		var prev = {};
+		var punctuation = { "?": true, "!": true, ".": true };
 		for (var i = 0; i < json.words.length; i++) {
 			var word = json.words[i];
 			if (word.case === "not-found-in-audio") continue;
 			var aligned = word.word.toLowerCase();
 			var char = json.transcript.charAt(word.endOffset);
-			if (prev && prev.word) {
-				transcript.words[prev.word][transcript.words[prev.word].length - 1].next = punctuation[char] ? char : aligned;
+			if (prev.word) {
+				transcript.words[prev.word][transcript.words[prev.word].length - 1].next = matchPunctuation && punctuation[char] ? char : aligned;
 			}
 			transcript.words[aligned] = transcript.words[aligned] || [];
 			transcript.words[aligned].push({
@@ -39,18 +38,17 @@ function convert(json, file) {
 				end: word.end,
 				dur: word.end - word.start,
 				phone: aligned,
-				prev: punctuation[char] ? prev && prev.char : prev && prev.word,
+				prev: matchPunctuation && punctuation[char] ? prev.char : prev.word,
 				phones: [],
 				file: file
 			});
 			prev = { word: aligned, char: char };
 			var start = word.start;
-			var prevPhone;
 			for (var j = 0; j < word.phones.length; j++) {
 				var phone = word.phones[j];
 				var simple = phone.phone.split("_").shift().toUpperCase();
-				if (prevPhone) {
-					transcript.phones[prevPhone][transcript.phones[prevPhone].length - 1].next = simple;
+				if (prev.phone) {
+					transcript.phones[prev.phone][transcript.phones[prev.phone].length - 1].next = simple;
 				}
 				transcript.phones[simple] = transcript.phones[simple] || [];
 				var data = {
@@ -58,13 +56,13 @@ function convert(json, file) {
 					end: start + phone.duration,
 					dur: phone.duration,
 					phone: simple,
-					prev: prevPhone,
+					prev: prev.phone,
 					file: file
 				};
 				transcript.words[aligned][transcript.words[aligned].length - 1].phones.push(data);
 				transcript.phones[simple].push(data);
 				start += phone.duration;
-				prevPhone = simple;
+				prev.phone = simple;
 			}
 		}
 	}

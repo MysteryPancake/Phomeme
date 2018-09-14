@@ -15,9 +15,9 @@ function addClip(target, phones, mix, method, diphones, triphones, func) {
 	}
 }
 
-function sing(vocals, acapella, matchWords, matchDiphones, matchTriphones, chooseMethod, overlapStart, overlapEnd) {
-	const input = convert(JSON.parse(fs.readFileSync(vocals + ".json")), vocals + ".wav");
-	const output = convert(JSON.parse(fs.readFileSync(acapella + ".json")), acapella + ".wav");
+function sing(vocals, acapella, chooseMethod, matchWords, matchDiphones, matchTriphones, matchPunctuation, matchReverse, overlapStart, overlapEnd) {
+	const input = convert(JSON.parse(fs.readFileSync(vocals + ".json")), vocals + ".wav", matchPunctuation);
+	const output = convert(JSON.parse(fs.readFileSync(acapella + ".json")), acapella + ".wav", matchPunctuation);
 	const mix = new session("session", 32, 44100);
 	mix.overlapStart = overlapStart;
 	mix.overlapEnd = overlapEnd;
@@ -47,4 +47,4 @@ function sing(vocals, acapella, matchWords, matchDiphones, matchTriphones, choos
 	mix.save();
 }
 
-sing("input", "output", true, true, true, "duration", 0, 0.025);
+sing("input", "output", "duration", true, true, true, true, true, 0, 0.025);

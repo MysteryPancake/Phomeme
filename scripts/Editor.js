@@ -16,8 +16,6 @@ function setup() {
 	window.addEventListener("resize", resize);
 	window.addEventListener("orientationchange", resize);
 	resize();
-	player = new (window.AudioContext || window.webkitAudioContext)();
-	sampleRate = player.sampleRate;
 	window.addEventListener("wheel", wheel);
 	if (window.ontouchstart) {
 		window.addEventListener("touchstart", clicked);
@@ -28,6 +26,8 @@ function setup() {
 		window.addEventListener("mousemove", moved);
 		window.addEventListener("mouseup", ended);
 	}
+	player = new (window.AudioContext || window.webkitAudioContext)();
+	sampleRate = player.sampleRate;
 	var audioRequest = new XMLHttpRequest();
 	audioRequest.open("GET", "donkeykong/input.wav", true);
 	audioRequest.responseType = "arraybuffer";

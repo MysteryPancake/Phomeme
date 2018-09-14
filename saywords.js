@@ -15,10 +15,9 @@ function dictionary() {
 	return dict;
 }
 
-const punctuation = { "!": true, "?": true, ".": true };
-
-function convertSentence(sentence) {
+function convertSentence(sentence, matchPunctuation) {
 	const words = sentence.toLowerCase().match(/\w+(?:'\w+)*|(?<![!?.])[!?.]/g);
+	const punctuation = { "!": true, "?": true, ".": true };
 	const dict = dictionary();
 	const transcript = {
 		transcript: sentence,
@@ -29,8 +28,8 @@ function convertSentence(sentence) {
 		const word = words[i];
 		if (punctuation[word]) continue;
 		transcript.words.push({
-			prev: words[i - 1],
-			next: words[i + 1],
+			prev: words[i - (matchPunctuation && punctuation[words[i - 1]] ? 1 : 2)],
+			next: words[i + (matchPunctuation && punctuation[words[i + 1]] ? 1 : 2)],
 			phone: word
 		});
 		const phones = dict[word];
@@ -67,9 +66,9 @@ function addClips(targets, phones, mix, method, diphones, triphones, length, fun
 	return length;
 }
 
-function speak(sentence, matchWords, matchDiphones, matchTriphones, chooseMethod, overlapStart, overlapEnd) {
-	const input = convert(JSON.parse(fs.readFileSync("input.json")), "input.wav");
-	const output = convertSentence(sentence);
+function speak(sentence, chooseMethod, matchWords, matchDiphones, matchTriphones, matchPunctuation, matchReverse, overlapStart, overlapEnd) {
+	const input = convert(JSON.parse(fs.readFileSync("input.json")), "input.wav", matchPunctuation);
+	const output = convertSentence(sentence, matchPunctuation);
 	const mix = new session("session", 32, 44100);
 	mix.overlapStart = overlapStart;
 	mix.overlapEnd = overlapEnd;
@@ -92,4 +91,4 @@ function speak(sentence, matchWords, matchDiphones, matchTriphones, chooseMethod
 	mix.save();
 }
 
-speak("sample text", true, true, true, "longest", 0, 0.025);
+speak("sample text", "longest", true, true, true, true, true, 0, 0.025);

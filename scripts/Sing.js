@@ -10,9 +10,9 @@ function addClip(target, phones, mix, method, diphones, triphones, func) {
 	}
 }
 
-function sing(vocals, acapella, matchWords, matchDiphones, matchTriphones, chooseMethod, overlapStart, overlapEnd) {
-	var input = convert(vocals, "input.wav");
-	var output = convert(acapella, "output.wav");
+function sing(vocals, acapella, chooseMethod, matchWords, matchDiphones, matchTriphones, matchPunctuation, matchReverse, overlapStart, overlapEnd) {
+	var input = convert(vocals, "input.wav", matchPunctuation);
+	var output = convert(acapella, "output.wav", matchPunctuation);
 	var mix = new session("session", 32, 44100);
 	mix.overlapStart = overlapStart;
 	mix.overlapEnd = overlapEnd;

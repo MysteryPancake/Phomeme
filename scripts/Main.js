@@ -20,7 +20,7 @@ function requestFile(method, file, error, func, data) {
 	request.send(data);
 }
 
-function addLink(name, data, type, extension) {
+function addLink(name, data, type, extension) { // see if new Blob([json], {type: "octet/stream"}) works instead of this crap
 	var element = document.getElementById(name);
 	element.href = "data:" + type + ";charset=utf-8," + encodeURIComponent(data);
 	element.download = name + "." + extension;
@@ -29,7 +29,7 @@ function addLink(name, data, type, extension) {
 function readJson(file, func) {
 	var reader = new FileReader();
 	reader.onload = function(e) {
-		func(e.target.result);
+		func(this.result);
 	};
 	reader.readAsText(file, "UTF-8");
 }
@@ -80,19 +80,21 @@ function getText(node) {
 }
 
 function updateDownloads() {
+	var chooseMethod = document.getElementById("chooseMethod").value;
 	var matchWords = document.getElementById("matchWords").checked;
 	var matchDiphones = document.getElementById("matchDiphones").checked;
 	var matchTriphones = document.getElementById("matchTriphones").checked;
-	var chooseMethod = document.getElementById("chooseMethod").value;
+	var matchPunctuation = document.getElementById("matchPunctuation").checked;
+	var matchReverse = document.getElementById("matchReverse").checked;
 	var overlapStart = parseFloat(document.getElementById("overlapStart").value);
 	var overlapEnd = parseFloat(document.getElementById("overlapEnd").value);
 	var final;
 	if (dictionary) {
-		outputJson = convertSentence(getText(document.getElementById("outputScript")), dictionary);
+		outputJson = convertSentence(getText(document.getElementById("outputScript")), dictionary, matchPunctuation);
 		addLink("output", JSON.stringify(outputJson, undefined, "\t"), "application/json", "json");
-		final = speak(inputJson, outputJson, matchWords, matchDiphones, matchTriphones, chooseMethod, overlapStart, overlapEnd);
+		final = speak(inputJson, outputJson, chooseMethod, matchWords, matchDiphones, matchTriphones, matchPunctuation, matchReverse, overlapStart, overlapEnd);
 	} else {
-		final = sing(inputJson, outputJson, matchWords, matchDiphones, matchTriphones, chooseMethod, overlapStart, overlapEnd);
+		final = sing(inputJson, outputJson, chooseMethod, matchWords, matchDiphones, matchTriphones, matchPunctuation, matchReverse, overlapStart, overlapEnd);
 	}
 	addLink("session", final, "text/xml", "sesx");
 }
