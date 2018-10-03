@@ -75,20 +75,22 @@ function drawBoxes(json, audio) {
 		context.font = "16px Courier New";
 		context.textAlign = "center";
 		for (var i = 0; i < json.words.length; i++) {
-			if (json.words[i].active) {
+			var word = json.words[i];
+			if (word.case === "not-found-in-audio") continue;
+			if (word.active) {
 				context.fillStyle = "#004000";
-				var start = json.words[i].start * scale - offset;
-				context.fillRect(start, yPos + 20, -scale * (json.words[i].active - player.currentTime), height - 40);
+				var start = word.start * scale - offset;
+				context.fillRect(start, yPos + 20, -scale * (word.active - player.currentTime), height - 40);
 			}
 			context.lineWidth = 1;
 			context.fillStyle = "white";
 			context.strokeStyle = "#004000";
-			if (json.words[i].phones) {
+			if (word.phones) {
 				context.textBaseline = "bottom";
-				var duration = json.words[i].start * scale;
-				for (var j = 0; j < json.words[i].phones.length; j++) {
-					var phone = json.words[i].phones[j].phone.split("_").shift().toUpperCase();
-					var length = json.words[i].phones[j].duration * scale;
+				var duration = word.start * scale;
+				for (var j = 0; j < word.phones.length; j++) {
+					var phone = word.phones[j].phone.split("_").shift().toUpperCase();
+					var length = word.phones[j].duration * scale;
 					drawLine(context, duration - offset, yPos + 20, duration - offset, yPos + height);
 					drawLine(context, duration + length - offset, yPos + 20, duration + length - offset, yPos + height);
 					context.fillText(phone, duration + length * 0.5 - offset, yPos + height);
@@ -97,11 +99,11 @@ function drawBoxes(json, audio) {
 			}
 			context.lineWidth = 2;
 			context.strokeStyle = "#00FF00";
-			drawLine(context, json.words[i].start * scale - offset, yPos, json.words[i].start * scale - offset, yPos + height);
-			drawLine(context, json.words[i].end * scale - offset, yPos, json.words[i].end * scale - offset, yPos + height);
+			drawLine(context, word.start * scale - offset, yPos, word.start * scale - offset, yPos + height);
+			drawLine(context, word.end * scale - offset, yPos, word.end * scale - offset, yPos + height);
 			context.textBaseline = "top";
-			var difference = (json.words[i].end - json.words[i].start) * 0.5;
-			context.fillText(json.words[i].word, scale * (json.words[i].start + difference) - offset, yPos);
+			var difference = (word.end - word.start) * 0.5;
+			context.fillText(word.word, scale * (word.start + difference) - offset, yPos);
 		}
 	}
 	if (audio) {
@@ -166,16 +168,17 @@ function clicked(e) {
 	if (e.pageY > yPos && e.pageY < yPos + height) {
 		var match;
 		for (var i = 0; i < json.words.length; i++) {
-			var start = json.words[i].start * scale - offset;
-			var end = json.words[i].end * scale - offset;
+			var word = json.words[i];
+			var start = word.start * scale - offset;
+			var end = word.end * scale - offset;
 			if (near(e.pageX, start)) {
-				dragging = { key: json.words[i], value: "start" };
+				dragging = { key: word, value: "start" };
 				canvas.style.cursor = "col-resize";
 			} else if (near(e.pageX, end)) {
-				dragging = { key: json.words[i], value: "end" };
+				dragging = { key: word, value: "end" };
 				canvas.style.cursor = "col-resize";
 			} else if (e.pageX > start && e.pageX < end) {
-				match = json.words[i];
+				match = word;
 			}
 		}
 		if (match !== undefined) {
@@ -215,8 +218,9 @@ function moved(e) {
 	if (!dragging && e.pageY > yPos && e.pageY < yPos + height) {
 		var hovering = false;
 		for (var i = 0; i < json.words.length; i++) {
-			var start = json.words[i].start * scale - offset;
-			var end = json.words[i].end * scale - offset;
+			var word = json.words[i];
+			var start = word.start * scale - offset;
+			var end = word.end * scale - offset;
 			if (near(e.pageX, start) || near(e.pageX, end)) {
 				hovering = true;
 			}

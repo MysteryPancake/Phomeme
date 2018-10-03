@@ -1,7 +1,7 @@
 "use strict";
 
 const fs = require("fs");
-const session = require("./session.js");
+const Session = require("./session.js");
 const triphone = require("./triphone.js");
 const convert = require("./convert.js");
 
@@ -69,7 +69,7 @@ function addClips(targets, phones, mix, method, diphones, triphones, length, fun
 function speak(sentence, chooseMethod, matchWords, matchDiphones, matchTriphones, matchPunctuation, matchReverse, overlapStart, overlapEnd) {
 	const input = convert(JSON.parse(fs.readFileSync("input.json")), "input.wav", matchPunctuation);
 	const output = convertSentence(sentence, matchPunctuation);
-	const mix = new session("session", 32, 44100);
+	const mix = new Session("session", 32, 44100);
 	mix.overlapStart = overlapStart;
 	mix.overlapEnd = overlapEnd;
 	if (matchWords && input.words && output.words) {

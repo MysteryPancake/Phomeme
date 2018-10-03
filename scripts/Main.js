@@ -28,7 +28,7 @@ function addLink(name, data, type, extension) { // see if new Blob([json], {type
 
 function readJson(file, func) {
 	var reader = new FileReader();
-	reader.onload = function(e) {
+	reader.onload = function() {
 		func(this.result);
 	};
 	reader.readAsText(file, "UTF-8");
@@ -113,11 +113,11 @@ function microphone(element) {
 		element.src = "microphone.png";
 		element.active = false;
 	} else {
-		var speech = window.SpeechRecognition || window.webkitSpeechRecognition || window.mozSpeechRecognition || window.oSpeechRecognition || window.msSpeechRecognition;
-		if (speech) {
+		var Speech = window.SpeechRecognition || window.webkitSpeechRecognition || window.mozSpeechRecognition || window.oSpeechRecognition || window.msSpeechRecognition;
+		if (Speech) {
 			transcript.setAttribute("contenteditable", false);
 			if (!element.recognition) {
-				element.recognition = new speech();
+				element.recognition = new Speech();
 				element.recognition.continuous = true;
 				element.recognition.interimResults = true;
 				var final = transcript.innerHTML;

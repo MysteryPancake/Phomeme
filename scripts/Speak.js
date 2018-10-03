@@ -52,7 +52,7 @@ function addClips(targets, phones, mix, method, diphones, triphones, length, fun
 
 function speak(vocals, output, chooseMethod, matchWords, matchDiphones, matchTriphones, matchPunctuation, matchReverse, overlapStart, overlapEnd) {
 	var input = convert(vocals, "input.wav", matchPunctuation);
-	var mix = new session("session", 32, 44100);
+	var mix = new Session("session", 32, 44100);
 	mix.overlapStart = overlapStart;
 	mix.overlapEnd = overlapEnd;
 	if (matchWords && input.words && output.words) {

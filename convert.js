@@ -1,14 +1,14 @@
 "use strict";
 
 const fs = require("fs");
-const session = require("./session.js");
+const Session = require("./session.js");
 
 function saveJson(transcript) {
 	fs.writeFileSync("input.json", JSON.stringify(transcript, undefined, "\t"));
 }
 
 function process(phones) {
-	const mix = new session("session", 16, 16000);
+	const mix = new Session("session", 16, 16000);
 	for (let phone in phones) {
 		for (let i = 0; i < phones[phone].length; i++) {
 			mix.addClip(phones[phone][i].file, phone, phones[phone][i].start, phones[phone][i].end, phones[phone][i].start, phones[phone][i].end, 1);

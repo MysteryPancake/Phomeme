@@ -8,7 +8,8 @@ function choose(method, target, phones) {
 	} else if (method === "random") {
 		return phones[Math.floor(Math.random() * phones.length)];
 	} else if (method === "duration") {
-		let match, difference;
+		let difference;
+		let match;
 		for (let i = 0; i < phones.length; i++) {
 			const diff = Math.abs(target - phones[i].dur);
 			if (difference === undefined || diff < difference) {
@@ -53,13 +54,13 @@ module.exports = function(target, phones, method, matchDiphones, matchTriphones)
 		const matchNext = phones[i].next === target.next;
 		if (matchTriphones && matchPrev && matchNext) {
 			triphones.push(phones[i]);
-			console.log("MATCHED TRIPHONE: " + target.prev + " " + target.phone + " " + target.next);
+			//console.log("MATCHED TRIPHONE: " + target.prev + " " + target.phone + " " + target.next);
 		} else if (matchDiphones && matchPrev) {
 			diphones.push(phones[i]);
-			console.log("MATCHED DIPHONE: " + target.prev + " " + target.phone);
+			//console.log("MATCHED DIPHONE: " + target.prev + " " + target.phone);
 		} else if (matchDiphones && matchNext) {
 			diphones.push(phones[i]);
-			console.log("MATCHED DIPHONE: " + target.phone + " " + target.next);
+			//console.log("MATCHED DIPHONE: " + target.phone + " " + target.next);
 		}
 	}
 	if (triphones.length) {
