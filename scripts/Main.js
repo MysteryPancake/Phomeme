@@ -87,16 +87,15 @@ function updateDownloads() {
 	var matchDiphones = document.getElementById("matchDiphones").checked;
 	var matchTriphones = document.getElementById("matchTriphones").checked;
 	var matchPunctuation = document.getElementById("matchPunctuation").checked;
-	var matchReverse = document.getElementById("matchReverse").checked;
 	var overlapStart = parseFloat(document.getElementById("overlapStart").value);
 	var overlapEnd = parseFloat(document.getElementById("overlapEnd").value);
 	var final;
 	if (dictionary) {
 		outputJson = convertSentence(getText(document.getElementById("outputScript")), dictionary, matchPunctuation);
 		addLink("output", JSON.stringify(outputJson, undefined, "\t"), "application/json", "json");
-		final = speak(inputJson, outputJson, chooseMethod, matchWords, matchDiphones, matchTriphones, matchPunctuation, matchReverse, overlapStart, overlapEnd);
+		final = speak(inputJson, outputJson, chooseMethod, matchWords, matchDiphones, matchTriphones, matchPunctuation, overlapStart, overlapEnd);
 	} else {
-		final = sing(inputJson, outputJson, chooseMethod, matchWords, matchDiphones, matchTriphones, matchPunctuation, matchReverse, overlapStart, overlapEnd);
+		final = sing(inputJson, outputJson, chooseMethod, matchWords, matchDiphones, matchTriphones, matchPunctuation, overlapStart, overlapEnd);
 	}
 	addLink("session", final, "application/xml", "sesx");
 }

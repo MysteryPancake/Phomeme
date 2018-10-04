@@ -66,7 +66,7 @@ function addClips(targets, phones, mix, method, diphones, triphones, length, fun
 	return length;
 }
 
-function speak(sentence, chooseMethod, matchWords, matchDiphones, matchTriphones, matchPunctuation, matchReverse, overlapStart, overlapEnd) {
+function speak(sentence, chooseMethod, matchWords, matchDiphones, matchTriphones, matchPunctuation, overlapStart, overlapEnd) {
 	const input = convert(JSON.parse(fs.readFileSync("input.json")), "input.wav", matchPunctuation);
 	const output = convertSentence(sentence, matchPunctuation);
 	const mix = new Session("session", 32, 44100);
@@ -91,4 +91,4 @@ function speak(sentence, chooseMethod, matchWords, matchDiphones, matchTriphones
 	mix.save();
 }
 
-speak("sample text", "longest", true, true, true, true, true, 0, 0.025);
+speak("sample text", "longest", true, true, true, true, 0, 0.025);
