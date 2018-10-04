@@ -47,4 +47,4 @@ function sing(vocals, acapella, chooseMethod, matchWords, matchDiphones, matchTr
 	mix.save();
 }
 
-sing("input", "output", "duration", true, true, true, true, true, 0, 0.025);
+sing("inputmusic", "outputmusic", "duration", true, true, true, true, true, 0, 0.025);

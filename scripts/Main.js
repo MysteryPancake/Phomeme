@@ -20,9 +20,11 @@ function requestFile(method, file, error, func, data) {
 	request.send(data);
 }
 
-function addLink(name, data, type, extension) { // see if new Blob([json], {type: "octet/stream"}) works instead of this crap
+function addLink(name, data, type, extension) {
+	var blob = new Blob([data], { type: type });
+	var url = window.URL.createObjectURL(blob);
 	var element = document.getElementById(name);
-	element.href = "data:" + type + ";charset=utf-8," + encodeURIComponent(data);
+	element.href = url;
 	element.download = name + "." + extension;
 }
 
@@ -96,7 +98,7 @@ function updateDownloads() {
 	} else {
 		final = sing(inputJson, outputJson, chooseMethod, matchWords, matchDiphones, matchTriphones, matchPunctuation, matchReverse, overlapStart, overlapEnd);
 	}
-	addLink("session", final, "text/xml", "sesx");
+	addLink("session", final, "application/xml", "sesx");
 }
 
 function microphone(element) {
