@@ -8,8 +8,8 @@ function choose(method, target, phones) {
 	} else if (method === "random") {
 		return phones[Math.floor(Math.random() * phones.length)];
 	} else if (method === "duration") {
-		let difference;
 		let match;
+		let difference;
 		for (let i = 0; i < phones.length; i++) {
 			const diff = Math.abs(target - phones[i].dur);
 			if (difference === undefined || diff < difference) {

@@ -31,7 +31,7 @@
 				<option disabled value="kaplan">Jeff Kaplan - COMING SOON</option>
 			</select>
 			<div id="custom" class="preset">
-				<input multiple required type="file" id="inputAudio" accept="audio/*,application/json,.json" onchange="checkJson(this);">
+				<input multiple required type="file" id="inputAudio" accept="audio/*,application/json,.json,.TextGrid" onchange="checkJson(this);">
 				<input type="image" alt="Microphone" id="inputMic" src="microphone.png" width="24" height="24" onclick="return microphone(this);">
 				<audio controls id="inputPlayer"></audio>
 				<code contenteditable="true" id="inputScript" data-placeholder="Type the transcript of the input here"></code>
@@ -69,7 +69,7 @@
 				</div>
 			</div>
 			<h3>Output (Acapella)</h3>
-			<input multiple type="file" id="outputAudio" accept="audio/*,application/json,.json" onchange="checkJson(this);">
+			<input multiple type="file" id="outputAudio" accept="audio/*,application/json,.json,.TextGrid" onchange="checkJson(this);">
 			<input type="image" alt="Microphone" id="outputMic" src="microphone.png" width="24" height="24" onclick="return microphone(this);">
 			<audio controls id="outputPlayer"></audio>
 			<code contenteditable="true" id="outputScript" data-placeholder="Type the transcript of the output here"></code>

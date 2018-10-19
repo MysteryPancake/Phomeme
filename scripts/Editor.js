@@ -89,7 +89,7 @@ function drawBoxes(json, audio) {
 				context.textBaseline = "bottom";
 				var duration = word.start * scale;
 				for (var j = 0; j < word.phones.length; j++) {
-					var phone = word.phones[j].phone.split("_").shift().toUpperCase();
+					var phone = word.phones[j].phone.split("_")[0].toUpperCase();
 					var length = word.phones[j].duration * scale;
 					drawLine(context, duration - offset, yPos + 20, duration - offset, yPos + height);
 					drawLine(context, duration + length - offset, yPos + 20, duration + length - offset, yPos + height);

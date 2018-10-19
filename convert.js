@@ -63,7 +63,7 @@ function convert(json, file, matchPunctuation) {
 			let start = word.start;
 			for (let j = 0; j < word.phones.length; j++) {
 				const phone = word.phones[j];
-				const simple = phone.phone.split("_").shift().toUpperCase();
+				const simple = phone.phone.split("_")[0].toUpperCase();
 				if (prev.phone) {
 					transcript.phones[prev.phone][transcript.phones[prev.phone].length - 1].next = simple;
 				}

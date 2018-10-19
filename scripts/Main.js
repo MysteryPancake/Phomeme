@@ -51,6 +51,7 @@ function addBlob(file, extension, isInput) {
 function checkJson(element) {
 	var isInput = element.id === "inputAudio";
 	var file = element.files[0];
+	if (!file) return;
 	if (file.type === "application/json") {
 		readJson(file, function(content) {
 			var transcript = document.getElementById(isInput ? "inputScript" : "outputScript");
@@ -74,11 +75,15 @@ function updatePresets(element) {
 }
 
 function getText(node) {
-	var result = "";
-	for (var i = 0; i < node.childNodes.length; i++) {
-		result += node.childNodes[i].textContent + " ";
+	if (node.childNodes.length) {
+		var result = "";
+		for (var i = 0; i < node.childNodes.length; i++) {
+			result += getText(node.childNodes[i]) + " ";
+		}
+		return result;
+	} else {
+		return node.textContent;
 	}
-	return result;
 }
 
 function updateDownloads() {
