@@ -69,7 +69,7 @@
 				</div>
 			</div>
 			<h3>Output (Acapella)</h3>
-			<input multiple type="file" id="outputAudio" accept="audio/*,application/json,.json,.TextGrid" onchange="checkJson(this);">
+			<input multiple type="file" id="outputAudio" accept="audio/*,application/json,.json,.TextGrid,text/plain,.txt" onchange="checkJson(this);">
 			<input type="image" alt="Microphone" id="outputMic" src="microphone.png" width="24" height="24" onclick="return microphone(this);">
 			<audio controls id="outputPlayer"></audio>
 			<code contenteditable="true" id="outputScript" data-placeholder="Type the transcript of the output here"></code>

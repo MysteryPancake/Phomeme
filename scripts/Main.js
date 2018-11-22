@@ -1,7 +1,8 @@
 "use strict";
 
-var inputJson;
-var outputJson;
+var lookup;
+var inputData;
+var outputData;
 var dictionary;
 
 function requestFile(method, file, error, func, data) {
@@ -28,10 +29,10 @@ function addLink(name, data, type, extension) {
 	element.download = name + "." + extension;
 }
 
-function readJson(file, func) {
+function readFile(file, func) {
 	var reader = new FileReader();
 	reader.onload = function() {
-		func(this.result);
+		func(this.result, file.name, file.type);
 	};
 	reader.readAsText(file, "UTF-8");
 }
@@ -52,10 +53,11 @@ function checkJson(element) {
 	var isInput = element.id === "inputAudio";
 	var file = element.files[0];
 	if (!file) return;
-	if (file.type === "application/json") {
-		readJson(file, function(content) {
+	var lower = file.name.toLowerCase();
+	if (lower.endsWith("json") || lower.endsWith("txt")) {
+		readFile(file, function(content) {
 			var transcript = document.getElementById(isInput ? "inputScript" : "outputScript");
-			transcript.innerHTML = JSON.parse(content).transcript;
+			transcript.innerHTML = lower.endsWith("txt") ? content : JSON.parse(content).transcript;
 		});
 	} else if (file.type.startsWith("audio")) {
 		addBlob(file, file.name.split(".").pop(), isInput);
@@ -94,14 +96,7 @@ function updateDownloads() {
 	var matchPunctuation = document.getElementById("matchPunctuation").checked;
 	var overlapStart = parseFloat(document.getElementById("overlapStart").value);
 	var overlapEnd = parseFloat(document.getElementById("overlapEnd").value);
-	var final;
-	if (dictionary) {
-		outputJson = convertSentence(getText(document.getElementById("outputScript")), dictionary, matchPunctuation);
-		addLink("output", JSON.stringify(outputJson, undefined, "\t"), "application/json", "json");
-		final = speak(inputJson, outputJson, chooseMethod, matchWords, matchDiphones, matchTriphones, matchPunctuation, overlapStart, overlapEnd);
-	} else {
-		final = sing(inputJson, outputJson, chooseMethod, matchWords, matchDiphones, matchTriphones, matchPunctuation, overlapStart, overlapEnd);
-	}
+	var final = (dictionary ? speak : sing)(inputData, outputData, chooseMethod, matchWords, matchDiphones, matchTriphones, matchPunctuation, overlapStart, overlapEnd);
 	addLink("session", final, "application/xml", "sesx");
 }
 
@@ -167,15 +162,19 @@ function microphone(element) {
 }
 
 function complete() {
-	updateDownloads();
-	document.getElementById("spinner").style.display = "none";
-	document.getElementById("waiting").style.display = "none";
-	document.getElementById("options").style.display = "block";
+	requestFile("GET", "lookup.json", "Couldn't load lookup table!", function(response) {
+		lookup = JSON.parse(response);
+		updateDownloads();
+		document.getElementById("spinner").style.display = "none";
+		document.getElementById("waiting").style.display = "none";
+		document.getElementById("options").style.display = "block";
+	});
 }
 
-function addOutput(data) {
-	addLink("output", data, "application/json", "json");
-	outputJson = JSON.parse(data);
+function addOutput(data, name, type) {
+	var extension = name ? name.split(".").pop() : "json";
+	addLink("output", data, type || "application/json", extension);
+	outputData = { data: data, type: extension };
 	complete();
 }
 
@@ -183,13 +182,13 @@ function finalResponse() {
 	document.getElementById("waiting").innerHTML = "Response received! Waiting for the final response...";
 	var file = document.getElementById("outputAudio").files[0];
 	if (file) {
-		if (file.type === "application/json") {
-			readJson(file, addOutput);
-		} else {
+		if (file.type.startsWith("audio")) {
 			var output = new FormData();
 			output.append("audio", file);
 			output.append("transcript", getText(document.getElementById("outputScript")));
 			requestFile("POST", "http://gentle-demo.lowerquality.com/transcriptions?async=false", "Couldn't receive a response!", addOutput, output);
+		} else {
+			readFile(file, addOutput);
 		}
 	} else {
 		document.getElementById("waiting").innerHTML = "Loading phone dictionary...";
@@ -201,21 +200,25 @@ function finalResponse() {
 				var phones = lines[i].split(" ");
 				dictionary[phones[0]] = phones.slice(1);
 			}
+			var data = getText(document.getElementById("outputScript"));
+			addLink("output", data, "text/plain", "txt");
+			outputData = { data: data, type: "txt" };
 			complete();
 		});
 	}
 }
 
-function addInput(data) {
-	addLink("input", data, "application/json", "json");
-	inputJson = JSON.parse(data);
+function addInput(data, name, type) {
+	var extension = name ? name.split(".").pop() : "json";
+	addLink("input", data, type || "application/json", extension);
+	inputData = { data: data, type: extension };
 	finalResponse();
 }
 
 function crossOrigin(func) {
 	var input = document.getElementById("inputAudio").files[0];
 	var output = document.getElementById("outputAudio").files[0];
-	if ((input && input.type.startsWith("audio")) || (output && output.type.startsWith("audio"))) {
+	if (input && input.type.startsWith("audio") || output && output.type.startsWith("audio")) {
 		var request = new XMLHttpRequest();
 		request.open("GET", "http://gentle-demo.lowerquality.com", true);
 		request.onreadystatechange = function() {
@@ -237,13 +240,13 @@ function phomeme() {
 		var preset = document.getElementById("preset").value;
 		if (preset === "custom") {
 			var file = document.getElementById("inputAudio").files[0];
-			if (file.type === "application/json") {
-				readJson(file, addInput);
-			} else {
+			if (file.type.startsWith("audio")) {
 				var input = new FormData();
 				input.append("audio", file);
 				input.append("transcript", getText(document.getElementById("inputScript")));
 				requestFile("POST", "http://gentle-demo.lowerquality.com/transcriptions?async=false", "Couldn't receive a response!", addInput, input);
+			} else {
+				readFile(file, addInput);
 			}
 		} else {
 			document.getElementById("waiting").innerHTML = "Loading " + preset + "...";

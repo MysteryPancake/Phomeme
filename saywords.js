@@ -5,52 +5,6 @@ const Session = require("./session.js");
 const triphone = require("./triphone.js");
 const convert = require("./convert.js");
 
-function dictionary() {
-	const dict = {};
-	const lines = fs.readFileSync("WEBSITE/phonedictionary.txt", "utf8").split("\n");
-	for (let i = 0; i < lines.length; i++) {
-		const phones = lines[i].split(" ");
-		dict[phones[0]] = phones.slice(1);
-	}
-	return dict;
-}
-
-function convertSentence(sentence, matchPunctuation) {
-	const words = sentence.toLowerCase().match(/\w+(?:'\w+)*|(?<![!?.])[!?.]/g);
-	const punctuation = { "!": true, "?": true, ".": true };
-	const dict = dictionary();
-	const transcript = {
-		transcript: sentence,
-		words: [],
-		phones: []
-	};
-	for (let i = 0; i < words.length; i++) {
-		const word = words[i];
-		if (punctuation[word]) continue;
-		transcript.words.push({
-			prev: words[i - (matchPunctuation && punctuation[words[i - 1]] ? 1 : 2)],
-			next: words[i + (matchPunctuation && punctuation[words[i + 1]] ? 1 : 2)],
-			phone: word
-		});
-		const phones = dict[word];
-		if (phones) {
-			transcript.words[transcript.words.length - 1].phones = [];
-			for (let j = 0; j < phones.length; j++) {
-				const data = {
-					prev: phones[j - 1],
-					next: phones[j + 1],
-					phone: phones[j]
-				};
-				transcript.words[transcript.words.length - 1].phones.push(data);
-				transcript.phones.push(data);
-			}
-		} else {
-			console.log("MISSING DEFINITION: " + word);
-		}
-	}
-	return transcript;
-}
-
 function addClips(targets, phones, mix, method, diphones, triphones, length, func) {
 	for (let i = 0; i < targets.length; i++) {
 		const target = targets[i];
@@ -67,8 +21,8 @@ function addClips(targets, phones, mix, method, diphones, triphones, length, fun
 }
 
 function speak(sentence, chooseMethod, matchWords, matchDiphones, matchTriphones, matchPunctuation, overlapStart, overlapEnd) {
-	const input = convert(JSON.parse(fs.readFileSync("input.json")), "input.wav", matchPunctuation);
-	const output = convertSentence(sentence, matchPunctuation);
+	const input = convert(fs.readFileSync("input.json", "utf8"), "json", "input.wav", matchPunctuation);
+	const output = convert(sentence, "txt", "input.wav", matchPunctuation);
 	const mix = new Session("session", 32, 44100);
 	mix.overlapStart = overlapStart;
 	mix.overlapEnd = overlapEnd;

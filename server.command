@@ -1,1 +1,1 @@
-http-server "./Desktop/PHOMEME/WEBSITE" --cors -o
+http-server "./Desktop/PHOMEME/WEBSITE" --cors -c-1 -o

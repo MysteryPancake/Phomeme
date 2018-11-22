@@ -16,8 +16,8 @@ function addClip(target, phones, mix, method, diphones, triphones, func) {
 }
 
 function sing(vocals, acapella, chooseMethod, matchWords, matchDiphones, matchTriphones, matchPunctuation, overlapStart, overlapEnd) {
-	const input = convert(JSON.parse(fs.readFileSync(vocals + ".json")), vocals + ".wav", matchPunctuation);
-	const output = convert(JSON.parse(fs.readFileSync(acapella + ".json")), acapella + ".wav", matchPunctuation);
+	const input = convert(fs.readFileSync(vocals + ".json", "utf8"), "json", vocals + ".wav", matchPunctuation);
+	const output = convert(fs.readFileSync(acapella + ".json", "utf8"), "json", acapella + ".wav", matchPunctuation);
 	const mix = new Session("session", 32, 44100);
 	mix.overlapStart = overlapStart;
 	mix.overlapEnd = overlapEnd;
