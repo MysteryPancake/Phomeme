@@ -1,6 +1,6 @@
 # Phomeme
 Simple sentence mixing tool.
-This project will become public once it works well and gets enough interest.
+This project will become public once it works well enough to be useful.
 
 ## Experiments
 [![YouTube Wants You Gone](https://img.youtube.com/vi/B6BDVJbobwY/mqdefault.jpg)](https://youtu.be/B6BDVJbobwY)
