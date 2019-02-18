@@ -105,8 +105,12 @@
 					<label for="matchTriphones">Match Triphones</label>
 				</div>
 				<div>
-					<input checked type="checkbox" id="matchPunctuation" onchange="updateDownloads();">
+					<input type="checkbox" id="matchPunctuation" onchange="updateDownloads();">
 					<label for="matchPunctuation">Match Punctuation</label>
+				</div>
+				<div>
+					<input type="checkbox" id="matchExact" onchange="updateDownloads();">
+					<label for="matchExact">Match Exact Phones</label>
 				</div>
 				<div>
 					<label for="overlapStart">Start Overlap</label>

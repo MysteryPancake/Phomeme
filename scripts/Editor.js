@@ -108,7 +108,7 @@ function drawBoxes(json, audio) {
 	}
 	if (audio) {
 		var detail = 2;
-		var lines = canvas.width * detail; // Todo: Find a better drawing method
+		var lines = canvas.width * detail;
 		context.lineWidth = 1;
 		context.strokeStyle = "white";
 		context.beginPath();
@@ -134,7 +134,7 @@ function drawScroll(audio) {
 	context.lineWidth = 1;
 	context.strokeStyle = "white";
 	context.beginPath();
-	var lines = canvas.width * 8; // Todo: Find a better drawing method
+	var lines = canvas.width * 8;
 	for (var k = 0; k < lines; k++) {
 		var x = k / lines * canvas.width;
 		var y = scrollHeight * 0.5;
@@ -244,10 +244,11 @@ function moved(e) {
 			canvas.style.cursor = "col-resize";
 		} else if (dragging.direction !== undefined) {
 			if (dragging.direction) {
+				//offset = (offset / dragging.initial) * sampleRate;
 				//scale = (sampleRate * canvas.width * canvas.width) / (sample.data.length * e.pageX); // todo
-				offset = clamp((e.pageX * sample.data.length * scale) / (sampleRate * canvas.width));
+				//offset = clamp((e.pageX * sample.data.length * scale) / (sampleRate * canvas.width));
 			} else {
-				scale = (sampleRate * canvas.width * canvas.width) / (sample.data.length * e.pageX);
+				//scale = (sampleRate * canvas.width * canvas.width) / (sample.data.length * e.pageX);
 				//offset = (dragging.initial / offset); // todo
 			}
 		} else {

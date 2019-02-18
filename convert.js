@@ -67,7 +67,7 @@ function convertSentence(sentence, matchPunctuation) {
 	return transcript;
 }
 
-function convertTextGrid(transcript, str, file) {
+function convertTextGrid(transcript, str, file, matchExact) {
 	const lookup = lookupJson();
 	const lines = str.split("\n");
 	let mode = "words";
@@ -97,7 +97,7 @@ function convertTextGrid(transcript, str, file) {
 					if (mode === "words") {
 						text = text.toLowerCase();
 					} else {
-						const match = lookup.textgrid[text];
+						const match = matchExact ? text : lookup.textgrid[text];
 						if (!match) {
 							console.log("USING OOV FOR: " + text);
 						}
@@ -136,7 +136,7 @@ function convertTextGrid(transcript, str, file) {
 	return transcript;
 }
 
-function convertJson(transcript, json, file, matchPunctuation) {
+function convertJson(transcript, json, file, matchPunctuation, matchExact) {
 	let prev = {};
 	const lookup = lookupJson();
 	const punctuation = { "?": true, "!": true, ".": true };
@@ -162,7 +162,7 @@ function convertJson(transcript, json, file, matchPunctuation) {
 		let start = word.start;
 		for (let j = 0; j < word.phones.length; j++) {
 			const phone = word.phones[j];
-			let match = lookup.json[phone.phone];
+			let match = matchExact ? phone.phone : lookup.json[phone.phone];
 			if (!match) {
 				console.log("USING OOV FOR: " + phone.phone);
 				match = "OOV";
@@ -188,9 +188,9 @@ function convertJson(transcript, json, file, matchPunctuation) {
 	return transcript;
 }
 
-function convertMultiple(transcript, json, matchPunctuation) {
+function convertMultiple(transcript, json, matchPunctuation, matchExact) {
 	for (let i = 0; i < json.length; i++) {
-		const script = convert(json[i].script, json[i].type, json[i].file, matchPunctuation);
+		const script = convert(json[i].script, json[i].type, json[i].file, matchPunctuation, matchExact);
 		for (let word in script.words) {
 			transcript.words[word] = transcript.words[word] || [];
 			for (let j = 0; j < script.words[word].length; j++) {
@@ -207,20 +207,20 @@ function convertMultiple(transcript, json, matchPunctuation) {
 	return transcript;
 }
 
-function convert(data, type, file, matchPunctuation) {
+function convert(data, type, file, matchPunctuation, matchExact) {
 	const transcript = {
 		words: {},
 		phones: {}
 	};
 	const lower = type.toLowerCase();
 	if (lower === "textgrid") {
-		return convertTextGrid(transcript, data, file);
+		return convertTextGrid(transcript, data, file, matchExact);
 	} else if (lower === "json") {
 		const json = JSON.parse(data);
 		if (Array.isArray(json)) {
-			return convertMultiple(transcript, json, matchPunctuation);
+			return convertMultiple(transcript, json, matchPunctuation, matchExact);
 		} else {
-			return convertJson(transcript, json, file, matchPunctuation);
+			return convertJson(transcript, json, file, matchPunctuation, matchExact);
 		}
 	} else {
 		return convertSentence(data, matchPunctuation);

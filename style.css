@@ -25,6 +25,10 @@ input[type="checkbox"], input[type="file"], input[type="submit"], label, select 
 }
 
 input[type="number"]:hover, input[type="submit"]:hover, select:hover, code:hover {
+	border: 1px solid #80FF80;
+}
+
+input[type="number"]:active, input[type="submit"]:active, select:focus, code:focus {
 	border: 1px solid white;
 }
 
@@ -48,14 +52,13 @@ input[type="submit"] {
 	height: 48px;
 }
 
-input[type="submit"]:active {
-	border: 1px solid white;
-	box-shadow: none;
-	outline: none;
+input[type="submit"]:hover {
+	box-shadow: 0 0 16px #80FF80;
 }
 
-input[type="submit"]:hover {
-	box-shadow: 0 0 16px white;
+input[type="submit"]:active {
+	box-shadow: none;
+	outline: none;
 }
 
 form, #result {
@@ -68,11 +71,11 @@ form, #result {
 
 code {
 	display: block;
-	font-size: small;
+	font-size: medium;
 	height: 16em;
 	margin: 6px 0 12px 0px;
 	overflow: auto;
-	padding: 12px;
+	padding: 8px;
 	resize: vertical;
 }
 

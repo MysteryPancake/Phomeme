@@ -20,9 +20,9 @@ function addClips(targets, phones, mix, method, diphones, triphones, length, fun
 	return length;
 }
 
-function speak(sentence, chooseMethod, matchWords, matchDiphones, matchTriphones, matchPunctuation, overlapStart, overlapEnd) {
-	const input = convert(fs.readFileSync("input.json", "utf8"), "json", "input.wav", matchPunctuation);
-	const output = convert(sentence, "txt", "input.wav", matchPunctuation);
+function speak(sentence, chooseMethod, matchWords, matchDiphones, matchTriphones, matchPunctuation, matchExact, overlapStart, overlapEnd) {
+	const input = convert(fs.readFileSync("input.json", "utf8"), "json", "input.wav", matchPunctuation, matchExact);
+	const output = convert(sentence, "txt", "input.wav", matchPunctuation, matchExact);
 	const mix = new Session("session", 32, 44100);
 	mix.overlapStart = overlapStart;
 	mix.overlapEnd = overlapEnd;
