@@ -3,19 +3,60 @@
 	<head>
 		<meta charset="utf-8">
 		<title>Phomeme Editor</title>
-		<script async src="scripts/Convert.js"></script>
+		<meta name="viewport" content="width=device-width, initial-scale=1">
+		<link rel="stylesheet" type="text/css" href="editor.css">
+		<script defer src="scripts/Triphone.js"></script>
+		<script defer src="scripts/Session.js"></script>
+		<script defer src="scripts/Convert.js"></script>
+		<script defer src="scripts/Speak.js"></script>
+		<script defer src="scripts/Sing.js"></script>
 		<script async src="scripts/Editor.js"></script>
-		<style>
-		html, body {
-			margin: 0;
-			padding: 0;
-		}
-		canvas {
-			display: block;
-		}
-		</style>
 	</head>
 	<body onload="setup();">
-		<canvas id="canvas"></canvas>
+		<div id="topnav">
+			<h1 id="title">Phomeme</h1>
+			<div class="dropdown">
+				<input type="button" class="dropbutton" value="File" onclick="toggle(this);">
+				<div class="dropcontent">
+					<a class="dropoption" onclick="newSession();">New</a>
+					<div>
+						<label for="openFile" class="dropoption">Open</label>
+						<input type="file" accept=".phomeme" id="openFile" onchange="loadSession(this);">
+					</div>
+					<a class="dropoption">Save</a>
+					<div>
+						<label for="importFile" class="dropoption">Import</label>
+						<input type="file" accept="audio/*,application/json,.json,.TextGrid,.txt" id="importFile" onchange="importFile(this);">
+					</div>
+					<a class="dropoption">Export</a>
+				</div>
+			</div>
+			<div class="dropdown">
+				<input type="button" class="dropbutton" value="Edit" onclick="toggle(this);">
+				<div class="dropcontent">
+					<a class="dropoption">Undo</a>
+					<a class="dropoption">Redo</a>
+				</div>
+			</div>
+			<div class="dropdown">
+				<input type="button" class="dropbutton" value="Align" onclick="toggle(this);">
+				<div class="dropcontent">
+					<a class="dropoption">Gentle</a>
+					<a class="dropoption">WebMAUS</a>
+				</div>
+			</div>
+		</div>
+		<div id="content">
+			<div id="sidenav"></div>
+			<div id="playlist">
+				<div id="initial">
+					<label for="importFile" class="initialbutton">Upload Vocals</label>
+					<span>OR</span>
+					<label for="choosePreset" class="initialbutton">Choose Preset</label>
+				</div>
+				<!--<div id="zoom"></div>-->
+				<!--<canvas id="canvas"></canvas>-->
+			</div>
+		</div>
 	</body>
 </html>

@@ -1,23 +1,26 @@
 "use strict";
 
-var json;
+//var json;
 var player;
-var canvas;
-var sample;
-var context;
-var frame = 0;
+//var canvas;
+//var sample;
+//var context;
+//var frame = 0;
+var fileList = [];
 var sampleRate = 44100;
-var requestFrame = window.requestAnimationFrame || window.webkitRequestAnimationFrame || window.mozRequestAnimationFrame || window.oRequestAnimationFrame || window.msRequestAnimationFrame || function(e) { return window.setTimeout(e, 1000 / 60); };
-var cancelFrame = window.cancelAnimationFrame || window.webkitCancelAnimationFrame || window.mozCancelAnimationFrame || window.oCancelAnimationFrame || window.msCancelAnimationFrame || function(id) { window.clearTimeout(id); };
+//var requestFrame = window.requestAnimationFrame || window.webkitRequestAnimationFrame || window.mozRequestAnimationFrame || window.oRequestAnimationFrame || window.msRequestAnimationFrame || function(e) { return window.setTimeout(e, 1000 / 60); };
+//var cancelFrame = window.cancelAnimationFrame || window.webkitCancelAnimationFrame || window.mozCancelAnimationFrame || window.oCancelAnimationFrame || window.msCancelAnimationFrame || function(id) { window.clearTimeout(id); };
 
 function setup() {
-	canvas = document.getElementById("canvas");
-	context = canvas.getContext("2d", { alpha: false });
-	window.addEventListener("resize", resize);
-	window.addEventListener("orientationchange", resize);
-	resize();
-	window.addEventListener("wheel", wheel);
-	if (window.ontouchstart) {
+	addFile({ name: "Untitled Session.phomeme" }); // do proper one later
+	//canvas = document.getElementById("canvas");
+	//context = canvas.getContext("2d", { alpha: false });
+	//window.addEventListener("resize", resize);
+	//window.addEventListener("orientationchange", resize);
+	//resize();
+	//frame = requestFrame(draw);
+	//window.addEventListener("wheel", wheel);
+	/*if (window.ontouchstart) {
 		window.addEventListener("touchstart", clicked);
 		window.addEventListener("touchmove", moved);
 		window.addEventListener("touchend", ended);
@@ -25,10 +28,8 @@ function setup() {
 		window.addEventListener("mousedown", clicked);
 		window.addEventListener("mousemove", moved);
 		window.addEventListener("mouseup", ended);
-	}
-	player = new (window.AudioContext || window.webkitAudioContext)();
-	sampleRate = player.sampleRate;
-	var audioRequest = new XMLHttpRequest();
+	}*/
+	/*var audioRequest = new XMLHttpRequest();
 	audioRequest.open("GET", "donkeykong/input.wav", true);
 	audioRequest.responseType = "arraybuffer";
 	audioRequest.onreadystatechange = function() {
@@ -46,10 +47,61 @@ function setup() {
 			json = JSON.parse(this.responseText);
 		}
 	};
-	jsonRequest.send();
+	jsonRequest.send();*/
 }
 
-function resize() {
+function setupAudio() {
+	player = new (window.AudioContext || window.webkitAudioContext)();
+	sampleRate = player.sampleRate;
+}
+
+function toggle(element) {
+	var dropdown = element.nextSibling.nextSibling;
+	var previous = dropdown.style.display;
+	closeMenus();
+	dropdown.style.display = previous === "block" ? "none" : "block";
+}
+
+function addFile(file) {
+	var listed = document.createElement("a");
+	listed.draggable = true;
+	listed.innerHTML = file.name;
+	document.getElementById("sidenav").appendChild(listed);
+	fileList.push(file);
+}
+
+function closeMenus() {
+	var dropdowns = document.getElementsByClassName("dropcontent");
+	for (var i = 0; i < dropdowns.length; i++) {
+		dropdowns[i].style.display = "none";
+	}
+}
+
+function newSession() {
+	var sessionName = window.prompt("Please enter a session name", "Untitled Session");
+	if (sessionName) {
+		addFile({ name: sessionName + ".phomeme" }); // make this a proper file later
+	}
+}
+
+function loadSession(element) {
+	console.log(element.files[0]);
+}
+
+function importFile(element) {
+	var file = element.files[0];
+	if (file) {
+		addFile(file);
+	}
+}
+
+window.onclick = function(e) {
+	if (!e.target.matches(".dropbutton")) {
+		closeMenus();
+	}
+}
+
+/*function resize() {
 	cancelFrame(frame);
 	canvas.width = window.innerWidth;
 	canvas.height = window.innerHeight;
@@ -270,4 +322,4 @@ function draw() {
 	drawBoxes(json, sample && sample.data);
 	drawScroll(sample && sample.data);
 	frame = requestFrame(draw);
-}
+}*/
