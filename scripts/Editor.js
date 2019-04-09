@@ -259,6 +259,7 @@ function newSession() {
 
 function loadSession(element) {
 	console.log(element.files[0]);
+	element.value = null;
 }
 
 function importFile(element) {
@@ -270,6 +271,7 @@ function importFile(element) {
 			track.loadClip(file);
 		}
 	}
+	element.value = null;
 }
 
 /*function drawLine(context, x, y, x2, y2) {
