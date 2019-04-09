@@ -10,53 +10,19 @@ html, body {
 }
 
 input[type="file"] {
+	height: 0px;
+	opacity: 0;
 	position: absolute;
 	right: 0px;
 	top: 0px;
-	opacity: 0;
 	width: 0px;
-	height: 0px;
 }
 
-#initial {
-	/*width: 75%;*/
-	padding: 64px;
-	text-align: center;
-	font-size: xx-large;
-}
-
-.initialbutton {
-	width: 100%;
-	padding: 16px 0;
-	display: block;
-	border: 1px solid #00FF00;
-	font-size: x-large;
-	background-color: transparent;
-}
-
-#sidenav a, .dropbutton, .dropoption, .initialbutton {
-	cursor: pointer;
-	user-select: none;
-	outline: none;
-}
-
-.dropdown:hover .dropbutton, .dropoption:hover, #sidenav a:hover, .initialbutton:hover {
-	background-color: #004000;
-}
-
-.dropdown:hover .dropbutton {
-	box-shadow: 0 -32px 32px -32px #00FF00 inset;
-}
-
-.dropdown .dropbutton:active, .dropoption:active, #sidenav a:active, .initialbutton:active {
-	background-color: #00FF00;
-}
-
-#title {
-	/*display: inline-block;*/
-	margin: 0;
-	padding: 4px 16px 0 16px;
-	float: left;
+.clip {
+	cursor: move;
+	height: 100%;
+	outline: 1px solid #00FF00;
+	position: absolute;
 }
 
 #content {
@@ -64,48 +30,18 @@ input[type="file"] {
 	height: calc(100vh - 50px);
 }
 
-#playlist {
-	/*display: inline-block;*/
-	/*position: absolute;*/
-	/*float: right;*/
-	/*height: 100%;*/
-	/*margin-left: 316px;*/
-	overflow: scroll;
-	width: 75%;
-	word-break: break-word;
+.dropbutton, .dropoption, .initialbutton, #sidenav a {
+	cursor: pointer;
+	outline: none;
+	user-select: none;
 }
 
-#sidenav {
-	/*float: left;*/
-	/*display: inline-block;*/
-	border-right: 1px solid #00FF00;
-	/*position: absolute;*/
-	/*height: 100%;*/
-	/*width: 300px;*/
-	width: 25%;
-	padding: 8px;
-	overflow: scroll;
+.dropdown:hover .dropbutton, .dropoption:hover, .initialbutton:hover, #sidenav a:hover {
+	background-color: #004000;
 }
 
-#sidenav a {
-	display: block;
-	border-bottom: 1px solid #004000;
-	padding: 8px;
-}
-
-#topnav {
-	/*box-shadow: 0 0 32px #00FF00;*/
-	box-shadow: 0 -32px 32px -32px #00FF00 inset;
-	border-bottom: 2px solid #00FF00;
-	/*overflow: hidden;*/
-	width: 100%;
-	height: 48px;
-	background-color: #061306;
-}
-
-.dropdown {
-	float: left;
-	overflow: hidden;
+.dropdown .dropbutton:active, .dropoption:active, .initialbutton:active, #sidenav a:active {
+	background-color: #00FF00;
 }
 
 .dropbutton {
@@ -113,22 +49,94 @@ input[type="file"] {
 	border: none;
 	display: inline-block;
 	font-size: medium;
+	mix-blend-mode: screen;
 	padding: 16px;
 }
 
 .dropcontent {
+	background-color: #061306;
+	border-top: 0;
 	border: 1px solid #00FF00;
 	display: none;
-	position: absolute;
-	background-color: #061306;
 	min-width: 160px;
+	position: absolute;
 	z-index: 1;
 }
 
+.dropdown {
+	float: left;
+	overflow: hidden;
+}
+
 .dropoption {
-	/*float: none;*/
-	padding: 16px;
-	/*text-decoration: none;*/
 	display: block;
-	/*text-align: left;*/
+	padding: 16px;
+}
+
+#initial {
+	font-size: xx-large;
+	padding: 32px;
+	text-align: center;
+}
+
+.initialbutton {
+	background-color: black;
+	border: 1px solid #00FF00;
+	display: inline-block;
+	font-size: x-large;
+	padding: 16px 64px;
+}
+
+#mainnav {
+	overflow: scroll;
+	width: calc(100vw - 322px);
+	word-break: break-word;
+}
+
+#playlist {
+	display: inline-block;
+	min-width: 100%;
+	position: relative;
+}
+
+#sidenav {
+	border-right: 1px solid #00FF00;
+	overflow: scroll;
+	padding: 8px;
+	width: 320px;
+}
+
+#sidenav a {
+	border-bottom: 1px solid #004000;
+	display: block;
+	padding: 8px;
+}
+
+#title {
+	float: left;
+	margin: 0;
+	padding: 4px 16px 0 16px;
+}
+
+#topnav {
+	background-color: #061306;
+	border-bottom: 2px solid #00FF00;
+	box-shadow: 0 -32px 32px -32px #00FF00 inset;
+	height: 48px;
+	width: 100%;
+}
+
+.track {
+	background-color: black;
+	border-bottom: 1px solid #00FF00;
+	display: flex;
+	height: 128px;
+	position: relative;
+	width: 100%;
+}
+
+#zoom {
+	border-bottom: 2px solid #00FF00;
+	height: 64px;
+	width: 100%;
 }

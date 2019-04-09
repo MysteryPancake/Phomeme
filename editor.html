@@ -21,12 +21,12 @@
 					<a class="dropoption" onclick="newSession();">New</a>
 					<div>
 						<label for="openFile" class="dropoption">Open</label>
-						<input type="file" accept=".phomeme" id="openFile" onchange="loadSession(this);">
+						<input multiple type="file" accept=".phomeme" id="openFile" onchange="loadSession(this);">
 					</div>
 					<a class="dropoption">Save</a>
 					<div>
 						<label for="importFile" class="dropoption">Import</label>
-						<input type="file" accept="audio/*,application/json,.json,.TextGrid,.txt" id="importFile" onchange="importFile(this);">
+						<input multiple type="file" accept="audio/*,application/json,.json,.TextGrid,.txt" id="importFile" onchange="importFile(this);">
 					</div>
 					<a class="dropoption">Export</a>
 				</div>
@@ -48,14 +48,15 @@
 		</div>
 		<div id="content">
 			<div id="sidenav"></div>
-			<div id="playlist">
+			<div id="mainnav">
+				<div id="playlist">
+					<div id="zoom"></div>
+				</div>
 				<div id="initial">
-					<label for="importFile" class="initialbutton">Upload Vocals</label>
+					<label for="importFile" class="initialbutton">Upload Audio</label>
 					<span>OR</span>
 					<label for="choosePreset" class="initialbutton">Choose Preset</label>
 				</div>
-				<!--<div id="zoom"></div>-->
-				<!--<canvas id="canvas"></canvas>-->
 			</div>
 		</div>
 	</body>
