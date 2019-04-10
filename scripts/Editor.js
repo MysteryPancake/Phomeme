@@ -5,18 +5,19 @@ var fileList = [];
 var activeSession;
 var draggedFile;
 var offset = 0;
-var scale = 40;
+var scale = 70;
 var detail = 6;
 var activeClip;
+var playButton;
 var playlist;
 var sideNav;
 var initial;
 var player;
 
 function setupAudio() {
-	if (player) return;
 	player = new (window.AudioContext || window.webkitAudioContext)();
 	sampleRate = player.sampleRate;
+	return player.suspend();
 }
 
 function fileBuffer(file, func) {
@@ -79,19 +80,20 @@ function Clip(clipFile, clipTrack) {
 	this.drag = 0;
 	this.audioData;
 	this.audioBuffer;
+	this.duration = 0;
 	this.track = clipTrack;
 	this.active = false;
 	this.startPoint = 0;
-	this.duration = 128;
 	this.elem = document.createElement("canvas");
 	this.elem.className = "clip";
-	this.elem.style.left = this.startPoint + "px";
-	this.elem.width = this.duration;
+	this.elem.style.left = "0px";
+	this.elem.width = "128";
+	this.elem.height = "128";
 	this.track.elem.appendChild(this.elem);
 	this.context = this.elem.getContext("2d", { alpha: true });
 	this.updateCanvas = function() {
-		this.duration = scale * (this.audioBuffer.length / sampleRate);
-		this.elem.width = this.duration;
+		this.duration = this.audioBuffer.duration;
+		this.elem.width = this.duration * scale;
 		this.context.clearRect(0, 0, this.elem.width, this.elem.height);
 		var lines = this.elem.width * detail;
 		this.context.lineWidth = 1;
@@ -108,7 +110,7 @@ function Clip(clipFile, clipTrack) {
 	this.clicked = function(e) {
 		e.preventDefault();
 		activeClip = this;
-		this.drag = e.pageX - this.startPoint;
+		this.drag = e.pageX - (this.startPoint * scale);
 	};
 	this.elem.addEventListener("mousedown", this.clicked.bind(this));
 	this.drawLoading = function() {
@@ -119,7 +121,9 @@ function Clip(clipFile, clipTrack) {
 		this.context.fillText("LOADING...", this.elem.width * 0.5, this.elem.height * 0.5);
 	};
 	this.loadFile = function(file) {
-		setupAudio();
+		if (!player) {
+			setupAudio();
+		}
 		this.drawLoading();
 		fileBuffer(file, function(buffer) {
 			this.audioData = buffer.getChannelData(0);
@@ -128,14 +132,14 @@ function Clip(clipFile, clipTrack) {
 		}.bind(this));
 	};
 	this.loadFile(clipFile);
-	this.moveTo = function(track) {
+	this.changeTrack = function(track) {
 		this.track.removeClip(this);
 		track.addClip(this);
 		this.track = track;
 		track.elem.appendChild(this.elem);
 	};
 	this.moveStart = function(start) {
-		this.startPoint = start;
+		this.startPoint = start / scale;
 		this.elem.style.left = start + "px";
 	};
 }
@@ -162,7 +166,7 @@ function Track() {
 	this.moved = function(e) {
 		if (activeClip && activeClip.track !== this) {
 			e.preventDefault();
-			activeClip.moveTo(this);
+			activeClip.changeTrack(this);
 		}
 	};
 	this.elem.addEventListener("mousemove", this.moved.bind(this));
@@ -223,13 +227,39 @@ function ended() {
 	activeClip = undefined;
 }
 
+function padTime(num, size) {
+	return ("000" + num).slice(-size);
+}
+
+function niceTime(timeInSeconds, detailed) {
+	var time = parseFloat(timeInSeconds).toFixed(3);
+	var hours = Math.floor(time / 60 / 60);
+	var minutes = Math.floor(time / 60) % 60;
+	var seconds = Math.floor(time - minutes * 60);
+	if (detailed) {
+		var milliseconds = time.slice(-3);
+		return padTime(hours, 1) + ":" + padTime(minutes, 2) + ":" + padTime(seconds, 2) + "." + padTime(milliseconds, 3);
+	} else {
+		return padTime(hours, 1) + ":" + padTime(minutes, 2) + ":" + padTime(seconds, 2);
+	}
+}
+
 function setup() {
 	playlist = document.getElementById("playlist");
+	playButton = document.getElementById("play");
 	initial = document.getElementById("initial");
 	sideNav = document.getElementById("sidenav");
 	window.addEventListener("mousemove", moved);
 	window.addEventListener("mouseup", ended);
 	new ListedFile(new Session("Untitled Session"));
+	var timeline = document.getElementById("timeline");
+	for (var i = 0; i < scale * 10; i += scale) {
+		var timeLabel = document.createElement("span");
+		timeLabel.innerHTML = niceTime(i / scale, false);
+		timeLabel.className = "timelabel";
+		timeLabel.style.left = i + "px";
+		timeline.appendChild(timeLabel);
+	}
 	/*urlBuffer("donkeykong/input.wav", function(buffer) {
 		sample = { buffer: buffer, data: buffer.getChannelData(0) };
 	});
@@ -272,6 +302,28 @@ function importFile(element) {
 		}
 	}
 	element.value = null;
+}
+
+function playSession() {
+	if (!player) return;
+	if (player.state === "running") {
+		player.close();
+		playButton.value = "►";
+	} else {
+		playButton.value = "❚❚";
+		setupAudio().then(function() {
+			for (var i = 0; i < activeSession.trackList.length; i++) {
+				for (var j = 0; j < activeSession.trackList[i].clips.length; j++) {
+					var clip = activeSession.trackList[i].clips[j];
+					var bufferNode = player.createBufferSource();
+					bufferNode.buffer = clip.audioBuffer;
+					bufferNode.connect(player.destination);
+					bufferNode.start(clip.startPoint, 0, clip.duration); // when, offset, duration
+				}
+			}
+			player.resume();
+		});
+	}
 }
 
 /*function drawLine(context, x, y, x2, y2) {
