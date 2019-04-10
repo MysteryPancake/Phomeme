@@ -20,7 +20,6 @@ input[type="file"] {
 
 .clip {
 	cursor: move;
-	height: 100%;
 	outline: 1px solid #00FF00;
 	position: absolute;
 }
@@ -30,17 +29,17 @@ input[type="file"] {
 	height: calc(100vh - 50px);
 }
 
-.dropbutton, .dropoption, .initialbutton, #sidenav a {
+.dropbutton, .dropoption, .initialbutton, #sidenav a, #play {
 	cursor: pointer;
 	outline: none;
 	user-select: none;
 }
 
-.dropdown:hover .dropbutton, .dropoption:hover, .initialbutton:hover, #sidenav a:hover {
+.dropdown:hover .dropbutton, .dropoption:hover, .initialbutton:hover, #sidenav a:hover, #play:hover {
 	background-color: #004000;
 }
 
-.dropdown .dropbutton:active, .dropoption:active, .initialbutton:active, #sidenav a:active {
+.dropdown .dropbutton:active, .dropoption:active, .initialbutton:active, #sidenav a:active, #play:active {
 	background-color: #00FF00;
 }
 
@@ -55,8 +54,9 @@ input[type="file"] {
 
 .dropcontent {
 	background-color: #061306;
-	border-top: 0;
-	border: 1px solid #00FF00;
+	border-bottom: 1px solid #00FF00;
+	border-left: 1px solid #00FF00;
+	border-right: 1px solid #00FF00;
 	display: none;
 	min-width: 160px;
 	position: absolute;
@@ -65,6 +65,7 @@ input[type="file"] {
 
 .dropdown {
 	float: left;
+	height: 100%;
 	overflow: hidden;
 }
 
@@ -93,6 +94,25 @@ input[type="file"] {
 	word-break: break-word;
 }
 
+#play {
+	background-color: transparent;
+	border: 1px solid #00FF00;
+	display: inline-block;
+	font-size: medium;
+	height: 24px;
+	width: 64px;
+}
+
+#playback {
+	background-color: black;
+	border-top: 2px solid #00FF00;
+	bottom: 0;
+	height: 32px;
+	padding: 16px;
+	position: fixed;
+	width: 100%;
+}
+
 #playlist {
 	display: inline-block;
 	min-width: 100%;
@@ -110,6 +130,26 @@ input[type="file"] {
 	border-bottom: 1px solid #004000;
 	display: block;
 	padding: 8px;
+}
+
+#time {
+	font-size: large;
+}
+
+.timelabel {
+	border-left: 1px solid gray;
+	bottom: 0;
+	color: gray;
+	font-size: xx-small;
+	position: absolute;
+}
+
+#timeline {
+	border-bottom: 1px solid gray;
+	cursor: pointer;
+	height: 16px;
+	position: relative;
+	width: 100%;
 }
 
 #title {
