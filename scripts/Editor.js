@@ -1,18 +1,23 @@
 "use strict";
 
-var sampleRate = 44100;
-var fileList = [];
-var activeSession;
-var draggedFile;
-var offset = 0;
-var scale = 70;
-var detail = 6;
-var activeClip;
-var playButton;
-var playlist;
-var sideNav;
-var initial;
 var player;
+var initial;
+var sideNav;
+var playhead;
+var playlist;
+var frame = 0;
+var timeLabel;
+var playButton;
+var activeDrag;
+var detail = 10;
+var scale = 100;
+var offset = 0;
+var draggedFile;
+var activeSession;
+var fileList = [];
+var sampleRate = 44100;
+var requestFrame = window.requestAnimationFrame || window.webkitRequestAnimationFrame || window.mozRequestAnimationFrame || window.oRequestAnimationFrame || window.msRequestAnimationFrame || function(e) { return window.setTimeout(e, 1000 / 60); };
+var cancelFrame = window.cancelAnimationFrame || window.webkitCancelAnimationFrame || window.mozCancelAnimationFrame || window.oCancelAnimationFrame || window.msCancelAnimationFrame || function(id) { window.clearTimeout(id); };
 
 function setupAudio() {
 	player = new (window.AudioContext || window.webkitAudioContext)();
@@ -55,6 +60,18 @@ function urlJson(url, func) {
 	jsonRequest.send();
 }*/
 
+function setPlayhead(seconds) {
+	playhead.style.left = seconds * scale + "px";
+	timeLabel.innerHTML = niceTime(seconds, true);
+}
+
+function draw() {
+	if (player && player.state === "running") {
+		setPlayhead(player.currentTime);
+	}
+	frame = requestFrame(draw);
+}
+
 function setSession(session) {
 	if (activeSession) {
 		for (var i = 0; i < activeSession.trackList.length; i++) {
@@ -78,25 +95,35 @@ function Session(name) {
 
 function Clip(clipFile, clipTrack) {
 	this.drag = 0;
+	this.scale = 1;
 	this.audioData;
 	this.audioBuffer;
 	this.duration = 0;
 	this.track = clipTrack;
 	this.active = false;
 	this.startPoint = 0;
+	this.edgeDrag = "";
 	this.elem = document.createElement("canvas");
 	this.elem.className = "clip";
-	this.elem.style.left = "0px";
 	this.elem.width = "128";
 	this.elem.height = "128";
-	this.track.elem.appendChild(this.elem);
+	this.parent = document.createElement("div");
+	this.parent.className = "clipdiv";
+	this.parent.appendChild(this.elem);
+	this.track.elem.appendChild(this.parent);
+	this.elemLeft = document.createElement("div");
+	this.elemLeft.className = "clipdragleft";
+	this.parent.appendChild(this.elemLeft);
+	this.elemRight = document.createElement("div");
+	this.elemRight.className = "clipdragright";
+	this.parent.appendChild(this.elemRight);
 	this.context = this.elem.getContext("2d", { alpha: true });
 	this.updateCanvas = function() {
 		this.duration = this.audioBuffer.duration;
 		this.elem.width = this.duration * scale;
 		this.context.clearRect(0, 0, this.elem.width, this.elem.height);
 		var lines = this.elem.width * detail;
-		this.context.lineWidth = 1;
+		this.context.lineWidth = 0.5;
 		this.context.strokeStyle = "white";
 		this.context.beginPath();
 		for (var k = 0; k < lines; k++) {
@@ -109,10 +136,27 @@ function Clip(clipFile, clipTrack) {
 	};
 	this.clicked = function(e) {
 		e.preventDefault();
-		activeClip = this;
+		activeDrag = this;
 		this.drag = e.pageX - (this.startPoint * scale);
 	};
 	this.elem.addEventListener("mousedown", this.clicked.bind(this));
+	this.setScale = function(stretch) {
+		this.scale = stretch;
+		this.elem.style.width = this.elem.width + this.scale + "px";
+	}
+	this.dragLeft = function(e) {
+		e.preventDefault();
+		activeDrag = this;
+		this.edgeDrag = "left";
+	};
+	this.elemLeft.addEventListener("mousedown", this.dragLeft.bind(this));
+	this.dragRight = function(e) {
+		e.preventDefault();
+		activeDrag = this;
+		this.edgeDrag = "right";
+		this.drag = e.pageX - (this.startPoint * scale);
+	};
+	this.elemRight.addEventListener("mousedown", this.dragRight.bind(this));
 	this.drawLoading = function() {
 		this.context.fillStyle = "white";
 		this.context.textAlign = "center";
@@ -136,11 +180,11 @@ function Clip(clipFile, clipTrack) {
 		this.track.removeClip(this);
 		track.addClip(this);
 		this.track = track;
-		track.elem.appendChild(this.elem);
+		track.elem.appendChild(this.parent);
 	};
-	this.moveStart = function(start) {
+	this.setStart = function(start) {
 		this.startPoint = start / scale;
-		this.elem.style.left = start + "px";
+		this.parent.style.left = start + "px";
 	};
 }
 
@@ -164,9 +208,9 @@ function Track() {
 		}
 	};
 	this.moved = function(e) {
-		if (activeClip && activeClip.track !== this) {
+		if (activeDrag && activeDrag.track && !activeDrag.edgeDrag && activeDrag.track !== this) {
 			e.preventDefault();
-			activeClip.changeTrack(this);
+			activeDrag.changeTrack(this);
 		}
 	};
 	this.elem.addEventListener("mousemove", this.moved.bind(this));
@@ -181,7 +225,7 @@ function Track() {
 		if (draggedFile) {
 			e.preventDefault();
 			var clip = this.loadClip(draggedFile);
-			clip.moveStart(e.offsetX);
+			clip.setStart(e.clientX - this.elem.getBoundingClientRect().left);
 			draggedFile = undefined;
 		}
 	};
@@ -217,14 +261,30 @@ function closeMenus() {
 }
 
 function moved(e) {
-	if (activeClip) {
-		e.preventDefault();
-		activeClip.moveStart(Math.max(0, e.pageX - activeClip.drag));
+	if (activeDrag) {
+		if (activeDrag.track) {
+			if (activeDrag.edgeDrag === "left") {
+				// drag left
+			} else if (activeDrag.edgeDrag === "right") {
+				e.preventDefault();
+				activeDrag.setScale(e.pageX - activeDrag.drag);
+				// drag right
+			} else {
+				e.preventDefault();
+				activeDrag.setStart(e.pageX - activeDrag.drag);
+			}
+		} else if (activeDrag === "playhead") {
+			e.preventDefault();
+			setPlayhead((e.clientX - timeline.getBoundingClientRect().left) / scale);
+		}
 	}
 }
 
 function ended() {
-	activeClip = undefined;
+	if (activeDrag.edgeDrag) {
+		activeDrag.edgeDrag = undefined;
+	}
+	activeDrag = undefined;
 }
 
 function padTime(num, size) {
@@ -240,26 +300,34 @@ function niceTime(timeInSeconds, detailed) {
 		var milliseconds = time.slice(-3);
 		return padTime(hours, 1) + ":" + padTime(minutes, 2) + ":" + padTime(seconds, 2) + "." + padTime(milliseconds, 3);
 	} else {
-		return padTime(hours, 1) + ":" + padTime(minutes, 2) + ":" + padTime(seconds, 2);
+		return padTime(minutes, 1) + ":" + padTime(seconds, 2);
 	}
 }
 
 function setup() {
 	playlist = document.getElementById("playlist");
+	playhead = document.getElementById("playhead");
 	playButton = document.getElementById("play");
 	initial = document.getElementById("initial");
 	sideNav = document.getElementById("sidenav");
+	timeLabel = document.getElementById("time");
 	window.addEventListener("mousemove", moved);
 	window.addEventListener("mouseup", ended);
 	new ListedFile(new Session("Untitled Session"));
 	var timeline = document.getElementById("timeline");
 	for (var i = 0; i < scale * 10; i += scale) {
-		var timeLabel = document.createElement("span");
-		timeLabel.innerHTML = niceTime(i / scale, false);
-		timeLabel.className = "timelabel";
-		timeLabel.style.left = i + "px";
-		timeline.appendChild(timeLabel);
+		var timeNotch = document.createElement("span");
+		timeNotch.innerHTML = niceTime(i / scale, false);
+		timeNotch.className = "timenotch";
+		timeNotch.style.left = i + "px";
+		timeline.appendChild(timeNotch);
 	}
+	timeline.addEventListener("mousedown", function() {
+		activeDrag = "playhead";
+	});
+	timeline.addEventListener("click", function(e) {
+		setPlayhead((e.clientX - this.getBoundingClientRect().left) / scale);
+	});
 	/*urlBuffer("donkeykong/input.wav", function(buffer) {
 		sample = { buffer: buffer, data: buffer.getChannelData(0) };
 	});
@@ -271,6 +339,7 @@ function setup() {
 			closeMenus();
 		}
 	});
+	requestFrame(draw);
 }
 
 function toggle(element) {
@@ -307,22 +376,21 @@ function importFile(element) {
 function playSession() {
 	if (!player) return;
 	if (player.state === "running") {
-		player.close();
 		playButton.value = "►";
+		player.close();
+		setupAudio();
 	} else {
 		playButton.value = "❚❚";
-		setupAudio().then(function() {
-			for (var i = 0; i < activeSession.trackList.length; i++) {
-				for (var j = 0; j < activeSession.trackList[i].clips.length; j++) {
-					var clip = activeSession.trackList[i].clips[j];
-					var bufferNode = player.createBufferSource();
-					bufferNode.buffer = clip.audioBuffer;
-					bufferNode.connect(player.destination);
-					bufferNode.start(clip.startPoint, 0, clip.duration); // when, offset, duration
-				}
+		for (var i = 0; i < activeSession.trackList.length; i++) {
+			for (var j = 0; j < activeSession.trackList[i].clips.length; j++) {
+				var clip = activeSession.trackList[i].clips[j];
+				var bufferNode = player.createBufferSource();
+				bufferNode.buffer = clip.audioBuffer;
+				bufferNode.connect(player.destination);
+				bufferNode.start(Math.max(0, clip.startPoint), Math.max(0, -clip.startPoint), clip.duration); // when, offset, duration
 			}
-			player.resume();
-		});
+		}
+		player.resume();
 	}
 }
 

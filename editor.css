@@ -20,8 +20,29 @@ input[type="file"] {
 
 .clip {
 	cursor: move;
+	height: 128px;
 	outline: 1px solid #00FF00;
+	position: relative;
+}
+
+.clipdiv {
 	position: absolute;
+}
+
+.clipdragleft, .clipdragright {
+	cursor: ew-resize;
+	height: 128px;
+	position: absolute;
+	top: 0;
+	width: 16px;
+}
+
+.clipdragleft {
+	left: 0;
+}
+
+.clipdragright {
+	right: 0;
 }
 
 #content {
@@ -60,7 +81,7 @@ input[type="file"] {
 	display: none;
 	min-width: 160px;
 	position: absolute;
-	z-index: 1;
+	z-index: 2;
 }
 
 .dropdown {
@@ -113,6 +134,15 @@ input[type="file"] {
 	width: 100%;
 }
 
+#playhead {
+	background-color: white;
+	height: calc(100vh - 182px);
+	mix-blend-mode: color-dodge;
+	position: relative;
+	width: 2px;
+	z-index: 1;
+}
+
 #playlist {
 	display: inline-block;
 	min-width: 100%;
@@ -136,20 +166,21 @@ input[type="file"] {
 	font-size: large;
 }
 
-.timelabel {
-	border-left: 1px solid gray;
-	bottom: 0;
-	color: gray;
-	font-size: xx-small;
-	position: absolute;
-}
-
 #timeline {
 	border-bottom: 1px solid gray;
 	cursor: pointer;
 	height: 16px;
 	position: relative;
 	width: 100%;
+}
+
+.timenotch {
+	border-left: 1px solid gray;
+	bottom: 0;
+	color: gray;
+	font-size: xx-small;
+	position: absolute;
+	user-select: none;
 }
 
 #title {
