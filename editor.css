@@ -38,11 +38,11 @@ input[type="file"] {
 }
 
 .clipdragleft {
-	left: 0;
+	left: -8px;
 }
 
 .clipdragright {
-	right: 0;
+	right: -8px;
 }
 
 #content {
