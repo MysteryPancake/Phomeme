@@ -14,7 +14,7 @@ var activeSession;
 var fileList = [];
 var timeOffset = 0;
 var waveZoom = 100;
-var waveDetail = 10;
+var waveDetail = 16;
 var sampleRate = 44100;
 var requestFrame = window.requestAnimationFrame || window.webkitRequestAnimationFrame || window.mozRequestAnimationFrame || window.oRequestAnimationFrame || window.msRequestAnimationFrame || function(e) { return window.setTimeout(e, 1000 / 60); };
 
@@ -62,10 +62,11 @@ function schedulePlayback() {
 		for (var j = 0; j < activeSession.trackList[i].clips.length; j++) {
 			var clip = activeSession.trackList[i].clips[j];
 			var bufferNode = player.createBufferSource();
-			bufferNode.playbackRate.value = 1 / clip.scale;
+			//bufferNode.playbackRate.value = 1 / clip.scale;
 			bufferNode.buffer = clip.audioBuffer;
 			bufferNode.connect(player.destination);
-			bufferNode.start(Math.max(0, clip.startPoint - timeOffset), Math.max(0, (-clip.startPoint + timeOffset) / clip.scale), clip.duration);
+			//bufferNode.start(Math.max(0, clip.startTime - timeOffset), Math.max(0, (-clip.startTime + timeOffset) / clip.scale), clip.duration);
+			bufferNode.start(Math.max(0, clip.startTime - timeOffset), Math.max(0, -clip.startTime + timeOffset), Math.max(0, Math.min(0, clip.startTime - timeOffset) + clip.outTime));
 		}
 	}
 }
@@ -154,7 +155,6 @@ function Session(name) {
 	this.name = name + ".phomeme";
 	this.type = "application/json";
 	this.trackList = [];
-	setSession(this);
 }
 
 function Dragger(clip, left) {
@@ -168,8 +168,13 @@ function Dragger(clip, left) {
 	this.dragScale = function(e) {
 		e.preventDefault();
 		activeDrag = this;
-		this.clip.lastWidth = this.clip.elem.width * this.clip.scale;
-		this.drag = e.pageX - (left ? this.clip.startPoint * waveZoom : 0);
+		//this.clip.lastWidth = this.clip.elem.width * this.clip.scale;
+		if (this.left) {
+			this.drag = e.pageX - (this.clip.startTime * waveZoom);
+		} else {
+			this.drag = e.pageX - this.clip.elem.width;
+		}
+		//this.drag = e.pageX - (left ? this.clip.startTime * waveZoom : 0);
 	};
 	this.elem.addEventListener("mousedown", this.dragScale.bind(this));
 }
@@ -181,10 +186,11 @@ function Clip(clipFile, clipTrack) {
 	this.type = "clip";
 	this.audioBuffer;
 	this.duration = 0;
-	this.lastWidth = 0;
+	//this.lastWidth = 0;
 	this.track = clipTrack;
-	this.active = false;
-	this.startPoint = 0;
+	this.inTime = 0;
+	this.outTime = 0;
+	this.startTime = 0;
 	this.elem = document.createElement("canvas");
 	this.elem.className = "clip";
 	this.elem.width = "128";
@@ -196,8 +202,9 @@ function Clip(clipFile, clipTrack) {
 	new Dragger(this, true);
 	new Dragger(this, false);
 	this.context = this.elem.getContext("2d", { alpha: true });
-	this.updateCanvas = function() {
+	this.drawCanvas = function() {
 		this.duration = this.audioBuffer.duration;
+		this.outTime = this.duration;
 		this.elem.width = this.duration * waveZoom;
 		this.context.clearRect(0, 0, this.elem.width, this.elem.height);
 		var lines = this.elem.width * waveDetail;
@@ -211,17 +218,36 @@ function Clip(clipFile, clipTrack) {
 			drawLine(this.context, x, y, x, y + (index || 0) * y);
 		}
 		this.context.stroke();
+		this.imageData = this.context.getImageData(0, 0, this.elem.width, this.elem.height);
+	};
+	this.resizeWidth = function(width) {
+		this.elem.width = width;
+		//this.elem.width = Math.min(this.duration * waveZoom, width);
+		this.context.putImageData(this.imageData, -this.inTime * waveZoom, 0);
 	};
 	this.clicked = function(e) {
 		e.preventDefault();
 		activeDrag = this;
-		this.drag = e.pageX - (this.startPoint * waveZoom);
+		this.drag = e.pageX - (this.startTime * waveZoom);
 	};
 	this.elem.addEventListener("mousedown", this.clicked.bind(this));
-	this.setScale = function(scale) {
+	this.setOutTime = function(time) {
+		this.outTime = time / waveZoom;
+		this.resizeWidth(time);
+	};
+	this.setInTime = function(time) {
+		this.inTime = this.inTime - this.startTime + time / waveZoom;
+		//this.resizeWidth(this.elem.width * time);
+		this.resizeWidth((this.outTime - this.inTime) * waveZoom);
+		//this.resizeWidth(((this.outTime - (this.inTime - this.startPoint)) * waveZoom) - time);
+		//this.resizeWidth(this.elem.width);
+		//this.resizeWidth(this.startTime * waveZoom);
+		this.setStart(time);
+	}
+	/*this.setScale = function(scale) {
 		this.scale = (scale + this.lastWidth) / this.elem.width;
 		this.elem.style.width = this.scale * this.elem.width + "px";
-	};
+	};*/
 	this.drawLoading = function() {
 		this.context.fillStyle = "white";
 		this.context.textAlign = "center";
@@ -237,7 +263,7 @@ function Clip(clipFile, clipTrack) {
 		fileBuffer(file, function(buffer) {
 			this.audioData = buffer.getChannelData(0);
 			this.audioBuffer = buffer;
-			this.updateCanvas();
+			this.drawCanvas();
 		}.bind(this));
 	};
 	this.loadFile(clipFile);
@@ -248,7 +274,7 @@ function Clip(clipFile, clipTrack) {
 		track.elem.appendChild(this.parent);
 	};
 	this.setStart = function(start) {
-		this.startPoint = start / waveZoom;
+		this.startTime = start / waveZoom;
 		this.parent.style.left = start + "px";
 	};
 }
@@ -345,10 +371,12 @@ function moved(e) {
 	} else if (activeDrag.type === "dragger") {
 		e.preventDefault();
 		if (activeDrag.left) {
-			activeDrag.clip.setScale(activeDrag.drag - e.pageX);
-			activeDrag.clip.setStart(e.pageX - activeDrag.drag);
+			/*activeDrag.clip.setScale(activeDrag.drag - e.pageX);
+			activeDrag.clip.setStart(e.pageX - activeDrag.drag);*/
+			activeDrag.clip.setInTime(e.pageX - activeDrag.drag);
 		} else {
-			activeDrag.clip.setScale(e.pageX - activeDrag.drag);
+			activeDrag.clip.setOutTime(e.pageX - activeDrag.drag);
+			/*activeDrag.clip.setScale(e.pageX - activeDrag.drag);*/
 		}
 	} else if (activeDrag === "playhead") {
 		e.preventDefault();
@@ -370,7 +398,9 @@ function setup() {
 	timeLabel = document.getElementById("time");
 	window.addEventListener("mousemove", moved);
 	window.addEventListener("mouseup", ended);
-	new ListedFile(new Session("Untitled Session"));
+	var session = new Session("Untitled Session");
+	activeSession = session;
+	new ListedFile(session);
 	for (var i = 0; i < waveZoom * 10; i += waveZoom) {
 		var timeNotch = document.createElement("span");
 		timeNotch.innerHTML = niceTime(i / waveZoom, false);
@@ -411,7 +441,9 @@ function toggle(element) {
 function newSession() {
 	var sessionName = window.prompt("Please enter a session name", "Untitled Session");
 	if (sessionName) {
-		new ListedFile(new Session(sessionName));
+		var session = new Session(sessionName);
+		new ListedFile(session);
+		setSession(session);
 	}
 }
 
