@@ -4,7 +4,6 @@ var lookup;
 var inputData;
 var outputData;
 var dictionary;
-var proxy = "https://phomeme.herokuapp.com/";
 
 function requestFile(method, file, error, func, data) {
 	var request = new XMLHttpRequest();
@@ -188,7 +187,7 @@ function finalResponse() {
 			var output = new FormData();
 			output.append("audio", file);
 			output.append("transcript", getText(document.getElementById("outputScript")));
-			requestFile("POST", proxy + "http://gentle-demo.lowerquality.com/transcriptions?async=false", "Couldn't receive a response!", addOutput, output);
+			requestFile("POST", "http://gentle-demo.lowerquality.com/transcriptions?async=false", "Couldn't receive a response!", addOutput, output);
 		} else {
 			readFile(file, addOutput);
 		}
@@ -222,7 +221,7 @@ function crossOrigin(func) {
 	var output = document.getElementById("outputAudio").files[0];
 	if (input && input.type.startsWith("audio") || output && output.type.startsWith("audio")) {
 		var request = new XMLHttpRequest();
-		request.open("GET", proxy + "http://gentle-demo.lowerquality.com", true);
+		request.open("GET", "http://gentle-demo.lowerquality.com", true);
 		request.onreadystatechange = function() {
 			if (this.readyState === 4 && this.status === 200) {
 				func();
@@ -246,7 +245,7 @@ function phomeme() {
 				var input = new FormData();
 				input.append("audio", file);
 				input.append("transcript", getText(document.getElementById("inputScript")));
-				requestFile("POST", proxy + "http://gentle-demo.lowerquality.com/transcriptions?async=false", "Couldn't receive a response!", addInput, input);
+				requestFile("POST", "http://gentle-demo.lowerquality.com/transcriptions?async=false", "Couldn't receive a response!", addInput, input);
 			} else {
 				readFile(file, addInput);
 			}

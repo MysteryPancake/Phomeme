@@ -170,9 +170,11 @@ function Dragger(clip, left) {
 		activeDrag = this;
 		//this.clip.lastWidth = this.clip.elem.width * this.clip.scale;
 		if (this.left) {
-			this.drag = e.pageX - (this.clip.startTime * waveZoom);
+			//this.drag = e.pageX;
+			//this.drag = e.pageX - (this.clip.inTime * waveZoom);
+			this.drag = e.pageX - (this.clip.inTime * waveZoom);
 		} else {
-			this.drag = e.pageX - this.clip.elem.width;
+			this.drag = e.pageX - (this.clip.outTime * waveZoom);
 		}
 		//this.drag = e.pageX - (left ? this.clip.startTime * waveZoom : 0);
 	};
@@ -236,13 +238,23 @@ function Clip(clipFile, clipTrack) {
 		this.resizeWidth(time);
 	};
 	this.setInTime = function(time) {
-		this.inTime = this.inTime - this.startTime + time / waveZoom;
+		//this.setStart((this.startTime - this.inTime) * waveZoom + time);
+		//this.inTime = time - this.startTime / waveZoom;
+		//this.resizeWidth(this.outTime * waveZoom - time);
+		//this.inTime = (time / waveZoom) - this.startTime;
+		//this.setStart((this.outTime - this.inTime) * waveZoom);
 		//this.resizeWidth(this.elem.width * time);
-		this.resizeWidth((this.outTime - this.inTime) * waveZoom);
+		//this.resizeWidth(this.elem.width + time);
+		//this.resizeWidth(((this.outTime - this.startTime) * waveZoom) - time);
+		//this.resizeWidth(((this.outTime - this.inTime) * waveZoom) + time);
 		//this.resizeWidth(((this.outTime - (this.inTime - this.startPoint)) * waveZoom) - time);
+		//this.inTime = (this.inTime) / waveZoom + time;
+		//this.inTime += this.startTime - time;
+		this.inTime = time / waveZoom;
 		//this.resizeWidth(this.elem.width);
+		//this.resizeWidth((this.outTime - this.startTime) * waveZoom);
 		//this.resizeWidth(this.startTime * waveZoom);
-		this.setStart(time);
+		//this.setStart(time);
 	}
 	/*this.setScale = function(scale) {
 		this.scale = (scale + this.lastWidth) / this.elem.width;
