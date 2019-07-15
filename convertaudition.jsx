@@ -111,13 +111,13 @@
 			var extension = session.name.split(".").pop();
 			if (extension === "sesx") {
 				var content = session.read();
-				session.close();
 				var xml = new XML(content);
 				parse(xml, session);
 			} else {
 				alert("Not an Audition Session!\nPlease open .sesx files, not ." + extension + " files!");
 				importSession();
 			}
+			session.close();
 		} else {
 			alert("Couldn't read the file!");
 		}
