@@ -1,4 +1,5 @@
 (function() {
+	
 	function absolutePath(base, relative) {
 		var stack = base.split("/");
 		var parts = relative.split("/");
