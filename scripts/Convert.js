@@ -41,7 +41,7 @@ function convertTextGrid(transcript, str, file, matchExact) {
 	var intervals = 0;
 	var size = 2;
 	var prev;
-	while (lines.length) {
+	while (lines.length > 0) {
 		var line = lines.shift().trim();
 		if (line.endsWith("<exists>")) {
 			size = parseInt(lines.shift().split("=").pop().trim());

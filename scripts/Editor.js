@@ -250,11 +250,13 @@ function Clip(clipFile, clipTrack) {
 		//this.resizeWidth(((this.outTime - (this.inTime - this.startPoint)) * waveZoom) - time);
 		//this.inTime = (this.inTime) / waveZoom + time;
 		//this.inTime += this.startTime - time;
-		this.inTime = time / waveZoom;
+		//this.inTime = time / waveZoom;
+		//this.setStart((this.inTime * waveZoom) + time);
 		//this.resizeWidth(this.elem.width);
-		//this.resizeWidth((this.outTime - this.startTime) * waveZoom);
+		//this.resizeWidth((this.outTime - this.inTime) * waveZoom);
 		//this.resizeWidth(this.startTime * waveZoom);
-		//this.setStart(time);
+		//this.setStart((this.startTime * waveZoom) + time);
+		//this.setStart((this.startTime + this.inTime) * waveZoom + time);
 	}
 	/*this.setScale = function(scale) {
 		this.scale = (scale + this.lastWidth) / this.elem.width;
