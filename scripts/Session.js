@@ -4,7 +4,7 @@ function xmlSafe(str) {
 	return str.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/"/g, "&apos;");
 }
 
-function Session(name, bitDepth, sampleRate) {
+function AuditionSession(name, bitDepth, sampleRate) {
 	this.name = name || "Untitled Session";
 	this.depth = bitDepth || 16;
 	this.rate = sampleRate || 16000;
