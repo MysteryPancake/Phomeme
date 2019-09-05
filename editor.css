@@ -29,12 +29,23 @@ input[type="file"] {
 	position: absolute;
 }
 
+.clipdiv:hover {
+	background-color: #00000040;
+	z-index: 1;
+}
+
+.clipdiv:active {
+	background-color: #00000080;
+	z-index: 3;
+}
+
 .clipdragleft, .clipdragright {
 	cursor: ew-resize;
 	height: 128px;
 	position: absolute;
 	top: 0;
 	width: 16px;
+	z-index: 4;
 }
 
 .clipdragleft {
@@ -81,7 +92,7 @@ input[type="file"] {
 	display: none;
 	min-width: 160px;
 	position: absolute;
-	z-index: 2;
+	z-index: 999;
 }
 
 .dropdown {
@@ -132,6 +143,7 @@ input[type="file"] {
 	padding: 16px;
 	position: fixed;
 	width: 100%;
+	z-index: 420;
 }
 
 #playhead {
@@ -140,7 +152,7 @@ input[type="file"] {
 	mix-blend-mode: color-dodge;
 	position: relative;
 	width: 2px;
-	z-index: 1;
+	z-index: 2;
 }
 
 #playlist {
