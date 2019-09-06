@@ -16,6 +16,7 @@ var timeOffset = 0;
 var waveZoom = 100;
 var waveDetail = 16;
 var sampleRate = 44100;
+var minClipWidth = 0.05;
 var requestFrame = window.requestAnimationFrame || window.webkitRequestAnimationFrame || window.mozRequestAnimationFrame || window.oRequestAnimationFrame || window.msRequestAnimationFrame || function(e) { return window.setTimeout(e, 1000 / 60); };
 
 function pauseIfPlayingSession() {
@@ -66,7 +67,13 @@ function schedulePlayback() {
 			bufferNode.buffer = clip.audioBuffer;
 			bufferNode.connect(player.destination);
 			//bufferNode.start(Math.max(0, clip.startTime - timeOffset), Math.max(0, (-clip.startTime + timeOffset) / clip.scale), clip.duration);
-			bufferNode.start(Math.max(0, clip.startTime - timeOffset), Math.max(0, -clip.startTime + timeOffset), Math.max(0, Math.min(0, clip.startTime - timeOffset) + clip.outTime));
+			//var when = Math.max(0, Math.max(0, -clip.inTime) + clip.startTime - timeOffset);
+			//var offset = Math.max(0, Math.max(0, -clip.startTime + timeOffset) + clip.inTime);
+			//var duration = Math.max(0, Math.min(0, clip.startTime - timeOffset) + clip.outTime);
+			var when = clip.startTime; // TODO: FIX THIS SHIT
+			var offset = clip.inTime; // TODO: FIX THIS SHIT
+			var duration = clip.outTime - clip.inTime; // TODO: FIX THIS SHIT
+			bufferNode.start(when, offset, duration);
 		}
 	}
 }
@@ -157,27 +164,24 @@ function Session(name) {
 	this.trackList = [];
 }
 
-function Dragger(clip, left) {
-	this.drag = 0;
-	this.left = left;
-	this.type = "dragger";
-	this.elem = document.createElement("div");
-	this.elem.className = left ? "clipdragleft" : "clipdragright";
-	clip.parent.appendChild(this.elem);
-	this.clip = clip;
-	this.dragScale = function(e) {
+function addDragger(clip, left) {
+	var elem = document.createElement("div");
+	elem.className = left ? "clipdragleft" : "clipdragright";
+	clip.parent.appendChild(elem);
+	var dragger = { clip: clip, drag: 0, type: "dragger", left: left };
+	elem.addEventListener("mousedown", function(e) {
 		e.preventDefault();
-		activeDrag = this;
-		if (this.left) {
-			this.drag = {
-				in: e.pageX - (this.clip.inTime * waveZoom),
-				start: e.pageX - (this.clip.startTime * waveZoom)
+		activeDrag = dragger;
+		if (left) {
+			dragger.drag = {
+				in: e.pageX - (clip.inTime * waveZoom),
+				start: e.pageX - (clip.startTime * waveZoom),
+				lastStart: clip.startTime - clip.inTime
 			};
 		} else {
-			this.drag = e.pageX - (this.clip.outTime * waveZoom);
+			dragger.drag = e.pageX - (clip.outTime * waveZoom);
 		}
-	};
-	this.elem.addEventListener("mousedown", this.dragScale.bind(this));
+	});
 }
 
 function Clip(clipFile, clipTrack) {
@@ -199,8 +203,8 @@ function Clip(clipFile, clipTrack) {
 	this.parent.className = "clipdiv";
 	this.parent.appendChild(this.elem);
 	this.track.elem.appendChild(this.parent);
-	new Dragger(this, true);
-	new Dragger(this, false);
+	addDragger(this, true);
+	addDragger(this, false);
 	this.context = this.elem.getContext("2d", { alpha: true });
 	this.drawCanvas = function() {
 		this.duration = this.audioBuffer.duration;
@@ -321,23 +325,22 @@ function Track() {
 	initial.style.display = "none";
 }
 
-function ListedFile(file) {
-	this.file = file;
-	this.elem = document.createElement("a");
-	this.elem.draggable = true;
-	this.elem.innerHTML = this.file.name;
-	sideNav.appendChild(this.elem);
-	this.elem.addEventListener("dragstart", function() {
-		if (this.file.type.startsWith("audio")) {
-			draggedFile = this.file;
+function listFile(file) {
+	var elem = document.createElement("a");
+	elem.draggable = true;
+	elem.innerHTML = file.name;
+	sideNav.appendChild(elem);
+	elem.addEventListener("dragstart", function() {
+		if (file.type.startsWith("audio")) {
+			draggedFile = file;
 		}
-	}.bind(this));
-	this.elem.addEventListener("click", function() {
-		if (this.file.trackList) {
-			setSession(this.file);
+	});
+	elem.addEventListener("click", function() {
+		if (file.trackList) {
+			setSession(file);
 		}
-	}.bind(this));
-	fileList.push(this);
+	});
+	fileList.push({ file: file, elem: elem });
 }
 
 function closeMenus() {
@@ -367,10 +370,28 @@ function moved(e) {
 		e.preventDefault();
 		if (activeDrag.left) {
 			//activeDrag.clip.setScale(activeDrag.drag - e.pageX);
-			activeDrag.clip.setStart((e.pageX - activeDrag.drag.start) / waveZoom);
-			activeDrag.clip.setInTime((e.pageX - activeDrag.drag.in) / waveZoom);
+			var inTime = (e.pageX - activeDrag.drag.in) / waveZoom;
+			var minimum = activeDrag.clip.outTime - minClipWidth;
+			if (inTime > minimum) {
+				activeDrag.clip.setStart(activeDrag.drag.lastStart + minimum);
+				activeDrag.clip.setInTime(minimum);
+			} else if (inTime > 0) {
+				activeDrag.clip.setStart((e.pageX - activeDrag.drag.start) / waveZoom);
+				activeDrag.clip.setInTime(inTime);
+			} else {
+				activeDrag.clip.setStart(activeDrag.drag.lastStart);
+				activeDrag.clip.setInTime(0);
+			}
 		} else {
-			activeDrag.clip.setOutTime((e.pageX - activeDrag.drag) / waveZoom);
+			var outTime = (e.pageX - activeDrag.drag) / waveZoom;
+			var maximum = activeDrag.clip.inTime + minClipWidth;
+			if (outTime < maximum) {
+				activeDrag.clip.setOutTime(maximum);
+			} else if (outTime > activeDrag.clip.duration) {
+				activeDrag.clip.setOutTime(activeDrag.clip.duration);
+			} else {
+				activeDrag.clip.setOutTime(outTime);
+			}
 			//activeDrag.clip.setScale(e.pageX - activeDrag.drag);
 		}
 	} else if (activeDrag === "playhead") {
@@ -395,7 +416,7 @@ function setup() {
 	window.addEventListener("mouseup", ended);
 	var session = new Session("Untitled Session");
 	activeSession = session;
-	new ListedFile(session);
+	listFile(session);
 	for (var i = 0; i < waveZoom * 10; i += waveZoom) {
 		var timeNotch = document.createElement("span");
 		timeNotch.innerHTML = niceTime(i / waveZoom, false);
@@ -437,7 +458,7 @@ function newSession() {
 	var sessionName = window.prompt("Please enter a session name", "Untitled Session");
 	if (sessionName) {
 		var session = new Session(sessionName);
-		new ListedFile(session);
+		listFile(session);
 		setSession(session);
 	}
 }
@@ -450,7 +471,7 @@ function loadSession(element) {
 function importFile(element) {
 	for (var i = 0; i < element.files.length; i++) {
 		var file = element.files[i];
-		new ListedFile(file);
+		listFile(file);
 		if (file.type.startsWith("audio")) {
 			var track = new Track();
 			track.loadClip(file);

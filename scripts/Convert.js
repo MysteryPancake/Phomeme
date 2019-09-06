@@ -1,7 +1,7 @@
 "use strict";
 
 function convertSentence(sentence, matchPunctuation) {
-	var words = sentence.toLowerCase().match(/\w+(?:'\w+)*|(?<![!?.])[!?.]/g);
+	var words = sentence.toLowerCase().match(/\w+(?:'\w+)*|[!?.](?![!?.])/g);
 	var punctuation = { "!": true, "?": true, ".": true };
 	var transcript = {
 		transcript: sentence,
