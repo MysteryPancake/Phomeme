@@ -62,18 +62,21 @@ function schedulePlayback() {
 	for (var i = 0; i < activeSession.trackList.length; i++) {
 		for (var j = 0; j < activeSession.trackList[i].clips.length; j++) {
 			var clip = activeSession.trackList[i].clips[j];
-			var bufferNode = player.createBufferSource();
-			//bufferNode.playbackRate.value = 1 / clip.scale;
-			bufferNode.buffer = clip.audioBuffer;
-			bufferNode.connect(player.destination);
-			//bufferNode.start(Math.max(0, clip.startTime - timeOffset), Math.max(0, (-clip.startTime + timeOffset) / clip.scale), clip.duration);
-			//var when = Math.max(0, Math.max(0, -clip.inTime) + clip.startTime - timeOffset);
-			//var offset = Math.max(0, Math.max(0, -clip.startTime + timeOffset) + clip.inTime);
-			//var duration = Math.max(0, Math.min(0, clip.startTime - timeOffset) + clip.outTime);
-			var when = clip.startTime; // TODO: FIX THIS SHIT
-			var offset = clip.inTime; // TODO: FIX THIS SHIT
-			var duration = clip.outTime - clip.inTime; // TODO: FIX THIS SHIT
-			bufferNode.start(when, offset, duration);
+			var duration = clip.outTime - clip.inTime - Math.max(0, timeOffset - clip.startTime);
+			if (duration > 0) {
+				var bufferNode = player.createBufferSource();
+				//bufferNode.playbackRate.value = 1 / clip.scale;
+				bufferNode.buffer = clip.audioBuffer;
+				bufferNode.connect(player.destination);
+				//bufferNode.start(Math.max(0, clip.startTime - timeOffset), Math.max(0, (-clip.startTime + timeOffset) / clip.scale), clip.duration);
+				var when = clip.startTime - timeOffset;
+				var offset = clip.inTime;
+				if (when < 0) {
+					offset -= when;
+					when = 0;
+				}
+				bufferNode.start(when, offset, duration);
+			}
 		}
 	}
 }
