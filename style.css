@@ -84,7 +84,7 @@ code:empty:before {
 	color: gray;
 }
 
-#acapella, #disillusion, #inputPlayer, #options, #outputPlayer, #result, #rosen, #vocals {
+#destination, #disillusion, #inputPlayer, #options, #outputPlayer, #result, #rosen, #source {
 	display: none;
 }
 

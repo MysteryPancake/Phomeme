@@ -58,32 +58,9 @@ function niceTime(timeInSeconds, detailed) {
 	}
 }
 
-function schedulePlayback() {
-	for (var i = 0; i < activeSession.trackList.length; i++) {
-		for (var j = 0; j < activeSession.trackList[i].clips.length; j++) {
-			var clip = activeSession.trackList[i].clips[j];
-			var duration = clip.outTime - clip.inTime - Math.max(0, timeOffset - clip.startTime);
-			if (duration > 0) {
-				var bufferNode = player.createBufferSource();
-				//bufferNode.playbackRate.value = 1 / clip.scale;
-				bufferNode.buffer = clip.audioBuffer;
-				bufferNode.connect(player.destination);
-				//bufferNode.start(Math.max(0, clip.startTime - timeOffset), Math.max(0, (-clip.startTime + timeOffset) / clip.scale), clip.duration);
-				var when = clip.startTime - timeOffset;
-				var offset = clip.inTime;
-				if (when < 0) {
-					offset -= when;
-					when = 0;
-				}
-				bufferNode.start(when, offset, duration);
-			}
-		}
-	}
-}
-
 function playSession() {
 	playButton.value = "❚❚";
-	schedulePlayback();
+	activeSession.schedule();
 	player.resume();
 }
 
@@ -140,19 +117,6 @@ function draw() {
 	requestFrame(draw);
 }
 
-function setSession(session) {
-	if (activeSession) {
-		for (var i = 0; i < activeSession.trackList.length; i++) {
-			activeSession.trackList[i].elem.style.display = "none";
-		}
-	}
-	for (var j = 0; j < session.trackList.length; j++) {
-		session.trackList[j].elem.style.display = "flex";
-	}
-	activeSession = session;
-	initial.style.display = session.trackList.length ? "none" : "block";
-}
-
 function drawLine(context, x, y, x2, y2) {
 	context.beginPath();
 	context.moveTo(x, y);
@@ -165,6 +129,43 @@ function Session(name) {
 	this.name = name + ".phomeme";
 	this.type = "application/json";
 	this.trackList = [];
+	this.schedule = function() {
+		for (var i = 0; i < this.trackList.length; i++) {
+			for (var j = 0; j < this.trackList[i].clips.length; j++) {
+				var clip = this.trackList[i].clips[j];
+				var duration = clip.outTime - clip.inTime - Math.max(0, timeOffset - clip.startTime);
+				if (duration > 0) {
+					var bufferNode = player.createBufferSource();
+					//bufferNode.playbackRate.value = 1 / clip.scale;
+					bufferNode.buffer = clip.audioBuffer;
+					bufferNode.connect(player.destination);
+					//bufferNode.start(Math.max(0, clip.startTime - timeOffset), Math.max(0, (-clip.startTime + timeOffset) / clip.scale), clip.duration);
+					var when = clip.startTime - timeOffset;
+					var offset = clip.inTime;
+					if (when < 0) {
+						offset -= when;
+						when = 0;
+					}
+					bufferNode.start(when, offset, duration);
+				}
+			}
+		}
+	};
+	this.addTrack = function(track) {
+		this.trackList.push(track);
+	};
+	this.setActive = function() {
+		if (activeSession) {
+			for (var i = 0; i < activeSession.trackList.length; i++) {
+				activeSession.trackList[i].elem.style.display = "none";
+			}
+		}
+		for (var j = 0; j < this.trackList.length; j++) {
+			this.trackList[j].elem.style.display = "flex";
+		}
+		initial.style.display = this.trackList.length ? "none" : "block";
+		activeSession = this;
+	};
 }
 
 function addDragger(clip, left) {
@@ -324,7 +325,7 @@ function Track() {
 		}
 	};
 	this.elem.addEventListener("drop", this.drop.bind(this));
-	this.trackIndex = activeSession.trackList.push(this);
+	this.trackIndex = activeSession.addTrack(this);
 	initial.style.display = "none";
 }
 
@@ -340,7 +341,7 @@ function listFile(file) {
 	});
 	elem.addEventListener("click", function() {
 		if (file.trackList) {
-			setSession(file);
+			file.setActive();
 		}
 	});
 	fileList.push({ file: file, elem: elem });
@@ -462,7 +463,7 @@ function newSession() {
 	if (sessionName) {
 		var session = new Session(sessionName);
 		listFile(session);
-		setSession(session);
+		session.setActive();
 	}
 }
 

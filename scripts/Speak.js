@@ -15,9 +15,9 @@ function addClips(targets, phones, mix, method, diphones, triphones, length, fun
 	return length;
 }
 
-function speak(vocals, acapella, chooseMethod, matchWords, matchDiphones, matchTriphones, matchPunctuation, matchExact, overlapStart, overlapEnd) {
-	var input = convert(vocals.data, vocals.type, "input.wav", matchPunctuation, matchExact);
-	var output = convert(acapella.data, acapella.type, "input.wav", matchPunctuation, matchExact);
+function speak(source, destination, chooseMethod, matchWords, matchDiphones, matchTriphones, matchPunctuation, matchExact, overlapStart, overlapEnd) {
+	var input = convert(source.data, source.type, "input.wav", matchPunctuation, matchExact);
+	var output = convert(destination.data, destination.type, "input.wav", matchPunctuation, matchExact);
 	var mix = new AuditionSession("session", 32, 44100);
 	mix.overlapStart = overlapStart;
 	mix.overlapEnd = overlapEnd;

@@ -62,6 +62,7 @@ input[type="file"] {
 }
 
 .dropbutton, .dropoption, .initialbutton, #sidenav a, #play {
+	-moz-user-select: none;
 	cursor: pointer;
 	outline: none;
 	user-select: none;
@@ -187,6 +188,7 @@ input[type="file"] {
 }
 
 .timenotch {
+	-moz-user-select: none;
 	border-left: 1px solid gray;
 	bottom: 0;
 	color: gray;
