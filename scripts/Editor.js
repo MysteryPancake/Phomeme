@@ -413,12 +413,12 @@ function ended() {
 function updateNotches(elem) {
 	var scroll = elem.scrollLeft;
 	for (var i = 0; i < timeNotches.length; i++) {
-		var position = i * waveZoom;
-		while (position - scroll < -10) {
-			position += timeNotches.length * waveZoom;
+		var position = i;
+		while ((position * waveZoom) - scroll < -10) {
+			position += timeNotches.length;
 		}
-		timeNotches[i].innerHTML = niceTime(position / waveZoom, false);
-		timeNotches[i].style.left = position + "px";
+		timeNotches[i].innerHTML = niceTime(position, false);
+		timeNotches[i].style.left = position * waveZoom + "px";
 		playlist.style.width = playlistWidth + scroll + "px";
 	}
 }
