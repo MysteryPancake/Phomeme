@@ -15,6 +15,8 @@ var fileList = [];
 var timeOffset = 0;
 var waveZoom = 100;
 var waveDetail = 16;
+var timeNotches = [];
+var playlistWidth = 0;
 var sampleRate = 44100;
 var minClipWidth = 0.05;
 var requestFrame = window.requestAnimationFrame || window.webkitRequestAnimationFrame || window.mozRequestAnimationFrame || window.oRequestAnimationFrame || window.msRequestAnimationFrame || function(e) { return window.setTimeout(e, 1000 / 60); };
@@ -408,6 +410,19 @@ function ended() {
 	activeDrag = undefined;
 }
 
+function updateNotches(elem) {
+	var scroll = elem.scrollLeft;
+	for (var i = 0; i < timeNotches.length; i++) {
+		var position = i * waveZoom;
+		while (position - scroll < -10) {
+			position += timeNotches.length * waveZoom;
+		}
+		timeNotches[i].innerHTML = niceTime(position / waveZoom, false);
+		timeNotches[i].style.left = position + "px";
+		playlist.style.width = playlistWidth + scroll + "px";
+	}
+}
+
 function setup() {
 	playlist = document.getElementById("playlist");
 	playhead = document.getElementById("playhead");
@@ -421,11 +436,13 @@ function setup() {
 	var session = new Session("Untitled Session");
 	activeSession = session;
 	listFile(session);
-	for (var i = 0; i < waveZoom * 10; i += waveZoom) {
+	playlistWidth = playlist.scrollWidth;
+	for (var i = 0; i < timeline.scrollWidth; i += waveZoom) {
 		var timeNotch = document.createElement("span");
 		timeNotch.innerHTML = niceTime(i / waveZoom, false);
 		timeNotch.className = "timenotch";
 		timeNotch.style.left = i + "px";
+		timeNotches.push(timeNotch);
 		timeline.appendChild(timeNotch);
 	}
 	timeline.addEventListener("mousedown", function() {

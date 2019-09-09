@@ -9,6 +9,12 @@ html, body {
 	padding: 0;
 }
 
+body {
+	display: grid;
+	grid-template-columns: 320px auto;
+	grid-template-rows: 48px calc(100vh - 48px);
+}
+
 input[type="file"] {
 	height: 0px;
 	opacity: 0;
@@ -26,6 +32,7 @@ input[type="file"] {
 }
 
 .clipdiv {
+	height: 100%;
 	position: absolute;
 }
 
@@ -54,11 +61,6 @@ input[type="file"] {
 
 .clipdragright {
 	right: -4px;
-}
-
-#content {
-	display: flex;
-	height: calc(100vh - 50px);
 }
 
 .dropbutton, .dropoption, .initialbutton, #sidenav a, #play {
@@ -123,8 +125,6 @@ input[type="file"] {
 
 #mainnav {
 	overflow: scroll;
-	width: calc(100vw - 322px);
-	word-break: break-word;
 }
 
 #play {
@@ -149,7 +149,7 @@ input[type="file"] {
 
 #playhead {
 	background-color: white;
-	height: calc(100vh - 182px);
+	height: calc(100vh - 128px);
 	mix-blend-mode: color-dodge;
 	position: relative;
 	width: 2px;
@@ -166,7 +166,6 @@ input[type="file"] {
 	border-right: 1px solid #00FF00;
 	overflow: scroll;
 	padding: 8px;
-	width: 320px;
 }
 
 #sidenav a {
@@ -207,8 +206,7 @@ input[type="file"] {
 	background-color: #061306;
 	border-bottom: 2px solid #00FF00;
 	box-shadow: 0 -32px 32px -32px #00FF00 inset;
-	height: 48px;
-	width: 100%;
+	grid-column: 1 / span 2;
 }
 
 .track {
