@@ -16,7 +16,7 @@
 		<div id="topnav">
 			<h1 id="title">Phomeme</h1>
 			<div class="dropdown">
-				<input type="button" class="dropbutton" value="File" onclick="toggle(this);">
+				<input type="button" class="topbutton dropbutton" value="File" onclick="toggle(this);">
 				<div class="dropcontent">
 					<a class="dropoption" onclick="newSession();">New</a>
 					<div>
@@ -32,14 +32,14 @@
 				</div>
 			</div>
 			<div class="dropdown">
-				<input type="button" class="dropbutton" value="Edit" onclick="toggle(this);">
+				<input type="button" class="topbutton dropbutton" value="Edit" onclick="toggle(this);">
 				<div class="dropcontent">
 					<a class="dropoption">Undo</a>
 					<a class="dropoption">Redo</a>
 				</div>
 			</div>
 			<div class="dropdown">
-				<input type="button" class="dropbutton" value="Align" onclick="toggle(this);">
+				<input type="button" class="topbutton dropbutton" value="Align" onclick="toggle(this);">
 				<div class="dropcontent">
 					<a class="dropoption">Gentle</a>
 					<a class="dropoption">WebMAUS</a>
@@ -57,7 +57,13 @@
 			<div id="initial">
 				<label for="importFile" class="initialbutton">Upload Vocals</label>
 				<span>OR</span>
-				<label for="choosePreset" class="initialbutton">Choose Preset</label>
+				<div id="presets">
+					<label class="initialbutton dropbutton" onclick="toggle(this);">Load Preset</label>
+					<div class="dropcontent">
+						<a class="dropoption" onclick="loadPreset('rosen');">Michael Rosen</a>
+						<a class="dropoption" onclick="loadPreset('donkeykong');">Donkey Kong</a>
+					</div>
+				</div>
 			</div>
 			<div id="playback">
 				<span id="time">0:00:00.000</span>

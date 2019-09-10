@@ -63,26 +63,28 @@ input[type="file"] {
 	right: -4px;
 }
 
-.dropbutton, .dropoption, .initialbutton, #sidenav a, #play {
+.topbutton, .dropoption, .initialbutton, #sidenav a, #play {
 	-moz-user-select: none;
 	cursor: pointer;
 	outline: none;
 	user-select: none;
 }
 
-.dropdown:hover .dropbutton, .dropoption:hover, .initialbutton:hover, #sidenav a:hover, #play:hover {
+.dropdown:hover .topbutton, .dropoption:hover, .initialbutton:hover, #sidenav a:hover, #play:hover {
 	background-color: #004000;
 }
 
-.dropdown .dropbutton:active, .dropoption:active, .initialbutton:active, #sidenav a:active, #play:active {
+.dropdown .topbutton:active, .dropoption:active, .initialbutton:active, #sidenav a:active, #play:active {
 	background-color: #00FF00;
 }
 
-.dropbutton {
+.topbutton {
 	background-color: transparent;
 	border: none;
 	display: inline-block;
 	font-size: medium;
+	height: 100%;
+	margin-bottom: 2px;
 	mix-blend-mode: screen;
 	padding: 16px;
 }
@@ -93,6 +95,7 @@ input[type="file"] {
 	border-left: 1px solid #00FF00;
 	border-right: 1px solid #00FF00;
 	display: none;
+	font-size: medium;
 	min-width: 160px;
 	position: absolute;
 	z-index: 999;
@@ -160,6 +163,11 @@ input[type="file"] {
 	display: inline-block;
 	min-width: 100%;
 	position: relative;
+}
+
+#presets {
+	display: inline-block;
+	text-align: left;
 }
 
 #sidenav {

@@ -82,7 +82,7 @@ function togglePlayback() {
 	}
 }
 
-/*function urlBuffer(url, func) {
+function urlBuffer(url, func) {
 	var audioRequest = new XMLHttpRequest();
 	audioRequest.open("GET", url, true);
 	audioRequest.responseType = "arraybuffer";
@@ -105,7 +105,7 @@ function urlJson(url, func) {
 		}
 	};
 	jsonRequest.send();
-}*/
+}
 
 function setPlayhead(seconds) {
 	playhead.style.left = seconds * waveZoom + "px";
@@ -449,12 +449,6 @@ function setup() {
 		activeDrag = "playhead";
 	});
 	timeline.addEventListener("click", movePlayhead);
-	/*urlBuffer("donkeykong/input.wav", function(buffer) {
-		sample = { buffer: buffer, data: buffer.getChannelData(0) };
-	});
-	urlJson("donkeykong/complete.json", function(response) {
-		json = response;
-	});*/
 	window.addEventListener("keypress", function(e) {
 		if (e.key === " " || e.key === "Spacebar") {
 			playButton.click();
@@ -499,6 +493,16 @@ function importFile(element) {
 		}
 	}
 	element.value = null;
+}
+
+function loadPreset(name) {
+	/*urlBuffer(name + "/input.wav", function(buffer) {
+		console.log(buffer);
+		console.log(buffer.getChannelData(0));
+	});*/
+	urlJson(name + "/index.json", function(response) {
+		window.alert(response);
+	});
 }
 
 /*function drawBoxes(json, audio) {
