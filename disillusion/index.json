@@ -1,6 +1,7 @@
 [
 	{
 		"audio": "disillusion/ambiguouscylinder.wav",
+		"name": "Ambiguous Cylinder",
 		"transcript": "disillusion/ambiguouscylinder.json"
 	}
 ]

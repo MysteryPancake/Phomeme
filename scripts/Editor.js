@@ -82,28 +82,38 @@ function togglePlayback() {
 	}
 }
 
-function urlBuffer(url, func) {
+function urlBuffer(url, func, err) {
 	var audioRequest = new XMLHttpRequest();
 	audioRequest.open("GET", url, true);
 	audioRequest.responseType = "arraybuffer";
 	audioRequest.onreadystatechange = function() {
-		if (this.readyState === 4 && this.status === 200) {
-			player.decodeAudioData(this.response, function(buffer) {
-				func(buffer);
-			});
+		if (this.readyState === 4) {
+			if (this.status === 200) {
+				player.decodeAudioData(this.response, function(buffer) {
+					func(buffer);
+				});
+			} else if (err) {
+				err();
+			}
 		}
 	};
+	audioRequest.onerror = err;
 	audioRequest.send();
 }
 
-function urlJson(url, func) {
+function urlJson(url, func, err) {
 	var jsonRequest = new XMLHttpRequest();
 	jsonRequest.open("GET", url, true);
 	jsonRequest.onreadystatechange = function() {
-		if (this.readyState === 4 && this.status === 200) {
-			func(JSON.parse(this.responseText));
+		if (this.readyState === 4) {
+			if (this.status === 200) {
+				func(JSON.parse(this.responseText));
+			} else if (err) {
+				err();
+			}
 		}
 	};
+	jsonRequest.onerror = err;
 	jsonRequest.send();
 }
 
@@ -124,6 +134,12 @@ function drawLine(context, x, y, x2, y2) {
 	context.moveTo(x, y);
 	context.lineTo(x2, y2);
 	context.stroke();
+}
+
+function ensurePlayer() {
+	if (!player) {
+		restartPlayer();
+	}
 }
 
 function Session(name) {
@@ -261,9 +277,7 @@ function Clip(clipFile, clipTrack) {
 		this.context.fillText("LOADING...", this.elem.width * 0.5, this.elem.height * 0.5);
 	};
 	this.loadFile = function(file) {
-		if (!player) {
-			restartPlayer();
-		}
+		ensurePlayer();
 		this.drawLoading();
 		fileBuffer(file, function(buffer) {
 			this.audioData = buffer.getChannelData(0);
@@ -342,6 +356,7 @@ function listFile(file) {
 		}
 	});
 	elem.addEventListener("click", function() {
+		elem.classList.toggle("active");
 		if (file.trackList) {
 			file.setActive();
 		}
@@ -463,7 +478,7 @@ function setup() {
 }
 
 function toggle(element) {
-	var dropdown = element.nextSibling.nextSibling;
+	var dropdown = element.nextElementSibling;
 	var previous = dropdown.style.display;
 	closeMenus();
 	dropdown.style.display = previous === "block" ? "none" : "block";
@@ -495,14 +510,68 @@ function importFile(element) {
 	element.value = null;
 }
 
-function loadPreset(name) {
-	/*urlBuffer(name + "/input.wav", function(buffer) {
-		console.log(buffer);
-		console.log(buffer.getChannelData(0));
-	});*/
-	urlJson(name + "/index.json", function(response) {
-		window.alert(response);
+function listPreset(name) {
+	var parent = document.createElement("div");
+	parent.className = "filefolder";
+	sideNav.appendChild(parent);
+	var loader = document.createElement("div");
+	loader.className = "presetprogress";
+	parent.appendChild(loader);
+	var preset = document.createElement("a");
+	preset.innerHTML = name + " Preset";
+	parent.appendChild(preset);
+	var files = document.createElement("div");
+	files.className = "filegroup";
+	files.style.display = "none";
+	parent.appendChild(files);
+	preset.addEventListener("click", function() {
+		var previous = files.style.display;
+		parent.classList.toggle("active");
+		files.style.display = previous === "block" ? "none" : "block";
 	});
+	fileList.push({ elem: parent });
+	return { bar: loader, list: files };
+}
+
+function loadPreset(elem) {
+	ensurePlayer();
+	var elems = listPreset(elem.innerHTML);
+	urlJson(elem.id + "/index.json", function(response) {
+		loadParts(response, elems, -1);
+	});
+}
+
+function loadParts(json, elems, index) {
+	if (index < json.length - 1) {
+		var newIndex = index + 1;
+		if (json[newIndex].transcript) {
+			urlJson(json[newIndex].transcript, function() {
+				elems.bar.style.width = (newIndex + 1) / json.length * 100 + "%";
+				var details = document.createElement("span");
+				details.className = "filedetails";
+				details.innerHTML = "TRANSCRIPT";
+				var file = document.createElement("a");
+				file.appendChild(details);
+				var niceName = document.createTextNode(json[newIndex].name || json[newIndex].transcript.split("/").pop());
+				file.appendChild(niceName);
+				elems.list.appendChild(file);
+				if (json[newIndex].audio) {
+					urlBuffer(json[newIndex].audio, function(buffer) {
+						details.innerHTML += " + AUDIO";
+						loadParts(json, elems, newIndex);
+					}, function() {
+						loadParts(json, elems, newIndex);
+					});
+				} else {
+					loadParts(json, elems, newIndex);
+				}
+			}, function() {
+				loadParts(json, elems, newIndex);
+			});
+		}
+	} else {
+		elems.bar.parentNode.removeChild(elems.bar);
+	}
 }
 
 /*function drawBoxes(json, audio) {

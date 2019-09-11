@@ -1,6 +1,7 @@
 [
 	{
 		"audio": "donkeykong/rap.wav",
+		"name": "DK Rap",
 		"transcript": "donkeykong/rap.json"
 	}
 ]

@@ -10,6 +10,7 @@ function multiple(path) {
 			const name = files[i].replace(/\.[^/.]+$/, "");
 			transcripts.push({
 				audio: path.split("/").pop() + "/" + name + ".wav",
+				name: name,
 				transcript: path.split("/").pop() + "/" + name + ".json",
 				video: path.split("/").pop() + "/" + name + ".mp4"
 			});

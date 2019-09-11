@@ -75,7 +75,7 @@ input[type="file"] {
 }
 
 .dropdown .topbutton:active, .dropoption:active, .initialbutton:active, #sidenav a:active, #play:active {
-	background-color: #00FF00;
+	background-color: #008000;
 }
 
 .topbutton {
@@ -110,6 +110,43 @@ input[type="file"] {
 .dropoption {
 	display: block;
 	padding: 16px;
+}
+
+.filefolder > a:after {
+	color: #808080;
+	content: "+";
+	float: right;
+	font-size: large;
+	font-weight: bold;
+}
+
+#sidenav .active {
+	background-color: #002000;
+}
+
+.filefolder.active > a {
+	background-color: #004000;
+}
+
+.filefolder.active > a:after {
+	content: "-";
+}
+
+.filegroup {
+	margin-left: 16px;
+}
+
+.filedetails {
+	-moz-user-select: none;
+	background-color: #005000;
+	border-radius: 2px;
+	color: white;
+	float: right;
+	font-size: smaller;
+	font-weight: bold;
+	padding: 2px 6px;
+	pointer-events: none;
+	user-select: none;
 }
 
 #initial {
@@ -170,6 +207,12 @@ input[type="file"] {
 	text-align: left;
 }
 
+.presetprogress {
+	background-color: #00FF00;
+	float: left;
+	height: 2px;
+}
+
 #sidenav {
 	border-right: 1px solid #00FF00;
 	overflow: scroll;
@@ -200,6 +243,7 @@ input[type="file"] {
 	bottom: 0;
 	color: gray;
 	font-size: xx-small;
+	pointer-events: none;
 	position: absolute;
 	user-select: none;
 }
