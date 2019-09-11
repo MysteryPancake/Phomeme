@@ -546,7 +546,7 @@ function loadParts(json, elems, index) {
 		var newIndex = index + 1;
 		if (json[newIndex].transcript) {
 			urlJson(json[newIndex].transcript, function() {
-				elems.bar.style.width = (newIndex + 1) / json.length * 100 + "%";
+				elems.bar.style.width = (newIndex + 0.5) / json.length * 100 + "%";
 				var details = document.createElement("span");
 				details.className = "filedetails";
 				details.innerHTML = "TRANSCRIPT";
@@ -557,6 +557,7 @@ function loadParts(json, elems, index) {
 				elems.list.appendChild(file);
 				if (json[newIndex].audio) {
 					urlBuffer(json[newIndex].audio, function(buffer) {
+						elems.bar.style.width = (newIndex + 1) / json.length * 100 + "%";
 						details.innerHTML += " + AUDIO";
 						loadParts(json, elems, newIndex);
 					}, function() {
@@ -570,7 +571,9 @@ function loadParts(json, elems, index) {
 			});
 		}
 	} else {
-		elems.bar.parentNode.removeChild(elems.bar);
+		setTimeout(function() {
+			elems.bar.parentNode.removeChild(elems.bar);
+		}, 100);
 	}
 }
 
