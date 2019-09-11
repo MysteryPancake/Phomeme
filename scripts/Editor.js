@@ -92,7 +92,7 @@ function urlBuffer(url, func, err) {
 				player.decodeAudioData(this.response, function(buffer) {
 					func(buffer);
 				});
-			} else if (err) {
+			} else if (this.status === 404 && err) {
 				err();
 			}
 		}
@@ -108,7 +108,7 @@ function urlJson(url, func, err) {
 		if (this.readyState === 4) {
 			if (this.status === 200) {
 				func(JSON.parse(this.responseText));
-			} else if (err) {
+			} else if (this.status === 404 && err) {
 				err();
 			}
 		}
@@ -512,7 +512,7 @@ function importFile(element) {
 
 function listPreset(name) {
 	var parent = document.createElement("div");
-	parent.className = "filefolder";
+	parent.className = "filefolder active";
 	sideNav.appendChild(parent);
 	var loader = document.createElement("div");
 	loader.className = "presetprogress";
@@ -522,54 +522,77 @@ function listPreset(name) {
 	parent.appendChild(preset);
 	var files = document.createElement("div");
 	files.className = "filegroup";
-	files.style.display = "none";
 	parent.appendChild(files);
 	preset.addEventListener("click", function() {
 		var previous = files.style.display;
 		parent.classList.toggle("active");
-		files.style.display = previous === "block" ? "none" : "block";
+		files.style.display = previous === "none" ? "block" : "none";
 	});
 	fileList.push({ elem: parent });
-	return { bar: loader, list: files };
+	return { bar: loader, list: files, parent: parent };
 }
 
 function loadPreset(elem) {
-	ensurePlayer();
-	var elems = listPreset(elem.innerHTML);
 	urlJson(elem.id + "/index.json", function(response) {
+		ensurePlayer();
+		var elems = listPreset(elem.innerHTML);
 		loadParts(response, elems, -1);
+	}, function() {
+		window.alert("Couldn't load " + elem.innerHTML + "! Try installing a cross-origin extension.");
 	});
+}
+
+function addDetail(details, name) {
+	var detail = document.createElement("span");
+	detail.innerHTML = name;
+	details.appendChild(detail);
+}
+
+function loadPart2(json, elems, details, file, index) {
+	if (json[index].audio) {
+		urlBuffer(json[index].audio, function() {
+			elems.bar.style.width = (index + 1) / json.length * 100 + "%";
+			addDetail(details, "AUDIO");
+			loadParts(json, elems, index);
+		}, function() {
+			elems.parent.classList.add("error");
+			file.classList.add("error");
+			addDetail(details, "ERROR");
+			loadParts(json, elems, index);
+		});
+	} else {
+		loadParts(json, elems, index);
+	}
+}
+
+function loadPart1(json, elems, details, file, index) {
+	if (json[index].transcript) {
+		urlJson(json[index].transcript, function() {
+			elems.bar.style.width = (index + 0.5) / json.length * 100 + "%";
+			addDetail(details, "TRANSCRIPT");
+			loadPart2(json, elems, details, file, index);
+		}, function() {
+			elems.parent.classList.add("error");
+			file.classList.add("error");
+			addDetail(details, "ERROR");
+			loadPart2(json, elems, details, file, index);
+		});
+	} else {
+		loadPart2(json, elems, details, file, index);
+	}
 }
 
 function loadParts(json, elems, index) {
 	if (index < json.length - 1) {
 		var newIndex = index + 1;
-		if (json[newIndex].transcript) {
-			urlJson(json[newIndex].transcript, function() {
-				elems.bar.style.width = (newIndex + 0.5) / json.length * 100 + "%";
-				var details = document.createElement("span");
-				details.className = "filedetails";
-				details.innerHTML = "TRANSCRIPT";
-				var file = document.createElement("a");
-				file.appendChild(details);
-				var niceName = document.createTextNode(json[newIndex].name || json[newIndex].transcript.split("/").pop());
-				file.appendChild(niceName);
-				elems.list.appendChild(file);
-				if (json[newIndex].audio) {
-					urlBuffer(json[newIndex].audio, function(buffer) {
-						elems.bar.style.width = (newIndex + 1) / json.length * 100 + "%";
-						details.innerHTML += " + AUDIO";
-						loadParts(json, elems, newIndex);
-					}, function() {
-						loadParts(json, elems, newIndex);
-					});
-				} else {
-					loadParts(json, elems, newIndex);
-				}
-			}, function() {
-				loadParts(json, elems, newIndex);
-			});
-		}
+		var details = document.createElement("div");
+		details.className = "filedetails";
+		var file = document.createElement("a");
+		file.appendChild(details);
+		var niceName = document.createTextNode(json[newIndex].name || (json[newIndex].transcript && json[newIndex].transcript.split("/").pop()) || "ERROR");
+		file.appendChild(niceName);
+		elems.list.appendChild(file);
+		loadPart1(json, elems, details, file, newIndex);
 	} else {
 		setTimeout(function() {
 			elems.bar.parentNode.removeChild(elems.bar);

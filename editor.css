@@ -132,6 +132,23 @@ input[type="file"] {
 	content: "-";
 }
 
+.filefolder.error > .presetprogress {
+	background-color: #FF0000;
+}
+
+#sidenav .filefolder.error > a {
+	border-bottom: 1px solid #500000;
+}
+
+#sidenav .filegroup a.error {
+	background-color: #300000;
+	border-bottom: 1px solid #200000;
+}
+
+.filegroup a.error .filedetails {
+	background-color: #700000;
+}
+
 .filegroup {
 	margin-left: 16px;
 }
@@ -147,6 +164,10 @@ input[type="file"] {
 	padding: 2px 6px;
 	pointer-events: none;
 	user-select: none;
+}
+
+.filedetails span + span:before {
+	content: " + ";
 }
 
 #initial {
