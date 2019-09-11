@@ -128,6 +128,10 @@ input[type="file"] {
 	background-color: #004000;
 }
 
+.filefolder.active.error > a {
+	background-color: #600000;
+}
+
 .filefolder.active > a:after {
 	content: "-";
 }
@@ -137,7 +141,7 @@ input[type="file"] {
 }
 
 #sidenav .filefolder.error > a {
-	border-bottom: 1px solid #500000;
+	border-bottom: 1px solid #600000;
 }
 
 #sidenav .filegroup a.error {
@@ -146,11 +150,19 @@ input[type="file"] {
 }
 
 .filegroup a.error .filedetails {
-	background-color: #700000;
+	background-color: #800000;
 }
 
 .filegroup {
 	margin-left: 16px;
+}
+
+#sidenav .error a:hover {
+	background-color: #600000;
+}
+
+#sidenav .error a:active {
+	background-color: #A00000;
 }
 
 .filedetails {
