@@ -9,14 +9,14 @@ function multiple(path) {
 		if (files[i].split(".").pop() === "json") {
 			const name = files[i].replace(/\.[^/.]+$/, "");
 			transcripts.push({
-				audio: path.split("/").pop() + "/" + name + ".wav",
-				name: name,
-				transcript: path.split("/").pop() + "/" + name + ".json",
-				video: path.split("/").pop() + "/" + name + ".mp4"
+				audio: "https://mysterypancake.github.io/Phomeme-Rosen/" + name.replace(/ /g, "_") + ".wav",
+				name: name.split(" - ")[0],
+				transcript: "https://mysterypancake.github.io/Phomeme-Rosen/" + name.replace(/ /g, "_") + ".json",
+				video: "https://mysterypancake.github.io/Phomeme-Rosen/" + name.replace(/ /g, "_") + ".mp4"
 			});
 		}
 	}
 	fs.writeFileSync("index.json", JSON.stringify(transcripts, undefined, "\t"));
 }
 
-multiple("./WEBSITE/rosen");
+multiple("./PRESETS/rosen");
