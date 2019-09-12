@@ -235,7 +235,7 @@ input[type="file"] {
 	position: relative;
 }
 
-#presets {
+#presetbutton {
 	display: inline-block;
 	text-align: left;
 }

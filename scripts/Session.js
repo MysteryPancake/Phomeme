@@ -22,8 +22,8 @@ function AuditionSession(name, bitDepth, sampleRate) {
 	};
 	this.clips = [];
 	this.addClip = function(path, phone, start, end, sourceStart, sourceEnd, stretch) {
-		var id;
-		for (var i = 0; i < this.files.length; i++) {
+		let id;
+		for (let i = 0; i < this.files.length; i++) {
 			if (this.files[i].path === path) {
 				id = i;
 			}
@@ -34,12 +34,12 @@ function AuditionSession(name, bitDepth, sampleRate) {
 		this.clips.push("\t\t\t\t<audioClip clipAutoCrossfade=\"true\" crossFadeHeadClipID=\"-1\" crossFadeTailClipID=\"-1\" endPoint=\"" + (end + this.overlapEnd) * this.rate + "\" fileID=\"" + id + "\" hue=\"-1\" id=\"" + this.clips.length + "\" lockedInTime=\"false\" looped=\"false\" name=\"" + xmlSafe(phone) + "\" offline=\"false\" select=\"false\" sourceInPoint=\"" + (sourceStart - this.overlapStart) * this.rate + "\" sourceOutPoint=\"" + (sourceEnd + this.overlapEnd) * this.rate + "\" startPoint=\"" + (start - this.overlapStart) * this.rate + "\" zOrder=\"" + this.clips.length + "\">\n\t\t\t\t\t<clipStretch adaptiveWindowSize=\"37\" pitchAdjustment=\"0\" preserveFormants=\"true\" stretchMode=\"rendered\" stretchQuality=\"high\" stretchRatio=\"" + stretch + "\" stretchType=\"solo\" transientSensitivity=\"40\"/>\n\t\t\t\t</audioClip>\n");
 	};
 	this.compile = function() {
-		var result = this.before;
-		for (var i = 0; i < this.clips.length; i++) {
+		let result = this.before;
+		for (let i = 0; i < this.clips.length; i++) {
 			result += this.clips[i];
 		}
 		result += this.middle;
-		for (var j = 0; j < this.files.length; j++) {
+		for (let j = 0; j < this.files.length; j++) {
 			result += this.files[j].xml;
 		}
 		result += this.after;

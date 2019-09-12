@@ -8,10 +8,10 @@ function choosePhone(method, target, phones) {
 	} else if (method === "random") {
 		return phones[Math.floor(Math.random() * phones.length)];
 	} else if (method === "duration") {
-		var match;
-		var difference;
-		for (var i = 0; i < phones.length; i++) {
-			var diff = Math.abs(target - phones[i].dur);
+		let match;
+		let difference;
+		for (let i = 0; i < phones.length; i++) {
+			const diff = Math.abs(target - phones[i].dur);
 			if (difference === undefined || diff < difference) {
 				difference = diff;
 				match = phones[i];
@@ -19,27 +19,27 @@ function choosePhone(method, target, phones) {
 		}
 		return match;
 	} else if (method === "longest") {
-		var match = phones[0];
-		for (var i = 0; i < phones.length; i++) {
+		let match = phones[0];
+		for (let i = 0; i < phones.length; i++) {
 			if (phones[i].dur > match.dur) {
 				match = phones[i];
 			}
 		}
 		return match;
 	} else if (method === "shortest") {
-		var match = phones[0];
-		for (var i = 0; i < phones.length; i++) {
+		let match = phones[0];
+		for (let i = 0; i < phones.length; i++) {
 			if (phones[i].dur < match.dur) {
 				match = phones[i];
 			}
 		}
 		return match;
 	} else if (method === "average") {
-		var sum = 0;
-		for (var i = 0; i < phones.length; i++) {
+		let sum = 0;
+		for (let i = 0; i < phones.length; i++) {
 			sum += phones[i].dur;
 		}
-		var average = sum / phones.length;
+		const average = sum / phones.length;
 		return choosePhone("duration", average, phones);
 	} else {
 		return phones[0];
@@ -47,11 +47,11 @@ function choosePhone(method, target, phones) {
 }
 
 function triphone(target, phones, method, matchDiphones, matchTriphones) {
-	var diphones = [];
-	var triphones = [];
-	for (var i = 0; i < phones.length; i++) {
-		var matchPrev = phones[i].prev === target.prev;
-		var matchNext = phones[i].next === target.next;
+	const diphones = [];
+	const triphones = [];
+	for (let i = 0; i < phones.length; i++) {
+		const matchPrev = phones[i].prev === target.prev;
+		const matchNext = phones[i].next === target.next;
 		if (matchTriphones && matchPrev && matchNext) {
 			triphones.push(phones[i]);
 			//console.log("MATCHED TRIPHONE: " + target.prev + " " + target.phone + " " + target.next);

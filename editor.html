@@ -57,12 +57,9 @@
 			<div id="initial">
 				<label for="importFile" class="initialbutton">Upload Vocals</label>
 				<span>OR</span>
-				<div id="presets">
-					<label class="initialbutton dropbutton" onclick="toggle(this);">Load Preset</label>
-					<div class="dropcontent">
-						<a class="dropoption" onclick="loadPreset(this);" id="rosen">Michael Rosen</a>
-						<a class="dropoption" onclick="loadPreset(this);" id="donkeykong">Donkey Kong</a>
-					</div>
+				<div id="presetbutton">
+					<label class="initialbutton dropbutton" onclick="loadPresets(this);">Load Preset</label>
+					<div class="dropcontent" id="presets"></div>
 				</div>
 			</div>
 			<div id="playback">

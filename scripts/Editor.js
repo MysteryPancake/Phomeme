@@ -1,25 +1,25 @@
 "use strict";
 
-var player;
-var initial;
-var sideNav;
-var timeline;
-var playhead;
-var playlist;
-var timeLabel;
-var playButton;
-var activeDrag;
-var draggedFile;
-var activeSession;
-var fileList = [];
-var timeOffset = 0;
-var waveZoom = 100;
-var waveDetail = 16;
-var timeNotches = [];
-var playlistWidth = 0;
-var sampleRate = 44100;
-var minClipWidth = 0.05;
-var requestFrame = window.requestAnimationFrame || window.webkitRequestAnimationFrame || window.mozRequestAnimationFrame || window.oRequestAnimationFrame || window.msRequestAnimationFrame || function(e) { return window.setTimeout(e, 1000 / 60); };
+let player;
+let initial;
+let sideNav;
+let timeline;
+let playhead;
+let playlist;
+let timeLabel;
+let playButton;
+let activeDrag;
+let draggedFile;
+let activeSession;
+const fileList = [];
+let timeOffset = 0;
+const waveZoom = 100;
+const waveDetail = 16;
+const timeNotches = [];
+let playlistWidth = 0;
+let sampleRate = 44100;
+const minClipWidth = 0.05;
+const requestFrame = window.requestAnimationFrame || window.webkitRequestAnimationFrame || window.mozRequestAnimationFrame || window.oRequestAnimationFrame || window.msRequestAnimationFrame || function(e) { return window.setTimeout(e, 1000 / 60); };
 
 function pauseIfPlayingSession() {
 	if (player && player.state === "running") {
@@ -34,7 +34,7 @@ function restartPlayer() {
 }
 
 function fileBuffer(file, func) {
-	var reader = new FileReader();
+	const reader = new FileReader();
 	reader.onload = function() {
 		player.decodeAudioData(this.result, function(buffer) {
 			func(buffer);
@@ -48,12 +48,12 @@ function padTime(num, size) {
 }
 
 function niceTime(timeInSeconds, detailed) {
-	var time = parseFloat(timeInSeconds).toFixed(3);
-	var hours = Math.floor(time / 60 / 60);
-	var minutes = Math.floor(time / 60) % 60;
-	var seconds = Math.floor(time - minutes * 60);
+	const time = parseFloat(timeInSeconds).toFixed(3);
+	const hours = Math.floor(time / 60 / 60);
+	const minutes = Math.floor(time / 60) % 60;
+	const seconds = Math.floor(time - minutes * 60);
 	if (detailed) {
-		var milliseconds = time.slice(-3);
+		const milliseconds = time.slice(-3);
 		return padTime(hours, 1) + ":" + padTime(minutes, 2) + ":" + padTime(seconds, 2) + "." + padTime(milliseconds, 3);
 	} else {
 		return padTime(minutes, 1) + ":" + padTime(seconds, 2);
@@ -83,7 +83,7 @@ function togglePlayback() {
 }
 
 function urlBuffer(url, func, err) {
-	var audioRequest = new XMLHttpRequest();
+	const audioRequest = new XMLHttpRequest();
 	audioRequest.open("GET", url, true);
 	audioRequest.responseType = "arraybuffer";
 	audioRequest.onreadystatechange = function() {
@@ -102,7 +102,7 @@ function urlBuffer(url, func, err) {
 }
 
 function urlJson(url, func, err) {
-	var jsonRequest = new XMLHttpRequest();
+	const jsonRequest = new XMLHttpRequest();
 	jsonRequest.open("GET", url, true);
 	jsonRequest.onreadystatechange = function() {
 		if (this.readyState === 4) {
@@ -148,18 +148,18 @@ function Session(name) {
 	this.type = "application/json";
 	this.trackList = [];
 	this.schedule = function() {
-		for (var i = 0; i < this.trackList.length; i++) {
-			for (var j = 0; j < this.trackList[i].clips.length; j++) {
-				var clip = this.trackList[i].clips[j];
-				var duration = clip.outTime - clip.inTime - Math.max(0, timeOffset - clip.startTime);
+		for (let i = 0; i < this.trackList.length; i++) {
+			for (let j = 0; j < this.trackList[i].clips.length; j++) {
+				const clip = this.trackList[i].clips[j];
+				const duration = clip.outTime - clip.inTime - Math.max(0, timeOffset - clip.startTime);
 				if (duration > 0) {
-					var bufferNode = player.createBufferSource();
+					const bufferNode = player.createBufferSource();
 					//bufferNode.playbackRate.value = 1 / clip.scale;
 					bufferNode.buffer = clip.audioBuffer;
 					bufferNode.connect(player.destination);
 					//bufferNode.start(Math.max(0, clip.startTime - timeOffset), Math.max(0, (-clip.startTime + timeOffset) / clip.scale), clip.duration);
-					var when = clip.startTime - timeOffset;
-					var offset = clip.inTime;
+					let when = clip.startTime - timeOffset;
+					let offset = clip.inTime;
 					if (when < 0) {
 						offset -= when;
 						when = 0;
@@ -174,11 +174,11 @@ function Session(name) {
 	};
 	this.setActive = function() {
 		if (activeSession) {
-			for (var i = 0; i < activeSession.trackList.length; i++) {
+			for (let i = 0; i < activeSession.trackList.length; i++) {
 				activeSession.trackList[i].elem.style.display = "none";
 			}
 		}
-		for (var j = 0; j < this.trackList.length; j++) {
+		for (let j = 0; j < this.trackList.length; j++) {
 			this.trackList[j].elem.style.display = "flex";
 		}
 		initial.style.display = this.trackList.length ? "none" : "block";
@@ -187,10 +187,10 @@ function Session(name) {
 }
 
 function addDragger(clip, left) {
-	var elem = document.createElement("div");
+	const elem = document.createElement("div");
 	elem.className = left ? "clipdragleft" : "clipdragright";
 	clip.parent.appendChild(elem);
-	var dragger = { clip: clip, drag: 0, type: "dragger", left: left };
+	const dragger = { clip: clip, drag: 0, type: "dragger", left: left };
 	elem.addEventListener("mousedown", function(e) {
 		e.preventDefault();
 		activeDrag = dragger;
@@ -233,14 +233,14 @@ function Clip(clipFile, clipTrack) {
 		this.outTime = this.duration;
 		this.elem.width = this.duration * waveZoom;
 		this.context.clearRect(0, 0, this.elem.width, this.elem.height);
-		var lines = this.elem.width * waveDetail;
+		const lines = this.elem.width * waveDetail;
 		this.context.lineWidth = 0.5;
 		this.context.strokeStyle = "white";
 		this.context.beginPath();
-		for (var k = 0; k < lines; k++) {
-			var x = k / lines * this.elem.width;
-			var y = this.elem.height * 0.5;
-			var index = this.audioData[Math.floor((k / waveDetail) * (sampleRate / waveZoom))];
+		for (let k = 0; k < lines; k++) {
+			const x = k / lines * this.elem.width;
+			const y = this.elem.height * 0.5;
+			const index = this.audioData[Math.floor((k / waveDetail) * (sampleRate / waveZoom))];
 			drawLine(this.context, x, y, x, y + (index || 0) * y);
 		}
 		this.context.stroke();
@@ -308,12 +308,12 @@ function Track() {
 	};
 	this.loadClip = function(file) {
 		pauseIfPlayingSession();
-		var clip = new Clip(file, this);
+		const clip = new Clip(file, this);
 		this.addClip(clip);
 		return clip;
 	};
 	this.removeClip = function(clip) {
-		var index = this.clips.indexOf(clip);
+		const index = this.clips.indexOf(clip);
 		if (index !== -1) {
 			this.clips.splice(index, 1);
 		}
@@ -335,7 +335,7 @@ function Track() {
 	this.drop = function(e) {
 		if (draggedFile) {
 			e.preventDefault();
-			var clip = this.loadClip(draggedFile);
+			const clip = this.loadClip(draggedFile);
 			clip.setStart((e.clientX - this.elem.getBoundingClientRect().left) / waveZoom);
 			draggedFile = undefined;
 		}
@@ -346,7 +346,7 @@ function Track() {
 }
 
 function listFile(file) {
-	var elem = document.createElement("a");
+	const elem = document.createElement("a");
 	elem.draggable = true;
 	elem.innerHTML = file.name;
 	sideNav.appendChild(elem);
@@ -365,8 +365,8 @@ function listFile(file) {
 }
 
 function closeMenus() {
-	var dropdowns = document.getElementsByClassName("dropcontent");
-	for (var i = 0; i < dropdowns.length; i++) {
+	const dropdowns = document.getElementsByClassName("dropcontent");
+	for (let i = 0; i < dropdowns.length; i++) {
 		dropdowns[i].style.display = "none";
 	}
 }
@@ -391,8 +391,8 @@ function moved(e) {
 		e.preventDefault();
 		if (activeDrag.left) {
 			//activeDrag.clip.setScale(activeDrag.drag - e.pageX);
-			var inTime = (e.pageX - activeDrag.drag.in) / waveZoom;
-			var minimum = activeDrag.clip.outTime - minClipWidth;
+			const inTime = (e.pageX - activeDrag.drag.in) / waveZoom;
+			const minimum = activeDrag.clip.outTime - minClipWidth;
 			if (inTime > minimum) {
 				activeDrag.clip.setStart(activeDrag.drag.lastStart + minimum);
 				activeDrag.clip.setInTime(minimum);
@@ -404,8 +404,8 @@ function moved(e) {
 				activeDrag.clip.setInTime(0);
 			}
 		} else {
-			var outTime = (e.pageX - activeDrag.drag) / waveZoom;
-			var maximum = activeDrag.clip.inTime + minClipWidth;
+			const outTime = (e.pageX - activeDrag.drag) / waveZoom;
+			const maximum = activeDrag.clip.inTime + minClipWidth;
 			if (outTime < maximum) {
 				activeDrag.clip.setOutTime(maximum);
 			} else if (outTime > activeDrag.clip.duration) {
@@ -426,9 +426,9 @@ function ended() {
 }
 
 function updateNotches(elem) {
-	var scroll = elem.scrollLeft;
-	for (var i = 0; i < timeNotches.length; i++) {
-		var position = i;
+	const scroll = elem.scrollLeft;
+	for (let i = 0; i < timeNotches.length; i++) {
+		let position = i;
 		while ((position * waveZoom) - scroll < -10) {
 			position += timeNotches.length;
 		}
@@ -448,12 +448,12 @@ function setup() {
 	timeLabel = document.getElementById("time");
 	window.addEventListener("mousemove", moved);
 	window.addEventListener("mouseup", ended);
-	var session = new Session("Untitled Session");
+	const session = new Session("Untitled Session");
 	activeSession = session;
 	listFile(session);
 	playlistWidth = playlist.scrollWidth;
-	for (var i = 0; i < timeline.scrollWidth; i += waveZoom) {
-		var timeNotch = document.createElement("span");
+	for (let i = 0; i < timeline.scrollWidth; i += waveZoom) {
+		const timeNotch = document.createElement("span");
 		timeNotch.innerHTML = niceTime(i / waveZoom, false);
 		timeNotch.className = "timenotch";
 		timeNotch.style.left = i + "px";
@@ -477,54 +477,81 @@ function setup() {
 	requestFrame(draw);
 }
 
-function toggle(element) {
-	var dropdown = element.nextElementSibling;
-	var previous = dropdown.style.display;
+function toggle(elem) {
+	const dropdown = elem.nextElementSibling;
+	const previous = dropdown.style.display;
 	closeMenus();
 	dropdown.style.display = previous === "block" ? "none" : "block";
 }
 
+function loadPresets(elem) {
+	urlJson("presets.json", function(presets) {
+		const presetList = document.getElementById("presets");
+		for (let i = 0; i < presets.length; i++) {
+			const label = document.createElement("a");
+			label.className = "dropoption";
+			label.innerHTML = presets[i].name;
+			label.onclick = function() {
+				urlJson(presets[i].url, function(response) {
+					ensurePlayer();
+					const elems = listPreset(presets[i].name);
+					loadParts(response, elems, -1);
+				}, function() {
+					window.alert("Couldn't load " + presets[i].name + "! Try installing a cross-origin extension.");
+				});
+			};
+			presetList.appendChild(label);
+		}
+		toggle(elem);
+		elem.onclick = function() {
+			toggle(elem);
+		};
+	}, function() {
+		window.alert("Couldn't load presets! Try installing a cross-origin extension.");
+	});
+}
+
 function newSession() {
-	var sessionName = window.prompt("Please enter a session name", "Untitled Session");
+	const sessionName = window.prompt("Please enter a session name", "Untitled Session");
 	if (sessionName) {
-		var session = new Session(sessionName);
+		const session = new Session(sessionName);
 		listFile(session);
 		session.setActive();
 	}
 }
 
-function loadSession(element) {
-	console.log(element.files[0]);
-	element.value = null;
+function loadSession(elem) {
+	console.log(elem.files[0]);
+	elem.value = null;
 }
 
-function importFile(element) {
-	for (var i = 0; i < element.files.length; i++) {
-		var file = element.files[i];
+function importFile(elem) {
+	for (let i = 0; i < elem.files.length; i++) {
+		const file = elem.files[i];
 		listFile(file);
 		if (file.type.startsWith("audio")) {
-			var track = new Track();
+			const track = new Track();
 			track.loadClip(file);
 		}
 	}
-	element.value = null;
+	elem.value = null;
 }
 
 function listPreset(name) {
-	var parent = document.createElement("div");
+	const parent = document.createElement("div");
 	parent.className = "filefolder active";
 	sideNav.appendChild(parent);
-	var loader = document.createElement("div");
+	const loader = document.createElement("div");
 	loader.className = "presetprogress";
 	parent.appendChild(loader);
-	var preset = document.createElement("a");
+	const preset = document.createElement("a");
 	preset.innerHTML = name + " Preset";
 	parent.appendChild(preset);
-	var files = document.createElement("div");
+	const files = document.createElement("div");
 	files.className = "filegroup";
 	parent.appendChild(files);
 	preset.addEventListener("click", function() {
-		var previous = files.style.display;
+		const previous = files.style.display;
 		parent.classList.toggle("active");
 		files.style.display = previous === "none" ? "block" : "none";
 	});
@@ -532,18 +559,8 @@ function listPreset(name) {
 	return { bar: loader, list: files, parent: parent };
 }
 
-function loadPreset(elem) {
-	urlJson(elem.id + "/index.json", function(response) {
-		ensurePlayer();
-		var elems = listPreset(elem.innerHTML);
-		loadParts(response, elems, -1);
-	}, function() {
-		window.alert("Couldn't load " + elem.innerHTML + "! Try installing a cross-origin extension.");
-	});
-}
-
 function addDetail(details, name) {
-	var detail = document.createElement("span");
+	const detail = document.createElement("span");
 	detail.innerHTML = name;
 	details.appendChild(detail);
 }
@@ -584,12 +601,12 @@ function loadPart1(json, elems, details, file, index) {
 
 function loadParts(json, elems, index) {
 	if (index < json.length - 1) {
-		var newIndex = index + 1;
-		var details = document.createElement("div");
+		const newIndex = index + 1;
+		const details = document.createElement("div");
 		details.className = "filedetails";
-		var file = document.createElement("a");
+		const file = document.createElement("a");
 		file.appendChild(details);
-		var niceName = document.createTextNode(json[newIndex].name || (json[newIndex].transcript && json[newIndex].transcript.split("/").pop()) || "ERROR");
+		const niceName = document.createTextNode(json[newIndex].name || (json[newIndex].transcript && json[newIndex].transcript.split("/").pop()) || "ERROR");
 		file.appendChild(niceName);
 		elems.list.appendChild(file);
 		loadPart1(json, elems, details, file, newIndex);
@@ -604,12 +621,12 @@ function loadParts(json, elems, index) {
 	if (json) {
 		context.font = "16px Courier New";
 		context.textAlign = "center";
-		for (var i = 0; i < json.words.length; i++) {
-			var word = json.words[i];
+		for (const i = 0; i < json.words.length; i++) {
+			const word = json.words[i];
 			if (word.case === "not-found-in-audio") continue;
 			if (word.active) {
 				context.fillStyle = "#004000";
-				var start = word.start * waveZoom - offset;
+				const start = word.start * waveZoom - offset;
 				context.fillRect(start, yPos + 20, -waveZoom * (word.active - player.currentTime), height - 40);
 			}
 			context.lineWidth = 1;
@@ -617,10 +634,10 @@ function loadParts(json, elems, index) {
 			context.strokeStyle = "#004000";
 			if (word.phones) {
 				context.textBaseline = "bottom";
-				var duration = word.start * waveZoom;
-				for (var j = 0; j < word.phones.length; j++) {
-					var phone = word.phones[j].phone.split("_")[0].toUpperCase();
-					var length = word.phones[j].duration * waveZoom;
+				const duration = word.start * waveZoom;
+				for (const j = 0; j < word.phones.length; j++) {
+					const phone = word.phones[j].phone.split("_")[0].toUpperCase();
+					const length = word.phones[j].duration * waveZoom;
 					drawLine(context, duration - offset, yPos + 20, duration - offset, yPos + height);
 					drawLine(context, duration + length - offset, yPos + 20, duration + length - offset, yPos + height);
 					context.fillText(phone, duration + length * 0.5 - offset, yPos + height);
@@ -632,7 +649,7 @@ function loadParts(json, elems, index) {
 			drawLine(context, word.start * waveZoom - offset, yPos, word.start * waveZoom - offset, yPos + height);
 			drawLine(context, word.end * waveZoom - offset, yPos, word.end * waveZoom - offset, yPos + height);
 			context.textBaseline = "top";
-			var difference = (word.end - word.start) * 0.5;
+			const difference = (word.end - word.start) * 0.5;
 			context.fillText(word.word, waveZoom * (word.start + difference) - offset, yPos);
 		}
 	}
@@ -653,18 +670,18 @@ function drawScroll(audio) {
 	context.lineWidth = 1;
 	context.strokeStyle = "white";
 	context.beginPath();
-	var lines = canvas.width * 8;
-	for (var k = 0; k < lines; k++) {
-		var x = k / lines * canvas.width;
-		var y = scrollHeight * 0.5;
-		var index = audio[Math.floor(k / lines * audio.length)];
+	const lines = canvas.width * 8;
+	for (const k = 0; k < lines; k++) {
+		const x = k / lines * canvas.width;
+		const y = scrollHeight * 0.5;
+		const index = audio[Math.floor(k / lines * audio.length)];
 		context.lineTo(x, y + scrollHeight * (index || 0));
 	}
 	context.stroke();
 	context.lineWidth = 2;
 	context.strokeStyle = "#00FF00";
-	var position = (offset * sampleRate * canvas.width) / (waveZoom * audio.length);
-	var size = (sampleRate * canvas.width * canvas.width) / (waveZoom * audio.length);
+	const position = (offset * sampleRate * canvas.width) / (waveZoom * audio.length);
+	const size = (sampleRate * canvas.width * canvas.width) / (waveZoom * audio.length);
 	context.strokeRect(position, 0, size, scrollHeight);
 }
 
@@ -680,11 +697,11 @@ function clicked(e) {
 	e.preventDefault();
 	if (!json || !json.words) return;
 	if (e.pageY > yPos && e.pageY < yPos + height) {
-		var match;
-		for (var i = 0; i < json.words.length; i++) {
-			var word = json.words[i];
-			var start = word.start * waveZoom - offset;
-			var end = word.end * waveZoom - offset;
+		const match;
+		for (const i = 0; i < json.words.length; i++) {
+			const word = json.words[i];
+			const start = word.start * waveZoom - offset;
+			const end = word.end * waveZoom - offset;
 			if (near(e.pageX, start)) {
 				dragging = { key: word, value: "start" };
 				canvas.style.cursor = "col-resize";
@@ -696,10 +713,10 @@ function clicked(e) {
 			}
 		}
 		if (match !== undefined) {
-			var source = player.createBufferSource();
+			const source = player.createBufferSource();
 			source.buffer = sample && sample.buffer;
 			source.connect(player.destination);
-			var duration = match.end - match.start;
+			const duration = match.end - match.start;
 			source.start(0, match.start, duration);
 			match.active = player.currentTime;
 			window.setTimeout(function() {
@@ -708,8 +725,8 @@ function clicked(e) {
 		}
 	} else if (e.pageY < scrollHeight) {
 		if (!sample) return;
-		var start = (offset * sampleRate * canvas.width) / (sample.buffer.length * waveZoom);
-		var end = (canvas.width * sampleRate * canvas.width) / (sample.buffer.length * waveZoom);
+		const start = (offset * sampleRate * canvas.width) / (sample.buffer.length * waveZoom);
+		const end = (canvas.width * sampleRate * canvas.width) / (sample.buffer.length * waveZoom);
 		if (near(e.pageX, start)) {
 			dragging = { initial: offset, direction: true };
 		} else if (near(e.pageX, start + end)) {
@@ -726,11 +743,11 @@ function moved(e) {
 	e.preventDefault();
 	if (!json || !json.words) return;
 	if (!dragging && e.pageY > yPos && e.pageY < yPos + height) {
-		var hovering = false;
-		for (var i = 0; i < json.words.length; i++) {
-			var word = json.words[i];
-			var start = word.start * waveZoom - offset;
-			var end = word.end * waveZoom - offset;
+		const hovering = false;
+		for (const i = 0; i < json.words.length; i++) {
+			const word = json.words[i];
+			const start = word.start * waveZoom - offset;
+			const end = word.end * waveZoom - offset;
 			if (near(e.pageX, start) || near(e.pageX, end)) {
 				hovering = true;
 			}
@@ -738,8 +755,8 @@ function moved(e) {
 		canvas.style.cursor = hovering ? "col-resize" : "auto";
 	} else if (!dragging && e.pageY < scrollHeight) {
 		if (!sample) return;
-		var start = (offset * sampleRate * canvas.width) / (sample.buffer.length * waveZoom);
-		var end = (sampleRate * canvas.width * canvas.width) / (sample.buffer.length * waveZoom);
+		const start = (offset * sampleRate * canvas.width) / (sample.buffer.length * waveZoom);
+		const end = (sampleRate * canvas.width * canvas.width) / (sample.buffer.length * waveZoom);
 		if (near(e.pageX, start) || near(e.pageX, start + end)) {
 			canvas.style.cursor = "col-resize";
 		} else {
