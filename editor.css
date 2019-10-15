@@ -76,21 +76,16 @@ input[type="file"] {
 	border: 1px solid #00FF00;
 	box-sizing: border-box;
 	display: block;
-	font-size: smaller;
-	outline: none;
+	font-family: Arial, Helvetica, sans-serif;
+	font-size: 0.9em;
+	margin-top: 12px;
 	padding: 12px;
 	resize: vertical;
-	margin-top: 12px;
 	width: 100%;
 }
 
-#transcript:hover {
-	background-color: #001000;
-	border: 1px solid #80FF80;
-}
-
 #transcript:focus {
-	background-color: transparent;
+	background-color: #001000;
 	border: 1px solid white;
 }
 
@@ -102,11 +97,11 @@ input[type="file"] {
 }
 
 .back:hover, .dropdown:hover .topbutton, .dropoption:hover, .initialbutton:hover, #sidenav a:hover, #play:hover, .preset:hover, #uploadbutton:hover {
-	background-color: #004000;
+	background-color: #002000;
 }
 
 .back:active, .dropdown .topbutton:active, .dropoption:active, .initialbutton:active, #sidenav a:active, #play:active, .preset:active, #uploadbutton:active {
-	background-color: #008000;
+	background-color: #004000;
 }
 
 .topbutton {
