@@ -1,12 +1,14 @@
 [
 	{
+		"author": "MysteryPancake",
+		"description": "Series 1 (2008) of the world's greatest poet.",
 		"name": "Michael Rosen",
-		"repo": "https://github.com/MysteryPancake/Phomeme-Rosen",
 		"url": "https://mysterypancake.github.io/Phomeme-Rosen/index.json"
 	},
 	{
+		"author": "MysteryPancake",
+		"description": "We'll take you through this monkey rap.",
 		"name": "Donkey Kong",
-		"repo": "https://github.com/MysteryPancake/Phomeme-Kong",
 		"url": "https://mysterypancake.github.io/Phomeme-Kong/index.json"
 	}
 ]

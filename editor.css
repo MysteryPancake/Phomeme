@@ -24,6 +24,14 @@ input[type="file"] {
 	width: 0px;
 }
 
+.back {
+	border-bottom: 1px solid gray;
+	cursor: pointer;
+	display: block;
+	font-size: large;
+	padding: 8px;
+}
+
 .clip {
 	cursor: move;
 	height: 128px;
@@ -63,18 +71,41 @@ input[type="file"] {
 	right: -4px;
 }
 
-.topbutton, .dropoption, .initialbutton, #sidenav a, #play {
+#transcript {
+	background-color: black;
+	border: 1px solid #00FF00;
+	box-sizing: border-box;
+	display: block;
+	font-size: smaller;
+	outline: none;
+	padding: 12px;
+	resize: vertical;
+	margin-top: 12px;
+	width: 100%;
+}
+
+#transcript:hover {
+	background-color: #001000;
+	border: 1px solid #80FF80;
+}
+
+#transcript:focus {
+	background-color: transparent;
+	border: 1px solid white;
+}
+
+.topbutton, .dropoption, .initialbutton, #transcriptmicrophone, #sidenav a, #play, .preset, #uploadbutton {
 	-moz-user-select: none;
 	cursor: pointer;
 	outline: none;
 	user-select: none;
 }
 
-.dropdown:hover .topbutton, .dropoption:hover, .initialbutton:hover, #sidenav a:hover, #play:hover {
+.back:hover, .dropdown:hover .topbutton, .dropoption:hover, .initialbutton:hover, #sidenav a:hover, #play:hover, .preset:hover, #uploadbutton:hover {
 	background-color: #004000;
 }
 
-.dropdown .topbutton:active, .dropoption:active, .initialbutton:active, #sidenav a:active, #play:active {
+.back:active, .dropdown .topbutton:active, .dropoption:active, .initialbutton:active, #sidenav a:active, #play:active, .preset:active, #uploadbutton:active {
 	background-color: #008000;
 }
 
@@ -98,6 +129,7 @@ input[type="file"] {
 	font-size: medium;
 	min-width: 160px;
 	position: absolute;
+	text-align: left;
 	z-index: 999;
 }
 
@@ -110,6 +142,10 @@ input[type="file"] {
 .dropoption {
 	display: block;
 	padding: 16px;
+}
+
+#editor, #presetmenu, #step2, #transcriptmenu, #transcriptplayer {
+	display: none;
 }
 
 .filefolder > a:after {
@@ -182,12 +218,6 @@ input[type="file"] {
 	content: " + ";
 }
 
-#initial {
-	font-size: xx-large;
-	padding: 32px;
-	text-align: center;
-}
-
 .initialbutton {
 	background-color: black;
 	border: 1px solid #00FF00;
@@ -235,9 +265,32 @@ input[type="file"] {
 	position: relative;
 }
 
-#presetbutton {
+.preset {
+	border: 1px solid #00FF00;
+	cursor: pointer;
 	display: inline-block;
-	text-align: left;
+	padding: 16px;
+	width: 256px;
+}
+
+.preset > span {
+	display: block;
+	padding: 2px;
+	text-align: center;
+}
+
+.preset > .presettitle {
+	font-size: x-large;
+	font-weight: bold;
+}
+
+.preset > .presetauthor {
+	font-size: smaller;
+}
+
+.preset > .presetdesc {
+	font-style: italic;
+	margin-top: 8px;
 }
 
 .presetprogress {
@@ -256,6 +309,17 @@ input[type="file"] {
 	border-bottom: 1px solid #004000;
 	display: block;
 	padding: 8px;
+}
+
+#step1 {
+	font-size: xx-large;
+	padding: 16px;
+	text-align: center;
+}
+
+.steplabel {
+	display: block;
+	padding: 8px 0;
 }
 
 #time {
@@ -294,6 +358,10 @@ input[type="file"] {
 	grid-column: 1 / span 2;
 }
 
+#transcriptbuttons > * {
+	vertical-align: middle;
+}
+
 .track {
 	background-color: black;
 	border-bottom: 1px solid #00FF00;
@@ -301,6 +369,17 @@ input[type="file"] {
 	height: 128px;
 	position: relative;
 	width: 100%;
+}
+
+#transcriptarea {
+	padding: 12px;
+}
+
+#uploadbutton {
+	background-color: black;
+	border: 1px solid #00FF00;
+	display: inline-block;
+	padding: 8px 32px;
 }
 
 #zoom {

@@ -1,24 +1,34 @@
 "use strict";
 
+let step1;
+let step2;
+let editor;
 let player;
-let initial;
 let sideNav;
 let timeline;
 let playhead;
 let playlist;
 let timeLabel;
+let presetMenu;
 let playButton;
+let presetList;
 let activeDrag;
 let draggedFile;
 let activeSession;
-const fileList = [];
+let transcriptMenu;
+let transcriptElem;
+let transcriptPlayer;
 let timeOffset = 0;
-const waveZoom = 100;
-const waveDetail = 16;
-const timeNotches = [];
 let playlistWidth = 0;
 let sampleRate = 44100;
+const fileList = [];
+const waveZoom = 100;
+const peakScale = 0.7;
+const waveDetail = 16;
+const timeNotches = [];
 const minClipWidth = 0.05;
+let presetsLoaded = false;
+let playlistSetup = false;
 const requestFrame = window.requestAnimationFrame || window.webkitRequestAnimationFrame || window.mozRequestAnimationFrame || window.oRequestAnimationFrame || window.msRequestAnimationFrame || function(e) { return window.setTimeout(e, 1000 / 60); };
 
 function pauseIfPlayingSession() {
@@ -41,6 +51,14 @@ function fileBuffer(file, func) {
 		});
 	};
 	reader.readAsArrayBuffer(file);
+}
+
+function readFile(file, func) {
+	const reader = new FileReader();
+	reader.onload = function() {
+		func(this.result, file.name, file.type);
+	};
+	reader.readAsText(file, "UTF-8");
 }
 
 function padTime(num, size) {
@@ -181,7 +199,7 @@ function Session(name) {
 		for (let j = 0; j < this.trackList.length; j++) {
 			this.trackList[j].elem.style.display = "flex";
 		}
-		initial.style.display = this.trackList.length ? "none" : "block";
+		setMenu(this.trackList.length ? "editor" : "step1");
 		activeSession = this;
 	};
 }
@@ -241,15 +259,27 @@ function Clip(clipFile, clipTrack) {
 			const x = k / lines * this.elem.width;
 			const y = this.elem.height * 0.5;
 			const index = this.audioData[Math.floor((k / waveDetail) * (sampleRate / waveZoom))];
-			drawLine(this.context, x, y, x, y + (index || 0) * y);
+			drawLine(this.context, x, y, x, y + (index || 0) * y * peakScale);
 		}
 		this.context.stroke();
+		this.context.lineWidth = 1;
+		this.context.strokeStyle = "#00FF00";
+		drawLine(this.context, 0, 16, this.elem.width, 16);
+		drawLine(this.context, 0, this.elem.height - 16, this.elem.width, this.elem.height - 16);
 		this.imageData = this.context.getImageData(0, 0, this.elem.width, this.elem.height);
+		//this.drawLabel();
 	};
+	/*this.drawLabel = function() {
+		this.context.fillStyle = "white";
+		this.context.textAlign = "center";
+		this.context.textBaseline = "top";
+		this.context.font = "12px Arial";
+		this.context.fillText("TESTING", this.elem.width * 0.5, 4);
+	};*/
 	this.updateCanvas = function() {
 		this.elem.width = (this.outTime - this.inTime) * waveZoom;
-		//this.elem.width = Math.min(this.duration * waveZoom, width);
 		this.context.putImageData(this.imageData, -this.inTime * waveZoom, 0);
+		//this.drawLabel();
 	};
 	this.clicked = function(e) {
 		e.preventDefault();
@@ -342,7 +372,6 @@ function Track() {
 	};
 	this.elem.addEventListener("drop", this.drop.bind(this));
 	this.trackIndex = activeSession.addTrack(this);
-	initial.style.display = "none";
 }
 
 function listFile(file) {
@@ -365,7 +394,7 @@ function listFile(file) {
 }
 
 function closeMenus() {
-	const dropdowns = document.getElementsByClassName("dropcontent");
+	const dropdowns = document.getElementsByClassName("autoclose");
 	for (let i = 0; i < dropdowns.length; i++) {
 		dropdowns[i].style.display = "none";
 	}
@@ -439,27 +468,26 @@ function updateNotches(elem) {
 }
 
 function setup() {
+	transcriptPlayer = document.getElementById("transcriptplayer");
+	transcriptMenu = document.getElementById("transcriptmenu");
+	transcriptElem = document.getElementById("transcript");
+	//initialMenu = document.getElementById("initialmenu");
+	presetMenu = document.getElementById("presetmenu");
+	presetList = document.getElementById("presets");
 	playlist = document.getElementById("playlist");
 	playhead = document.getElementById("playhead");
 	timeline = document.getElementById("timeline");
 	playButton = document.getElementById("play");
-	initial = document.getElementById("initial");
 	sideNav = document.getElementById("sidenav");
 	timeLabel = document.getElementById("time");
+	step1 = document.getElementById("step1");
+	step2 = document.getElementById("step2");
+	editor = document.getElementById("editor");
 	window.addEventListener("mousemove", moved);
 	window.addEventListener("mouseup", ended);
 	const session = new Session("Untitled Session");
 	activeSession = session;
 	listFile(session);
-	playlistWidth = playlist.scrollWidth;
-	for (let i = 0; i < timeline.scrollWidth; i += waveZoom) {
-		const timeNotch = document.createElement("span");
-		timeNotch.innerHTML = niceTime(i / waveZoom, false);
-		timeNotch.className = "timenotch";
-		timeNotch.style.left = i + "px";
-		timeNotches.push(timeNotch);
-		timeline.appendChild(timeNotch);
-	}
 	timeline.addEventListener("mousedown", function() {
 		activeDrag = "playhead";
 	});
@@ -470,11 +498,24 @@ function setup() {
 		}
 	});
 	window.addEventListener("click", function(e) {
-		if (!e.target.matches(".dropbutton")) {
+		if (!e.target.matches(".autoclosebutton")) {
 			closeMenus();
 		}
 	});
 	requestFrame(draw);
+}
+
+function setupPlaylist() {
+	playlistWidth = playlist.scrollWidth;
+	for (let i = 0; i < timeline.scrollWidth; i += waveZoom) {
+		const timeNotch = document.createElement("span");
+		timeNotch.innerHTML = niceTime(i / waveZoom, false);
+		timeNotch.className = "timenotch";
+		timeNotch.style.left = i + "px";
+		timeNotches.push(timeNotch);
+		timeline.appendChild(timeNotch);
+	}
+	playlistSetup = true;
 }
 
 function toggle(elem) {
@@ -484,31 +525,67 @@ function toggle(elem) {
 	dropdown.style.display = previous === "block" ? "none" : "block";
 }
 
-function loadPresets(elem) {
-	urlJson("presets.json", function(presets) {
-		const presetList = document.getElementById("presets");
-		for (let i = 0; i < presets.length; i++) {
-			const label = document.createElement("a");
-			label.className = "dropoption";
-			label.innerHTML = presets[i].name;
-			label.onclick = function() {
-				urlJson(presets[i].url, function(response) {
-					ensurePlayer();
-					const elems = listPreset(presets[i].name);
-					loadParts(response, elems, -1);
-				}, function() {
-					window.alert("Couldn't load " + presets[i].name + "! Try installing a cross-origin extension.");
-				});
-			};
-			presetList.appendChild(label);
-		}
-		toggle(elem);
-		elem.onclick = function() {
-			toggle(elem);
-		};
-	}, function() {
-		window.alert("Couldn't load presets! Try installing a cross-origin extension.");
-	});
+function loadPresets() {
+	if (presetsLoaded) {
+		setMenu("preset");
+	} else {
+		urlJson("presets.json", function(presets) {
+			presetsLoaded = true;
+			setMenu("preset");
+			for (let i = 0; i < presets.length; i++) {
+				const panel = document.createElement("div");
+				panel.className = "preset";
+				const title = document.createElement("span");
+				title.className = "presettitle";
+				title.innerHTML = presets[i].name;
+				panel.appendChild(title);
+				const author = document.createElement("span");
+				author.className = "presetauthor";
+				author.innerHTML = "By " + presets[i].author;
+				panel.appendChild(author);
+				const desc = document.createElement("span");
+				desc.className = "presetdesc";
+				desc.innerHTML = presets[i].description;
+				panel.appendChild(desc);
+				panel.onclick = function() {
+					urlJson(presets[i].url, function(response) {
+						setMenu("step2");
+						ensurePlayer();
+						const elems = listPreset(presets[i].name);
+						loadParts(response, elems, -1);
+					}, function() {
+						window.alert("Couldn't load " + presets[i].name + "! Try installing a cross-origin extension.");
+					});
+				};
+				presetList.appendChild(panel);
+			}
+		}, function() {
+			window.alert("Couldn't load presets! Try installing a cross-origin extension.");
+		});
+	}
+}
+
+function checkJson(element) {
+	const file = element.files[0];
+	if (!file) return;
+	const lower = file.name.toLowerCase();
+	if (lower.endsWith("json") || lower.endsWith("txt")) {
+		readFile(file, function(content) {
+			transcript.value = lower.endsWith("txt") ? content : JSON.parse(content).transcript;
+		});
+	} else if (file.type.startsWith("audio")) {
+		const url = window.URL.createObjectURL(file);
+		transcriptPlayer.style.display = "inline-block";
+		transcriptPlayer.src = url;
+	}
+}
+
+function goBack() {
+	setMenu("step1");
+}
+
+function transcribe() {
+	setMenu("transcript");
 }
 
 function newSession() {
@@ -525,6 +602,17 @@ function loadSession(elem) {
 	elem.value = null;
 }
 
+function setMenu(name) {
+	transcriptMenu.style.display = name === "transcript" ? "block" : "none";
+	presetMenu.style.display = name === "preset" ? "block" : "none";
+	editor.style.display = name === "editor" ? "block" : "none";
+	step1.style.display = name === "step1" ? "block" : "none";
+	step2.style.display = name === "step2" ? "block" : "none";
+	if (name === "editor" && !playlistSetup) {
+		setupPlaylist();
+	}
+}
+
 function importFile(elem) {
 	for (let i = 0; i < elem.files.length; i++) {
 		const file = elem.files[i];
@@ -532,6 +620,7 @@ function importFile(elem) {
 		if (file.type.startsWith("audio")) {
 			const track = new Track();
 			track.loadClip(file);
+			setMenu("editor");
 		}
 	}
 	elem.value = null;

@@ -16,31 +16,31 @@
 		<div id="topnav">
 			<h1 id="title">Phomeme</h1>
 			<div class="dropdown">
-				<input type="button" class="topbutton dropbutton" value="File" onclick="toggle(this);">
-				<div class="dropcontent">
+				<input type="button" class="topbutton autoclosebutton" value="File" onclick="toggle(this);">
+				<div class="dropcontent autoclose">
 					<a class="dropoption" onclick="newSession();">New</a>
 					<div>
-						<label for="openFile" class="dropoption">Open</label>
-						<input multiple type="file" accept=".phomeme" id="openFile" onchange="loadSession(this);">
+						<label for="openfile" class="dropoption">Open</label>
+						<input multiple type="file" accept=".phomeme" id="openfile" onchange="loadSession(this);">
 					</div>
 					<a class="dropoption">Save</a>
 					<div>
-						<label for="importFile" class="dropoption">Import</label>
-						<input multiple type="file" accept="audio/*,application/json,.json,.TextGrid,.txt" id="importFile" onchange="importFile(this);">
+						<label for="importfile" class="dropoption">Import</label>
+						<input multiple type="file" accept="audio/*,application/json,.json,.TextGrid,.txt" id="importfile" onchange="importFile(this);">
 					</div>
 					<a class="dropoption">Export</a>
 				</div>
 			</div>
 			<div class="dropdown">
-				<input type="button" class="topbutton dropbutton" value="Edit" onclick="toggle(this);">
-				<div class="dropcontent">
+				<input type="button" class="topbutton autoclosebutton" value="Edit" onclick="toggle(this);">
+				<div class="dropcontent autoclose">
 					<a class="dropoption">Undo</a>
 					<a class="dropoption">Redo</a>
 				</div>
 			</div>
 			<div class="dropdown">
-				<input type="button" class="topbutton dropbutton" value="Align" onclick="toggle(this);">
-				<div class="dropcontent">
+				<input type="button" class="topbutton autoclosebutton" value="Align" onclick="toggle(this);">
+				<div class="dropcontent autoclose">
 					<a class="dropoption">Gentle</a>
 					<a class="dropoption">WebMAUS</a>
 				</div>
@@ -48,23 +48,49 @@
 		</div>
 		<div id="sidenav"></div>
 		<div id="mainnav" onscroll="updateNotches(this);">
-			<div id="playlist">
-				<div id="zoom"></div>
-				<div id="timeline">
-					<div id="playhead"></div>
+			<div id="editor">
+				<div id="playlist">
+					<div id="zoom"></div>
+					<div id="timeline">
+						<div id="playhead"></div>
+					</div>
+				</div>
+				<div id="playback">
+					<span id="time">0:00:00.000</span>
+					<input type="button" id="play" value="&#9658;" onclick="togglePlayback();">
 				</div>
 			</div>
-			<div id="initial">
-				<label for="importFile" class="initialbutton">Upload Vocals</label>
+			<div id="step1">
+				<span class="steplabel">Step 1: Source</span>
+				<label class="initialbutton" onclick="transcribe();">Align Vocals</label>
+					<!--<div class="dropcontent">
+						<a class="dropoption">Upload</a>
+						<a class="dropoption">Record</a>
+					</div>-->
+				<!--</div>-->
 				<span>OR</span>
-				<div id="presetbutton">
-					<label class="initialbutton dropbutton" onclick="loadPresets(this);">Load Preset</label>
-					<div class="dropcontent" id="presets"></div>
+				<label class="initialbutton" onclick="loadPresets();">Load Preset</label>
+					<!--<div class="dropcontent" id="presets"></div>-->
+				<!--</div>-->
+			</div>
+			<div id="step2">
+				<span class="steplabel">Step 2: Destination</span>
+			</div>
+			<div id="transcriptmenu">
+				<a class="back" onclick="goBack();">< Back</a>
+				<div id="transcriptarea">
+					<div id="transcriptbuttons">
+						<label for="transcriptupload" id="uploadbutton">Upload</label>
+						<input multiple type="file" accept="audio/*,application/json,.json,.TextGrid" id="transcriptupload" onchange="checkJson(this);">
+						<input type="image" alt="Microphone" src="microphone.png" id="transcriptmicrophone" width="32" height="32">
+						<audio controls id="transcriptplayer"></audio>
+					</div>
+					<textarea id="transcript" rows="16" placeholder="Type the transcript here"></textarea>
 				</div>
 			</div>
-			<div id="playback">
-				<span id="time">0:00:00.000</span>
-				<input type="button" id="play" value="&#9658;" onclick="togglePlayback();">
+			<div id="presetmenu">
+				<a class="back" onclick="goBack();">< Back</a>
+				<div id="presets"></div>
 			</div>
 		</div>
 	</body>
