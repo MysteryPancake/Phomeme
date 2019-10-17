@@ -164,12 +164,17 @@ function ensurePlayer() {
 	}
 }
 
+function isLeftClick(e) {
+	return e.which === 1 || e.button === 0;
+}
+
 function addDragger(clip, left) {
 	const elem = document.createElement("div");
 	elem.className = left ? "clipdragleft" : "clipdragright";
 	clip.parent.appendChild(elem);
 	const dragger = { clip: clip, drag: 0, type: "dragger", left: left };
 	elem.addEventListener("mousedown", function(e) {
+		if (!isLeftClick(e)) return;
 		e.preventDefault();
 		activeDrag = dragger;
 		if (left) {
@@ -288,6 +293,7 @@ function Clip(clipFile, clipTrack) {
 		//this.drawLabel();
 	};
 	this.clicked = function(e) {
+		if (!isLeftClick(e)) return;
 		e.preventDefault();
 		activeDrag = this;
 		this.drag = e.pageX - (this.startTime * waveZoom);
@@ -470,12 +476,11 @@ function updateNotches(elem) {
 		timeNotches[i].style.left = position * waveZoom + "px";
 		playlist.style.width = playlistWidth + scroll + "px";
 	}
-	playhead.style.height = mainNav.scrollHeight - 128 + "px";
 }
 
 function annoy(e) {
-	//e.preventDefault();
-	//e.returnValue = "Unsaved Changes";
+	e.preventDefault();
+	e.returnValue = "Unsaved changes";
 }
 
 function setup() {
@@ -498,7 +503,8 @@ function setup() {
 	step2 = document.getElementById("step2");
 	window.addEventListener("mousemove", moved);
 	window.addEventListener("mouseup", ended);
-	timeline.addEventListener("mousedown", function() {
+	timeline.addEventListener("mousedown", function(e) {
+		if (!isLeftClick(e)) return;
 		activeDrag = "playhead";
 	});
 	timeline.addEventListener("click", movePlayhead);
@@ -506,7 +512,9 @@ function setup() {
 	window.addEventListener("keypress", function(e) {
 		if (e.key === " " || e.key === "Spacebar") {
 			playButton.click();
-			//e.preventDefault(); find a way to prevent without stopping keyboard input
+			if (e.target === document.body) {
+				e.preventDefault();
+			}
 		}
 	});
 	window.addEventListener("click", function(e) {

@@ -37,6 +37,14 @@ input[type="file"] {
 	padding: 8px 16px;
 }
 
+.back:hover, .dropdown:hover .topbutton, .dropoption:hover, .initialbutton:hover, #sidenav a:hover, #play:hover, .preset:hover, #submitbutton:hover, #uploadbutton:hover {
+	background-color: #002000;
+}
+
+.back:active, .dropdown .topbutton:active, .dropoption:active, .initialbutton:active, #sidenav a:active, #play:active, .preset:active, #submitbutton:active, #uploadbutton:active {
+	background-color: #004000;
+}
+
 .clip {
 	cursor: move;
 	height: 128px;
@@ -56,7 +64,7 @@ input[type="file"] {
 
 .clipdiv:active {
 	background-color: #00000080;
-	z-index: 3;
+	z-index: 2;
 }
 
 .clipdragleft, .clipdragright {
@@ -65,7 +73,7 @@ input[type="file"] {
 	position: absolute;
 	top: 0;
 	width: 8px;
-	z-index: 4;
+	z-index: 3;
 }
 
 .clipdragleft {
@@ -74,49 +82,6 @@ input[type="file"] {
 
 .clipdragright {
 	right: -4px;
-}
-
-#transcript {
-	background-color: black;
-	border: 1px solid #00FF00;
-	box-sizing: border-box;
-	display: block;
-	font-family: Arial, Helvetica, sans-serif;
-	font-size: 0.9em;
-	margin: 12px 0;
-	padding: 12px;
-	resize: vertical;
-	width: 100%;
-}
-
-#transcript:focus {
-	background-color: #001000;
-	border: 1px solid white;
-}
-
-.topbutton, .dropoption, .initialbutton, #transcriptmicrophone, #sidenav a, #play, .preset, #uploadbutton {
-	-moz-user-select: none;
-	cursor: pointer;
-	outline: none;
-	user-select: none;
-}
-
-.back:hover, .dropdown:hover .topbutton, .dropoption:hover, .initialbutton:hover, #sidenav a:hover, #play:hover, .preset:hover, #submitbutton:hover, #uploadbutton:hover {
-	background-color: #002000;
-}
-
-.back:active, .dropdown .topbutton:active, .dropoption:active, .initialbutton:active, #sidenav a:active, #play:active, .preset:active, #submitbutton:active, #uploadbutton:active {
-	background-color: #004000;
-}
-
-.topbutton {
-	box-sizing: border-box;
-	display: inline-block;
-	font-size: medium;
-	height: 100%;
-	margin-bottom: 2px;
-	mix-blend-mode: screen;
-	padding: 16px;
 }
 
 .dropcontent {
@@ -225,6 +190,13 @@ input[type="file"] {
 	overflow: scroll;
 }
 
+#navigation {
+	background-color: #061306;
+	position: sticky;
+	top: 0;
+	z-index: 4;
+}
+
 #play {
 	background-color: transparent;
 	border: 1px solid #00FF00;
@@ -249,12 +221,11 @@ input[type="file"] {
 	-moz-user-select: none;
 	background-color: white;
 	height: calc(100vh - 128px);
-	mix-blend-mode: color-dodge;
 	pointer-events: none;
 	position: relative;
 	user-select: none;
 	width: 1px;
-	z-index: 2;
+	z-index: 5;
 }
 
 #playlist {
@@ -363,6 +334,41 @@ input[type="file"] {
 	border-bottom: 2px solid #00FF00;
 	box-shadow: 0 -32px 32px -32px #00FF00 inset;
 	grid-column: 1 / span 2;
+}
+
+.topbutton, .dropoption, .initialbutton, #transcriptmicrophone, #sidenav a, #play, .preset, #uploadbutton {
+	-moz-user-select: none;
+	cursor: pointer;
+	outline: none;
+	user-select: none;
+}
+
+.topbutton {
+	box-sizing: border-box;
+	display: inline-block;
+	font-size: medium;
+	height: 100%;
+	margin-bottom: 2px;
+	mix-blend-mode: screen;
+	padding: 16px;
+}
+
+#transcript {
+	background-color: black;
+	border: 1px solid #00FF00;
+	box-sizing: border-box;
+	display: block;
+	font-family: Arial, Helvetica, sans-serif;
+	font-size: 0.9em;
+	margin: 12px 0;
+	padding: 12px;
+	resize: vertical;
+	width: 100%;
+}
+
+#transcript:focus {
+	background-color: #001000;
+	border: 1px solid white;
 }
 
 #transcriptbuttons {
