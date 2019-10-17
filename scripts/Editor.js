@@ -4,6 +4,8 @@ let step1;
 let step2;
 let editor;
 let player;
+let tracks;
+let mainNav;
 let sideNav;
 let timeline;
 let playhead;
@@ -13,6 +15,7 @@ let presetMenu;
 let playButton;
 let presetList;
 let activeDrag;
+let createTrack;
 let draggedFile;
 let activeSession;
 let transcriptMenu;
@@ -79,6 +82,7 @@ function niceTime(timeInSeconds, detailed) {
 }
 
 function playSession() {
+	if (!activeSession) return;
 	playButton.value = "❚❚";
 	activeSession.schedule();
 	player.resume();
@@ -160,6 +164,26 @@ function ensurePlayer() {
 	}
 }
 
+function addDragger(clip, left) {
+	const elem = document.createElement("div");
+	elem.className = left ? "clipdragleft" : "clipdragright";
+	clip.parent.appendChild(elem);
+	const dragger = { clip: clip, drag: 0, type: "dragger", left: left };
+	elem.addEventListener("mousedown", function(e) {
+		e.preventDefault();
+		activeDrag = dragger;
+		if (left) {
+			dragger.drag = {
+				in: e.pageX - (clip.inTime * waveZoom),
+				start: e.pageX - (clip.startTime * waveZoom),
+				lastStart: clip.startTime - clip.inTime
+			};
+		} else {
+			dragger.drag = e.pageX - (clip.outTime * waveZoom);
+		}
+	});
+}
+
 function Session(name) {
 	this.realName = name;
 	this.name = name + ".phomeme";
@@ -192,6 +216,7 @@ function Session(name) {
 	};
 	this.setActive = function() {
 		if (activeSession) {
+			pauseIfPlayingSession();
 			for (let i = 0; i < activeSession.trackList.length; i++) {
 				activeSession.trackList[i].elem.style.display = "none";
 			}
@@ -199,29 +224,10 @@ function Session(name) {
 		for (let j = 0; j < this.trackList.length; j++) {
 			this.trackList[j].elem.style.display = "flex";
 		}
-		setMenu(this.trackList.length ? "editor" : "step1");
+		setMenu("editor");
 		activeSession = this;
 	};
-}
-
-function addDragger(clip, left) {
-	const elem = document.createElement("div");
-	elem.className = left ? "clipdragleft" : "clipdragright";
-	clip.parent.appendChild(elem);
-	const dragger = { clip: clip, drag: 0, type: "dragger", left: left };
-	elem.addEventListener("mousedown", function(e) {
-		e.preventDefault();
-		activeDrag = dragger;
-		if (left) {
-			dragger.drag = {
-				in: e.pageX - (clip.inTime * waveZoom),
-				start: e.pageX - (clip.startTime * waveZoom),
-				lastStart: clip.startTime - clip.inTime
-			};
-		} else {
-			dragger.drag = e.pageX - (clip.outTime * waveZoom);
-		}
-	});
+	this.addTrack(new Track());
 }
 
 function Clip(clipFile, clipTrack) {
@@ -332,7 +338,7 @@ function Track() {
 	this.clips = [];
 	this.elem = document.createElement("div");
 	this.elem.className = "track";
-	playlist.appendChild(this.elem);
+	tracks.appendChild(this.elem);
 	this.addClip = function(clip) {
 		this.clips.push(clip);
 	};
@@ -371,7 +377,6 @@ function Track() {
 		}
 	};
 	this.elem.addEventListener("drop", this.drop.bind(this));
-	this.trackIndex = activeSession.addTrack(this);
 }
 
 function listFile(file) {
@@ -465,36 +470,43 @@ function updateNotches(elem) {
 		timeNotches[i].style.left = position * waveZoom + "px";
 		playlist.style.width = playlistWidth + scroll + "px";
 	}
+	playhead.style.height = mainNav.scrollHeight - 128 + "px";
+}
+
+function annoy(e) {
+	//e.preventDefault();
+	//e.returnValue = "Unsaved Changes";
 }
 
 function setup() {
 	transcriptPlayer = document.getElementById("transcriptplayer");
 	transcriptMenu = document.getElementById("transcriptmenu");
 	transcriptElem = document.getElementById("transcript");
-	//initialMenu = document.getElementById("initialmenu");
 	presetMenu = document.getElementById("presetmenu");
+	createTrack = document.getElementById("addtrack");
 	presetList = document.getElementById("presets");
 	playlist = document.getElementById("playlist");
 	playhead = document.getElementById("playhead");
 	timeline = document.getElementById("timeline");
 	playButton = document.getElementById("play");
 	sideNav = document.getElementById("sidenav");
+	mainNav = document.getElementById("mainnav");
 	timeLabel = document.getElementById("time");
+	editor = document.getElementById("editor");
+	tracks = document.getElementById("tracks");
 	step1 = document.getElementById("step1");
 	step2 = document.getElementById("step2");
-	editor = document.getElementById("editor");
 	window.addEventListener("mousemove", moved);
 	window.addEventListener("mouseup", ended);
-	const session = new Session("Untitled Session");
-	activeSession = session;
-	listFile(session);
 	timeline.addEventListener("mousedown", function() {
 		activeDrag = "playhead";
 	});
 	timeline.addEventListener("click", movePlayhead);
+	window.addEventListener("beforeunload", annoy);
 	window.addEventListener("keypress", function(e) {
 		if (e.key === " " || e.key === "Spacebar") {
 			playButton.click();
+			//e.preventDefault(); find a way to prevent without stopping keyboard input
 		}
 	});
 	window.addEventListener("click", function(e) {
@@ -502,7 +514,30 @@ function setup() {
 			closeMenus();
 		}
 	});
+	createTrack.addEventListener("dragover", function() {
+		if (activeSession) {
+			activeSession.addTrack(new Track());
+		}
+	});
+	createTrack.addEventListener("mousemove", function() {
+		if (activeSession && activeDrag && activeDrag.type === "clip") {
+			const track = new Track();
+			activeSession.addTrack(track);
+			activeDrag.changeTrack(track);
+		}
+	});
 	requestFrame(draw);
+}
+
+function setMenu(name) {
+	transcriptMenu.style.display = name === "transcript" ? "block" : "none";
+	presetMenu.style.display = name === "preset" ? "block" : "none";
+	editor.style.display = name === "editor" ? "block" : "none";
+	step1.style.display = name === "step1" ? "block" : "none";
+	step2.style.display = name === "step2" ? "block" : "none";
+	if (name === "editor" && !playlistSetup) {
+		setupPlaylist();
+	}
 }
 
 function setupPlaylist() {
@@ -547,7 +582,7 @@ function loadPresets() {
 				desc.className = "presetdesc";
 				desc.innerHTML = presets[i].description;
 				panel.appendChild(desc);
-				panel.onclick = function() {
+				panel.addEventListener("click", function() {
 					urlJson(presets[i].url, function(response) {
 						setMenu("step2");
 						ensurePlayer();
@@ -556,7 +591,7 @@ function loadPresets() {
 					}, function() {
 						window.alert("Couldn't load " + presets[i].name + "! Try installing a cross-origin extension.");
 					});
-				};
+				});
 				presetList.appendChild(panel);
 			}
 		}, function() {
@@ -568,10 +603,11 @@ function loadPresets() {
 function checkJson(element) {
 	const file = element.files[0];
 	if (!file) return;
+	listFile(file);
 	const lower = file.name.toLowerCase();
 	if (lower.endsWith("json") || lower.endsWith("txt")) {
 		readFile(file, function(content) {
-			transcript.value = lower.endsWith("txt") ? content : JSON.parse(content).transcript;
+			transcriptElem.value = lower.endsWith("txt") ? content : JSON.parse(content).transcript;
 		});
 	} else if (file.type.startsWith("audio")) {
 		const url = window.URL.createObjectURL(file);
@@ -602,26 +638,10 @@ function loadSession(elem) {
 	elem.value = null;
 }
 
-function setMenu(name) {
-	transcriptMenu.style.display = name === "transcript" ? "block" : "none";
-	presetMenu.style.display = name === "preset" ? "block" : "none";
-	editor.style.display = name === "editor" ? "block" : "none";
-	step1.style.display = name === "step1" ? "block" : "none";
-	step2.style.display = name === "step2" ? "block" : "none";
-	if (name === "editor" && !playlistSetup) {
-		setupPlaylist();
-	}
-}
-
 function importFile(elem) {
 	for (let i = 0; i < elem.files.length; i++) {
 		const file = elem.files[i];
 		listFile(file);
-		if (file.type.startsWith("audio")) {
-			const track = new Track();
-			track.loadClip(file);
-			setMenu("editor");
-		}
 	}
 	elem.value = null;
 }
