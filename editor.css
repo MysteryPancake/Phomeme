@@ -175,6 +175,8 @@ input[type="file"] {
 
 #navigation {
 	background-color: #061306;
+	border-bottom: 1px solid gray;
+	height: 82px;
 	position: sticky;
 	top: 0;
 	z-index: 4;
@@ -316,10 +318,11 @@ input[type="file"] {
 }
 
 #timeline {
-	border-bottom: 1px solid gray;
+	border-top: 2px solid #00FF00;
 	cursor: pointer;
 	height: 16px;
 	position: relative;
+	top: 64px;
 	width: 100%;
 }
 
@@ -418,9 +421,10 @@ input[type="file"] {
 }
 
 #zoom {
-	border-bottom: 2px solid #00FF00;
 	height: 64px;
-	width: 100%;
+	position: fixed;
+	top: 48px;
+	width: calc(100vw - 320px);
 }
 
 #editor, #presetmenu, #step2, #transcriptmenu, #transcriptplayer {

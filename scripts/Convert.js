@@ -1,8 +1,9 @@
 "use strict";
 
+const isPunctuation = { "?": true, "!": true, ".": true };
+
 function convertSentence(sentence, matchPunctuation) {
 	const words = sentence.toLowerCase().match(/\w+(?:'\w+)*|[!?.](?![!?.])/g);
-	const punctuation = { "!": true, "?": true, ".": true };
 	const transcript = {
 		transcript: sentence,
 		words: [],
@@ -10,10 +11,10 @@ function convertSentence(sentence, matchPunctuation) {
 	};
 	for (let i = 0; i < words.length; i++) {
 		const word = words[i];
-		if (punctuation[word]) continue;
+		if (isPunctuation[word]) continue;
 		transcript.words.push({
-			prev: words[i - (matchPunctuation && punctuation[words[i - 1]] ? 1 : 2)],
-			next: words[i + (matchPunctuation && punctuation[words[i + 1]] ? 1 : 2)],
+			prev: words[i - (matchPunctuation && isPunctuation[words[i - 1]] ? 1 : 2)],
+			next: words[i + (matchPunctuation && isPunctuation[words[i + 1]] ? 1 : 2)],
 			phone: word
 		});
 		const phones = dictionary[word];
@@ -105,14 +106,13 @@ function convertTextGrid(transcript, str, file, matchExact) {
 
 function convertJson(transcript, json, file, matchPunctuation, matchExact) {
 	let prev = {};
-	const punctuation = { "?": true, "!": true, ".": true };
 	for (let i = 0; i < json.words.length; i++) {
 		const word = json.words[i];
 		if (word.case === "not-found-in-audio") continue;
 		const aligned = word.word.toLowerCase();
 		const char = json.transcript.charAt(word.endOffset);
 		if (prev.word) {
-			transcript.words[prev.word][transcript.words[prev.word].length - 1].next = matchPunctuation && punctuation[char] ? char : aligned;
+			transcript.words[prev.word][transcript.words[prev.word].length - 1].next = matchPunctuation && isPunctuation[char] ? char : aligned;
 		}
 		transcript.words[aligned] = transcript.words[aligned] || [];
 		transcript.words[aligned].push({
@@ -120,7 +120,7 @@ function convertJson(transcript, json, file, matchPunctuation, matchExact) {
 			end: word.end,
 			dur: word.end - word.start,
 			phone: aligned,
-			prev: matchPunctuation && punctuation[char] ? prev.char : prev.word,
+			prev: matchPunctuation && isPunctuation[char] ? prev.char : prev.word,
 			phones: [],
 			file: file
 		});

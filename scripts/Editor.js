@@ -87,6 +87,36 @@ function niceTime(timeInSeconds, detailed) {
 	}
 }
 
+function timeStringToSeconds(timeString) {
+	let time = 0;
+	const parts = timeString.split(":").reverse();
+	const seconds = parseFloat(parts[0]);
+	const minutes = parseFloat(parts[1]);
+	const hours = parseFloat(parts[2]);
+	if (!isNaN(seconds)) {
+		time += seconds;
+	}
+	if (!isNaN(minutes)) {
+		time += minutes * 60;
+	}
+	if (!isNaN(hours)) {
+		time += hours * 3600;
+	}
+	return time;
+}
+
+function parseTime(elem) {
+	pauseIfPlayingSession();
+	timeOffset = timeStringToSeconds(elem.innerHTML);
+	setPlayhead(timeOffset, false);
+}
+
+function forceTime() {
+	pauseIfPlayingSession();
+	timeOffset = timeStringToSeconds(timeLabel.innerHTML);
+	setPlayhead(timeOffset, true);
+}
+
 function playSession() {
 	if (!activeSession) return;
 	playButton.value = "❚❚";
@@ -145,14 +175,16 @@ function urlJson(url, func, err) {
 	jsonRequest.send();
 }
 
-function setPlayhead(seconds) {
+function setPlayhead(seconds, updateLabel) {
 	playhead.style.left = seconds * waveZoom + "px";
-	timeLabel.innerHTML = niceTime(seconds, true);
+	if (updateLabel) {
+		timeLabel.innerHTML = niceTime(seconds, true);
+	}
 }
 
 function draw() {
 	if (player && player.state === "running") {
-		setPlayhead(timeOffset + player.currentTime);
+		setPlayhead(timeOffset + player.currentTime, true);
 	}
 	requestFrame(draw);
 }
@@ -424,7 +456,7 @@ function movePlayhead(e) {
 		pauseIfPlayingSession();
 	}
 	timeOffset = Math.max(0, timeOffset);
-	setPlayhead(timeOffset);
+	setPlayhead(timeOffset, true);
 }
 
 function moved(e) {
@@ -492,6 +524,14 @@ function annoy(e) {
 	e.returnValue = "Unsaved changes";
 }
 
+function preventTimeInput(e) {
+	if (e.keyCode === 32 || e.keyCode === 13) {
+		e.preventDefault();
+		timeLabel.blur();
+		return false;
+	}
+}
+
 function setup() {
 	interimTranscript = document.getElementById("interimtranscript");
 	finalTranscript = document.getElementById("finaltranscript");
@@ -514,14 +554,16 @@ function setup() {
 	step2 = document.getElementById("step2");
 	window.addEventListener("mousemove", moved);
 	window.addEventListener("mouseup", ended);
+	timeLabel.addEventListener("keydown", preventTimeInput);
+	timeLabel.addEventListener("blur", forceTime);
 	timeline.addEventListener("mousedown", function(e) {
 		if (!isLeftClick(e)) return;
 		activeDrag = "playhead";
 	});
 	timeline.addEventListener("click", movePlayhead);
 	window.addEventListener("beforeunload", annoy);
-	window.addEventListener("keypress", function(e) {
-		if (e.key === " " || e.key === "Spacebar") {
+	window.addEventListener("keydown", function(e) {
+		if (e.keyCode === 32) {
 			playButton.click();
 			if (e.target === document.body) {
 				e.preventDefault();
