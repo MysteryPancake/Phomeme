@@ -116,16 +116,8 @@ input[type="file"] {
 	font-weight: bold;
 }
 
-#sidenav .active {
-	background-color: #002000;
-}
-
 .filefolder.active > a {
 	background-color: #004000;
-}
-
-.filefolder.active.error > a {
-	background-color: #600000;
 }
 
 .filefolder.active > a:after {
@@ -136,29 +128,16 @@ input[type="file"] {
 	background-color: #FF0000;
 }
 
-#sidenav .filefolder.error > a {
-	border-bottom: 1px solid #600000;
-}
-
-#sidenav .filegroup a.error {
-	background-color: #300000;
-	border-bottom: 1px solid #200000;
-}
-
-.filegroup a.error .filedetails {
-	background-color: #800000;
+.filefolder.error.active > a {
+	background-color: #500000;
 }
 
 .filegroup {
 	margin-left: 16px;
 }
 
-#sidenav .error a:hover {
-	background-color: #600000;
-}
-
-#sidenav .error a:active {
-	background-color: #A00000;
+.filegroup a.error .filedetails {
+	background-color: #500000;
 }
 
 .filedetails {
@@ -176,6 +155,10 @@ input[type="file"] {
 
 .filedetails span + span:before {
 	content: " + ";
+}
+
+#interimtranscript {
+	color: gray;
 }
 
 .initialbutton {
@@ -197,17 +180,22 @@ input[type="file"] {
 	z-index: 4;
 }
 
+.padded {
+	margin: 6px 0;
+}
+
 #play {
 	background-color: transparent;
 	border: 1px solid #00FF00;
 	display: inline-block;
 	font-size: medium;
 	height: 24px;
+	pointer-events: all;
 	width: 64px;
 }
 
 #playback {
-	background-color: black;
+	background-color: #000000B3;
 	border-top: 2px solid #00FF00;
 	bottom: 0;
 	height: 32px;
@@ -215,12 +203,13 @@ input[type="file"] {
 	position: fixed;
 	width: 100%;
 	z-index: 420;
+	pointer-events: none;
 }
 
 #playhead {
 	-moz-user-select: none;
 	background-color: white;
-	height: calc(100vh - 128px);
+	height: calc(100vh - 114px);
 	pointer-events: none;
 	position: relative;
 	user-select: none;
@@ -280,6 +269,27 @@ input[type="file"] {
 	padding: 8px;
 }
 
+#sidenav .active {
+	background-color: #002000;
+}
+
+#sidenav .filefolder.error > a {
+	border-bottom: 1px solid #400000;
+}
+
+#sidenav .filegroup a.error {
+	background-color: #290000;
+	border-bottom: 1px solid #180000;
+}
+
+#sidenav .error a:hover {
+	background-color: #300000;
+}
+
+#sidenav .error a:active {
+	background-color: #400000;
+}
+
 #step1 {
 	font-size: xx-large;
 	padding: 16px;
@@ -302,6 +312,7 @@ input[type="file"] {
 
 #time {
 	font-size: large;
+	pointer-events: all;
 }
 
 #timeline {
@@ -360,7 +371,6 @@ input[type="file"] {
 	display: block;
 	font-family: Arial, Helvetica, sans-serif;
 	font-size: 0.9em;
-	margin: 12px 0;
 	padding: 12px;
 	resize: vertical;
 	width: 100%;

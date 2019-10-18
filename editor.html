@@ -86,10 +86,14 @@
 					<div id="transcriptbuttons">
 						<label for="transcriptupload" id="uploadbutton">Upload</label>
 						<input multiple type="file" accept="audio/*,application/json,.json,.TextGrid" id="transcriptupload" onchange="checkJson(this);">
-						<input type="image" alt="Microphone" src="microphone.png" id="transcriptmicrophone" width="32" height="32">
+						<input type="image" alt="Microphone" src="microphone.png" id="transcriptmicrophone" width="32" height="32" onclick="microphone(this);">
 						<audio controls id="transcriptplayer"></audio>
 					</div>
-					<textarea id="transcript" rows="16" placeholder="Type the transcript here"></textarea>
+					<div class="padded">
+						<span id="finaltranscript"></span>
+						<span id="interimtranscript"></span>
+					</div>
+					<textarea id="transcript" class="padded" rows="16" placeholder="Type the transcript here"></textarea>
 					<a id="submitbutton">Submit<a>
 				</div>
 			</div>

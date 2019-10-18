@@ -10,18 +10,24 @@ let sideNav;
 let timeline;
 let playhead;
 let playlist;
+let recorder;
 let timeLabel;
 let presetMenu;
 let playButton;
 let presetList;
 let activeDrag;
+let recognition;
 let createTrack;
 let draggedFile;
 let activeSession;
 let transcriptMenu;
 let transcriptElem;
 let transcriptPlayer;
+let interimTranscript;
+let finalTranscript;
+let oldScroll = 0;
 let timeOffset = 0;
+let recordIndex = 1;
 let playlistWidth = 0;
 let sampleRate = 44100;
 const fileList = [];
@@ -466,15 +472,18 @@ function ended() {
 }
 
 function updateNotches(elem) {
-	const scroll = elem.scrollLeft;
-	for (let i = 0; i < timeNotches.length; i++) {
-		let position = i;
-		while ((position * waveZoom) - scroll < -10) {
-			position += timeNotches.length;
+	const newScroll = elem.scrollLeft;
+	if (oldScroll !== newScroll) {
+		for (let i = 0; i < timeNotches.length; i++) {
+			let position = i;
+			while ((position * waveZoom) - newScroll < -10) {
+				position += timeNotches.length;
+			}
+			timeNotches[i].innerHTML = niceTime(position, false);
+			timeNotches[i].style.left = position * waveZoom + "px";
+			playlist.style.width = playlistWidth + newScroll + "px";
 		}
-		timeNotches[i].innerHTML = niceTime(position, false);
-		timeNotches[i].style.left = position * waveZoom + "px";
-		playlist.style.width = playlistWidth + scroll + "px";
+		oldScroll = newScroll;
 	}
 }
 
@@ -484,6 +493,8 @@ function annoy(e) {
 }
 
 function setup() {
+	interimTranscript = document.getElementById("interimtranscript");
+	finalTranscript = document.getElementById("finaltranscript");
 	transcriptPlayer = document.getElementById("transcriptplayer");
 	transcriptMenu = document.getElementById("transcriptmenu");
 	transcriptElem = document.getElementById("transcript");
@@ -608,8 +619,8 @@ function loadPresets() {
 	}
 }
 
-function checkJson(element) {
-	const file = element.files[0];
+function checkJson(elem) {
+	const file = elem.files[0];
 	if (!file) return;
 	listFile(file);
 	const lower = file.name.toLowerCase();
@@ -732,6 +743,74 @@ function loadParts(json, elems, index) {
 			elems.bar.parentNode.removeChild(elems.bar);
 		}, 100);
 	}
+}
+
+function setupRecognition() {
+	const Speech = window.SpeechRecognition || window.webkitSpeechRecognition || window.mozSpeechRecognition || window.oSpeechRecognition || window.msSpeechRecognition;
+	if (!Speech) return;
+	recognition = new Speech();
+	recognition.continuous = true;
+	recognition.interimResults = true;
+	recognition.onresult = function(e) {
+		interimTranscript.innerHTML = "";
+		for (let i = e.resultIndex; i < e.results.length; i++) {
+			if (event.results[i].isFinal) {
+				finalTranscript.innerHTML += event.results[i][0].transcript;
+			} else {
+				interimTranscript.innerHTML += event.results[i][0].transcript;
+			}
+		}
+	};
+	recognition.onend = function() {
+		transcriptElem.value += (transcriptElem.value ? " " : "") + finalTranscript.innerHTML;
+		interimTranscript.innerHTML = "";
+		finalTranscript.innerHTML = "";
+	};
+}
+
+function setupRecording() {
+	if (!window.MediaRecorder) return;
+	navigator.mediaDevices.getUserMedia({ audio: true, video: false }).then(function(stream) {
+		recorder = new MediaRecorder(stream, { mimeType: "audio/webm" });
+		const chunks = [];
+		recorder.ondataavailable = function(e) {
+			if (e.data.size > 0) {
+				chunks.push(e.data);
+			}
+		};
+		recorder.onstop = function() {
+			stream.getTracks()[0].stop();
+			const blob = new Blob(chunks);
+			const file = new File([blob], "Recording" + recordIndex + ".wav", { type: "audio/wav" });
+			listFile(file);
+			recordIndex++;
+		};
+		recorder.start();
+	}).catch(console.error);
+}
+
+function microphone(elem) {
+	if (elem.classList.contains("active")) {
+		elem.src = "microphone.png";
+		if (recognition) {
+			recognition.stop();
+		}
+		if (recorder) {
+			recorder.stop();
+		}
+	} else {
+		elem.src = "micactive.png";
+		if (!recognition) {
+			setupRecognition();
+		}
+		if (recognition) {
+			recognition.start();
+		}
+		if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
+			setupRecording();
+		}
+	}
+	elem.classList.toggle("active");
 }
 
 /*function drawBoxes(json, audio) {
