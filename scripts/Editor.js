@@ -619,6 +619,12 @@ function loadPresets() {
 	}
 }
 
+function updateTranscriptPlayer(file) {
+	const url = window.URL.createObjectURL(file);
+	transcriptPlayer.style.display = "inline-block";
+	transcriptPlayer.src = url;
+}
+
 function checkJson(elem) {
 	const file = elem.files[0];
 	if (!file) return;
@@ -629,9 +635,7 @@ function checkJson(elem) {
 			transcriptElem.value = lower.endsWith("txt") ? content : JSON.parse(content).transcript;
 		});
 	} else if (file.type.startsWith("audio")) {
-		const url = window.URL.createObjectURL(file);
-		transcriptPlayer.style.display = "inline-block";
-		transcriptPlayer.src = url;
+		updateTranscriptPlayer(file);
 	}
 }
 
@@ -780,8 +784,8 @@ function setupRecording() {
 		};
 		recorder.onstop = function() {
 			stream.getTracks()[0].stop();
-			const blob = new Blob(chunks);
-			const file = new File([blob], "Recording" + recordIndex + ".wav", { type: "audio/wav" });
+			const file = new File([new Blob(chunks)], "Recording" + recordIndex + ".wav", { type: "audio/wav" });
+			updateTranscriptPlayer(file);
 			listFile(file);
 			recordIndex++;
 		};
