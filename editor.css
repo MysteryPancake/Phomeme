@@ -321,6 +321,7 @@ input[type="file"] {
 	border-top: 2px solid #00FF00;
 	cursor: pointer;
 	height: 16px;
+	overflow: hidden;
 	position: relative;
 	top: 64px;
 	width: 100%;
@@ -332,6 +333,7 @@ input[type="file"] {
 	bottom: 0;
 	color: gray;
 	font-size: xx-small;
+	font-weight: bold;
 	pointer-events: none;
 	position: absolute;
 	user-select: none;

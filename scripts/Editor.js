@@ -12,6 +12,8 @@ let playhead;
 let playlist;
 let recorder;
 let timeLabel;
+let zoomCanvas;
+let zoomContext;
 let presetMenu;
 let playButton;
 let presetList;
@@ -28,7 +30,6 @@ let finalTranscript;
 let oldScroll = 0;
 let timeOffset = 0;
 let recordIndex = 1;
-let playlistWidth = 0;
 let sampleRate = 44100;
 const fileList = [];
 const waveZoom = 100;
@@ -182,9 +183,53 @@ function setPlayhead(seconds, updateLabel) {
 	}
 }
 
+function updateZoomCanvas() {
+	zoomContext.fillStyle = "#061306";
+	zoomContext.fillRect(0, 0, zoomCanvas.width, zoomCanvas.height);
+	zoomContext.strokeStyle = "#00FF00";
+	zoomContext.fillStyle = "#004000";
+	const height = zoomCanvas.height / activeSession.trackList.length;
+	for (let i = 0; i < activeSession.trackList.length; i++) {
+		zoomContext.lineWidth = 0.5;
+		const track = activeSession.trackList[i];
+		const y = i / activeSession.trackList.length * zoomCanvas.height;
+		drawLine(zoomContext, 0, y, zoomCanvas.width, y);
+		for (let j = 0; j < track.clips.length; j++) {
+			zoomContext.lineWidth = 1;
+			const clip = track.clips[j];
+			const x = clip.startTime / activeSession.duration * zoomCanvas.width;
+			const width = (clip.outTime - clip.inTime) / activeSession.duration * zoomCanvas.width;
+			zoomContext.fillRect(x, y, width, height);
+			zoomContext.strokeRect(x, y, width, height);
+		}
+	}
+}
+
+function updatePlaylistDuration() {
+	if (!activeSession) return;
+	let maxDuration = 0;
+	for (let i = 0; i < activeSession.trackList.length; i++) {
+		const track = activeSession.trackList[i];
+		for (let j = 0; j < track.clips.length; j++) {
+			const clip = track.clips[j];
+			maxDuration = Math.max(maxDuration, clip.startTime + clip.outTime - clip.inTime);
+		}
+	}
+	activeSession.setDuration(Math.max(playlist.scrollWidth / waveZoom, maxDuration));
+}
+
+function setupZoomContext() {
+	zoomCanvas.width = zoomCanvas.clientWidth;
+	zoomCanvas.height = zoomCanvas.clientHeight;
+	zoomContext = zoomCanvas.getContext("2d", { alpha: false });
+}
+
 function draw() {
 	if (player && player.state === "running") {
 		setPlayhead(timeOffset + player.currentTime, true);
+	}
+	if (zoomContext && activeSession) {
+		updateZoomCanvas();
 	}
 	requestFrame(draw);
 }
@@ -228,6 +273,7 @@ function addDragger(clip, left) {
 }
 
 function Session(name) {
+	this.duration = 0;
 	this.realName = name;
 	this.name = name + ".phomeme";
 	this.type = "application/json";
@@ -267,8 +313,13 @@ function Session(name) {
 		for (let j = 0; j < this.trackList.length; j++) {
 			this.trackList[j].elem.style.display = "flex";
 		}
-		setMenu("editor");
+		playlist.style.width = this.duration * waveZoom + "px";
 		activeSession = this;
+		setMenu("editor");
+	};
+	this.setDuration = function(time) {
+		this.duration = time;
+		playlist.style.width = time * waveZoom + "px";
 	};
 	this.addTrack(new Track());
 }
@@ -296,8 +347,6 @@ function Clip(clipFile, clipTrack) {
 	addDragger(this, false);
 	this.context = this.elem.getContext("2d", { alpha: true });
 	this.drawCanvas = function() {
-		this.duration = this.audioBuffer.duration;
-		this.outTime = this.duration;
 		this.elem.width = this.duration * waveZoom;
 		this.context.clearRect(0, 0, this.elem.width, this.elem.height);
 		const lines = this.elem.width * waveDetail;
@@ -362,6 +411,9 @@ function Clip(clipFile, clipTrack) {
 		fileBuffer(file, function(buffer) {
 			this.audioData = buffer.getChannelData(0);
 			this.audioBuffer = buffer;
+			this.duration = buffer.duration;
+			this.outTime = buffer.duration;
+			updatePlaylistDuration();
 			this.drawCanvas();
 		}.bind(this));
 	};
@@ -374,6 +426,7 @@ function Clip(clipFile, clipTrack) {
 	};
 	this.setStart = function(time) {
 		this.startTime = time;
+		updatePlaylistDuration();
 		this.parent.style.left = time * waveZoom + "px";
 	};
 }
@@ -513,7 +566,6 @@ function updateNotches(elem) {
 			}
 			timeNotches[i].innerHTML = niceTime(position, false);
 			timeNotches[i].style.left = position * waveZoom + "px";
-			playlist.style.width = playlistWidth + newScroll + "px";
 		}
 		oldScroll = newScroll;
 	}
@@ -534,8 +586,8 @@ function preventTimeInput(e) {
 
 function setup() {
 	interimTranscript = document.getElementById("interimtranscript");
-	finalTranscript = document.getElementById("finaltranscript");
 	transcriptPlayer = document.getElementById("transcriptplayer");
+	finalTranscript = document.getElementById("finaltranscript");
 	transcriptMenu = document.getElementById("transcriptmenu");
 	transcriptElem = document.getElementById("transcript");
 	presetMenu = document.getElementById("presetmenu");
@@ -544,6 +596,7 @@ function setup() {
 	playlist = document.getElementById("playlist");
 	playhead = document.getElementById("playhead");
 	timeline = document.getElementById("timeline");
+	zoomCanvas = document.getElementById("zoom");
 	playButton = document.getElementById("play");
 	sideNav = document.getElementById("sidenav");
 	mainNav = document.getElementById("mainnav");
@@ -602,7 +655,6 @@ function setMenu(name) {
 }
 
 function setupPlaylist() {
-	playlistWidth = playlist.scrollWidth;
 	for (let i = 0; i < timeline.scrollWidth; i += waveZoom) {
 		const timeNotch = document.createElement("span");
 		timeNotch.innerHTML = niceTime(i / waveZoom, false);
@@ -611,6 +663,7 @@ function setupPlaylist() {
 		timeNotches.push(timeNotch);
 		timeline.appendChild(timeNotch);
 	}
+	setupZoomContext();
 	playlistSetup = true;
 }
 
