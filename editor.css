@@ -175,11 +175,12 @@ input[type="file"] {
 
 #navigation {
 	background-color: #061306;
-	border-bottom: 1px solid gray;
-	height: 82px;
-	position: sticky;
-	top: 0;
-	z-index: 4;
+	height: 64px;
+	overflow: hidden;
+	position: fixed;
+	top: 48px;
+	width: calc(100vw - 320px);
+	z-index: 420;
 }
 
 .padded {
@@ -209,18 +210,20 @@ input[type="file"] {
 }
 
 #playhead {
-	-moz-user-select: none;
 	background-color: white;
-	height: calc(100vh - 114px);
+	height: calc(100vh - 96px);
+	mix-blend-mode: color-dodge;
 	pointer-events: none;
-	position: relative;
+	position: absolute;
+	top: -16px;
 	user-select: none;
 	width: 1px;
-	z-index: 5;
+	z-index: 4;
 }
 
 #playlist {
 	display: inline-block;
+	margin-top: 64px;
 	min-width: 100%;
 	position: relative;
 }
@@ -320,23 +323,9 @@ input[type="file"] {
 #timeline {
 	border-top: 2px solid #00FF00;
 	cursor: pointer;
+	display: block;
 	height: 16px;
-	overflow: hidden;
-	position: relative;
-	top: 64px;
 	width: 100%;
-}
-
-.timenotch {
-	-moz-user-select: none;
-	border-left: 1px solid gray;
-	bottom: 0;
-	color: gray;
-	font-size: xx-small;
-	font-weight: bold;
-	pointer-events: none;
-	position: absolute;
-	user-select: none;
 }
 
 #title {
@@ -423,10 +412,9 @@ input[type="file"] {
 }
 
 #zoom {
-	height: 64px;
-	position: fixed;
-	top: 48px;
-	width: calc(100vw - 320px);
+	display: block;
+	height: 46px;
+	width: 100%;
 }
 
 #editor, #presetmenu, #step2, #transcriptmenu, #transcriptplayer {

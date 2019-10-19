@@ -54,15 +54,14 @@
 			</div>
 		</div>
 		<div id="sidenav"></div>
-		<div id="mainnav" onscroll="updateNotches(this);">
+		<div id="mainnav" onscroll="fixPlayhead();">
 			<div id="editor">
+				<div id="navigation">
+					<canvas id="zoom"></canvas>
+					<canvas id="timeline"></canvas>
+				</div>
 				<div id="playlist">
-					<div id="navigation">
-						<canvas id="zoom"></canvas>
-						<div id="timeline">
-							<div id="playhead"></div>
-						</div>
-					</div>
+					<div id="playhead"></div>
 					<div id="tracks"></div>
 					<div id="addtrack"></div>
 				</div>
