@@ -431,7 +431,7 @@ input[type="file"] {
 	height: 100%;
 	position: absolute;
 	top: 0;
-	width: 16px;
+	width: 8px;
 	z-index: 7;
 }
 
