@@ -16,12 +16,12 @@ body {
 }
 
 input[type="file"] {
-	height: 0px;
+	height: 0;
 	opacity: 0;
 	position: absolute;
-	right: 0px;
-	top: 0px;
-	width: 0px;
+	right: 0;
+	top: 0;
+	width: 0;
 }
 
 #addtrack {
@@ -69,7 +69,7 @@ input[type="file"] {
 
 .clipdragleft, .clipdragright {
 	cursor: ew-resize;
-	height: 128px;
+	height: 100%;
 	position: absolute;
 	top: 0;
 	width: 8px;
@@ -174,13 +174,12 @@ input[type="file"] {
 }
 
 #navigation {
-	background-color: #061306;
 	height: 64px;
 	overflow: hidden;
 	position: fixed;
 	top: 48px;
 	width: calc(100vw - 320px);
-	z-index: 420;
+	z-index: 5;
 }
 
 .padded {
@@ -205,17 +204,16 @@ input[type="file"] {
 	padding: 16px;
 	position: fixed;
 	width: 100%;
-	z-index: 420;
+	z-index: 5;
 	pointer-events: none;
 }
 
 #playhead {
 	background-color: white;
-	height: calc(100vh - 96px);
+	height: calc(100vh - 112px);
 	mix-blend-mode: color-dodge;
 	pointer-events: none;
 	position: absolute;
-	top: -16px;
 	user-select: none;
 	width: 1px;
 	z-index: 4;
@@ -415,6 +413,34 @@ input[type="file"] {
 	display: block;
 	height: 46px;
 	width: 100%;
+}
+
+#zoomer {
+	background-color: #00FF0033;
+	cursor: grab;
+	height: 46px;
+	outline: 2px solid #00FF00;
+	position: absolute;
+	top: 0;
+	width: 100%;
+	z-index: 6;
+}
+
+#zoomdragleft, #zoomdragright {
+	cursor: ew-resize;
+	height: 100%;
+	position: absolute;
+	top: 0;
+	width: 16px;
+	z-index: 7;
+}
+
+#zoomdragleft {
+	left: 0;
+}
+
+#zoomdragright {
+	right: 0;
 }
 
 #editor, #presetmenu, #step2, #transcriptmenu, #transcriptplayer {
