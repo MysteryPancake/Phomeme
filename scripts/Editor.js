@@ -2,9 +2,11 @@
 
 let step1;
 let step2;
+let popup;
 let editor;
 let player;
 let tracks;
+let topNav;
 let mainNav;
 let sideNav;
 let zoomDrag;
@@ -12,6 +14,7 @@ let playhead;
 let playlist;
 let recorder;
 let timeLabel;
+let prefsMenu;
 let presetMenu;
 let playButton;
 let presetList;
@@ -21,6 +24,7 @@ let zoomContext;
 let recognition;
 let createTrack;
 let draggedFile;
+let popupOverlay;
 let activeSession;
 let transcriptMenu;
 let transcriptElem;
@@ -31,17 +35,21 @@ let interimTranscript;
 let finalTranscript;
 let lastTopScroll = 0;
 let lastLeftScroll = 0;
+let shaking = false;
+let shakeAnalyser;
 let timeOffset = 0;
 let recordIndex = 1;
+let playheadTime = 0;
 let sampleRate = 44100;
+let presetsLoaded = false;
+let playlistSetup = false;
 const fileList = [];
 const peakScale = 0.7;
 const waveDetail = 16;
-let playheadTime = 0;
-const minZoomWidth = 1;
+const zoomAmount = 1.25;
+const minZoomWidth = 2;
 const minClipWidth = 0.05;
-let presetsLoaded = false;
-let playlistSetup = false;
+let shakeData = new Uint8Array(2048);
 const requestFrame = window.requestAnimationFrame || window.webkitRequestAnimationFrame || window.mozRequestAnimationFrame || window.oRequestAnimationFrame || window.msRequestAnimationFrame || function(e) { return window.setTimeout(e, 1000 / 60); };
 
 function isLeftClick(e) {
@@ -55,9 +63,18 @@ function drawLine(context, x, y, x2, y2) {
 	context.stroke();
 }
 
+function createShakeAnalyser() {
+	shakeAnalyser = player.createAnalyser();
+	shakeAnalyser.fftSize = 2048;
+	shakeAnalyser.connect(player.destination);
+}
+
 function restartPlayer() {
 	player = new (window.AudioContext || window.webkitAudioContext)();
 	sampleRate = player.sampleRate;
+	if (shaking) {
+		createShakeAnalyser();
+	}
 	player.suspend();
 }
 
@@ -68,8 +85,14 @@ function ensurePlayer() {
 }
 
 function pauseSession() {
+	if (shakeAnalyser) {
+		sideNav.style.transform = "none";
+		topNav.style.transform = "none";
+		document.body.style.transform = "none";
+		document.body.style.overflow = "initial";
+	}
 	timeOffset += player.currentTime;
-	playButton.value = "►";
+	playButton.innerHTML = "►";
 	player.close();
 	restartPlayer();
 }
@@ -134,6 +157,7 @@ function timeStringToSeconds(timeString) {
 }
 
 function updateZoomCanvas() {
+	if (!zoomContext) return;
 	zoomContext.fillStyle = "black";
 	zoomContext.fillRect(0, 0, zoomCanvas.width, zoomCanvas.height);
 	zoomContext.fillStyle = "#002000";
@@ -151,6 +175,7 @@ function updateZoomCanvas() {
 }
 
 function updateTimeCanvas() {
+	if (!timelineContext) return;
 	timelineContext.fillStyle = "#061306";
 	timelineContext.fillRect(0, 0, timelineCanvas.width, timelineCanvas.height);
 	timelineContext.strokeStyle = "gray";
@@ -161,18 +186,23 @@ function updateTimeCanvas() {
 	timelineContext.textAlign = "left";
 	timelineContext.textBaseline = "top";
 	timelineContext.font = "bold 12px Arial";
-	const notchCount = Math.ceil(timelineCanvas.width / activeSession.zoom);
+	const notchCount = Math.ceil(timelineCanvas.width / activeSession.zoom) + 1;
+	const notchWidth = timelineCanvas.width / notchCount;
 	for (let i = 0; i < notchCount; i++) {
 		let seconds = i;
-		while (seconds * activeSession.zoom - mainNav.scrollLeft < -16) {
+		while (seconds - activeSession.scroll < -0.5) {
 			seconds += notchCount;
 		}
-		const position = seconds * activeSession.zoom - mainNav.scrollLeft;
+		const position = activeSession.zoom * (seconds - activeSession.scroll);
 		drawLine(timelineContext, position, 4, position, timelineCanvas.height);
-		timelineContext.fillText(niceTime(seconds, false), position + 4, 4);
+		if (notchWidth > 20) {
+			timelineContext.fillText(niceTime(seconds, false), position + 4, 4);
+		} else if (i % 2 === 0) {
+			timelineContext.fillText(niceTime(seconds, false), position + 4, 4);
+		}
 	}
 	timelineContext.fillStyle = "white";
-	timelineContext.fillRect(playheadTime * activeSession.zoom - mainNav.scrollLeft, 0, 1, timelineCanvas.height);
+	timelineContext.fillRect(activeSession.zoom * (playheadTime - activeSession.scroll), 0, 1, timelineCanvas.height);
 }
 
 function setPlayhead(seconds, updateLabel) {
@@ -198,13 +228,13 @@ function forceTime() {
 
 function playSession() {
 	if (!activeSession) return;
-	playButton.value = "❚❚";
+	playButton.innerHTML = "❚❚";
 	activeSession.schedule();
 	player.resume();
 }
 
 function togglePlayback() {
-	if (!player) return;
+	ensurePlayer();
 	if (player.state === "running") {
 		pauseSession();
 	} else {
@@ -248,6 +278,7 @@ function urlJson(url, func, err) {
 }
 
 function updateZoomDragger() {
+	if (!activeSession) return;
 	zoomDrag.style.left = activeSession.zoomPosition() + "px";
 	zoomDrag.style.width = activeSession.zoomWidth() + "px";
 }
@@ -294,7 +325,6 @@ function forceCanvasRedraw() {
 			const track = activeSession.trackList[i];
 			for (let j = 0; j < track.clips.length; j++) {
 				track.clips[j].updateCanvas();
-				console.log("UPDATED");
 			}
 		}
 	}, 1000);
@@ -320,7 +350,7 @@ function navScroll() {
 	}
 	if (activeSession && mainNav.scrollLeft !== lastLeftScroll) {
 		if (!activeDrag) {
-			zoomDrag.style.left = activeSession.zoomPosition() + "px";
+			activeSession.setScroll(mainNav.scrollLeft / activeSession.zoom);
 		}
 		updateTimeCanvas();
 		lastLeftScroll = mainNav.scrollLeft;
@@ -333,14 +363,14 @@ function setupZoomDraggers() {
 		if (!isLeftClick(e)) return;
 		e.preventDefault();
 		e.stopPropagation();
-		activeDrag = { type: "zoomdragleft", dragWidth: e.pageX, dragPosition: e.pageX - activeSession.zoomPosition(), lastWidth: activeSession.zoomWidth(), lastPosition: zoomCanvas.width * (mainNav.scrollLeft + zoomCanvas.width) / activeSession.pixelWidth() };
+		activeDrag = { type: "zoomdragleft", dragWidth: e.pageX, dragPosition: e.pageX - activeSession.zoomPosition(), lastWidth: activeSession.zoomWidth(), lastPosition: activeSession.zoomPosition() + activeSession.zoomWidth() };
 	});
 	const zoomDragRight = document.getElementById("zoomdragright");
 	zoomDragRight.addEventListener("mousedown", function(e) {
 		if (!isLeftClick(e)) return;
 		e.preventDefault();
 		e.stopPropagation();
-		activeDrag = { type: "zoomdragright", drag: e.pageX, lastWidth: activeSession.zoomWidth(), lastScroll: mainNav.scrollLeft / activeSession.zoom };
+		activeDrag = { type: "zoomdragright", drag: e.pageX, lastWidth: activeSession.zoomWidth(), lastScroll: activeSession.scroll };
 	});
 	zoomDrag.addEventListener("mousedown", function(e) {
 		if (!isLeftClick(e)) return;
@@ -356,6 +386,16 @@ function draw() {
 		} else {
 			setPlayhead(time, true);
 		}
+		if (shakeAnalyser) {
+			shakeAnalyser.getByteFrequencyData(shakeData);
+			const bass = shakeData[0] - 120;
+			document.body.style.overflow = "hidden";
+			document.body.style.transform = "rotate(" + (bass * 0.001) + "deg) translateY(" + (bass * -0.1) + "px";
+			const mid = shakeData[256] - 40;
+			sideNav.style.transform = "rotate(" + (mid * -0.005) + "deg)";
+			const treble = shakeData[512] - 80;
+			topNav.style.transform = "rotate(" + (treble * 0.005) + "deg) translateY(" + (treble * 0.1) + "px";
+		}
 	}
 	requestFrame(draw);
 }
@@ -367,9 +407,17 @@ function setupPlaylist() {
 	playlistSetup = true;
 }
 
-function setMenu(name) {
+function openPopup(name) {
+	pauseIfPlayingSession();
 	transcriptMenu.style.display = name === "transcript" ? "block" : "none";
 	presetMenu.style.display = name === "preset" ? "block" : "none";
+	prefsMenu.style.display = name === "prefs" ? "block" : "none";
+	popupOverlay.style.display = "block";
+	popup.style.display = "block";
+}
+
+function setMenu(name) {
+	pauseIfPlayingSession();
 	editor.style.display = name === "editor" ? "block" : "none";
 	step1.style.display = name === "step1" ? "block" : "none";
 	step2.style.display = name === "step2" ? "block" : "none";
@@ -561,6 +609,7 @@ function Track(trackSession) {
 }
 
 function Session(name) {
+	this.scroll = 0;
 	this.zoom = 100;
 	this.duration = 0;
 	this.realName = name;
@@ -576,6 +625,9 @@ function Session(name) {
 					const bufferNode = player.createBufferSource();
 					//bufferNode.playbackRate.value = 1 / clip.scale;
 					bufferNode.buffer = clip.audioBuffer;
+					if (shakeAnalyser) {
+						bufferNode.connect(shakeAnalyser);
+					}
 					bufferNode.connect(player.destination);
 					//bufferNode.start(Math.max(0, clip.startTime - timeOffset), Math.max(0, (-clip.startTime + timeOffset) / clip.scale), clip.duration);
 					let when = clip.startTime - timeOffset;
@@ -598,14 +650,13 @@ function Session(name) {
 		return this.duration * this.zoom;
 	};
 	this.zoomPosition = function() {
-		return mainNav.scrollLeft / this.pixelWidth() * zoomCanvas.width;
+		return (this.scroll * zoomCanvas.width) / this.duration;
 	};
 	this.zoomWidth = function() {
 		return (zoomCanvas.width * zoomCanvas.width) / this.pixelWidth();
 	};
 	this.setActive = function() {
 		if (activeSession) {
-			pauseIfPlayingSession();
 			for (let i = 0; i < activeSession.trackList.length; i++) {
 				activeSession.trackList[i].elem.style.display = "none";
 			}
@@ -626,6 +677,11 @@ function Session(name) {
 		playlist.style.width = this.pixelWidth() + "px";
 		updatePlaylistZoom();
 	};
+	this.setScroll = function(time) {
+		this.scroll = time;
+		mainNav.scrollLeft = time * this.zoom;
+		updateZoomDragger();
+	};
 	this.addTrack();
 }
 
@@ -641,7 +697,7 @@ function listFile(file) {
 		}
 	});
 	elem.addEventListener("click", function() {
-		elem.classList.toggle("active");
+		//elem.classList.toggle("active");
 		if (file.trackList) {
 			file.setActive();
 		}
@@ -710,8 +766,7 @@ function moved(e) {
 		} else if (position + maxPosition > zoomCanvas.width) {
 			position = zoomCanvas.width - maxPosition;
 		}
-		zoomDrag.style.left = position + "px";
-		mainNav.scrollLeft = (activeSession.pixelWidth() * position) / zoomCanvas.width;
+		activeSession.setScroll((activeSession.duration * position) / zoomCanvas.width);
 	} else if (activeDrag.type === "zoomdragleft") {
 		e.preventDefault();
 		let position = e.pageX - activeDrag.dragPosition;
@@ -728,10 +783,8 @@ function moved(e) {
 		} else if (position + newWidth > zoomCanvas.width) {
 			position = zoomCanvas.width - newWidth;
 		}
-		zoomDrag.style.left = position + "px";
-		zoomDrag.style.width = newWidth + "px";
 		activeSession.setZoom((zoomCanvas.width / newWidth) * (zoomCanvas.width / activeSession.duration));
-		mainNav.scrollLeft = (activeSession.pixelWidth() * position) / zoomCanvas.width;
+		activeSession.setScroll((activeSession.duration * position) / zoomCanvas.width);
 	} else if (activeDrag.type === "zoomdragright") {
 		e.preventDefault();
 		let newWidth = activeDrag.lastWidth - (activeDrag.drag - e.pageX);
@@ -740,9 +793,8 @@ function moved(e) {
 		} else if (newWidth < minZoomWidth) {
 			newWidth = minZoomWidth;
 		}
-		zoomDrag.style.width = newWidth + "px";
 		activeSession.setZoom((zoomCanvas.width / newWidth) * (zoomCanvas.width / activeSession.duration));
-		mainNav.scrollLeft = activeDrag.lastScroll * activeSession.zoom;
+		activeSession.setScroll(activeDrag.lastScroll);
 	} else if (activeDrag === "playhead") {
 		e.preventDefault();
 		pauseIfPlayingSession();
@@ -752,6 +804,38 @@ function moved(e) {
 
 function ended() {
 	activeDrag = undefined;
+}
+
+function zoomIn() {
+	activeSession.setZoom(activeSession.zoom * zoomAmount);
+	const visibleWidth = zoomCanvas.width / activeSession.zoom;
+	const newScroll = playheadTime - visibleWidth * 0.5;
+	if (newScroll < 0) {
+		activeSession.setScroll(0);
+	} else if (visibleWidth + newScroll > activeSession.duration) {
+		activeSession.setScroll(activeSession.duration - visibleWidth);
+	} else {
+		activeSession.setScroll(newScroll);
+	}
+}
+
+function zoomOut() {
+	const newZoom = activeSession.zoom / zoomAmount;
+	if (zoomCanvas.width / activeSession.duration >= newZoom) {
+		activeSession.setZoom(zoomCanvas.width / activeSession.duration);
+		activeSession.setScroll(0);
+	} else {
+		const lastScroll = activeSession.zoomPosition();
+		const lastWidth = activeSession.zoomWidth();
+		activeSession.setZoom(newZoom);
+		const half = lastScroll + (lastWidth - activeSession.zoomWidth()) * 0.5;
+		const newScroll = (half / zoomCanvas.width) * activeSession.duration;
+		if (newScroll < 0) {
+			activeSession.setScroll(0);
+		} else {
+			activeSession.setScroll(newScroll);
+		}
+	}
 }
 
 function annoy(e) {
@@ -773,22 +857,26 @@ function setup() {
 	finalTranscript = document.getElementById("finaltranscript");
 	transcriptMenu = document.getElementById("transcriptmenu");
 	transcriptElem = document.getElementById("transcript");
+	popupOverlay = document.getElementById("popupoverlay");
 	timelineCanvas = document.getElementById("timeline");
 	presetMenu = document.getElementById("presetmenu");
+	playButton = document.getElementById("playbutton");
 	createTrack = document.getElementById("addtrack");
+	prefsMenu = document.getElementById("prefsmenu");
 	presetList = document.getElementById("presets");
 	playlist = document.getElementById("playlist");
 	playhead = document.getElementById("playhead");
 	zoomDrag = document.getElementById("zoomer");
 	zoomCanvas = document.getElementById("zoom");
-	playButton = document.getElementById("play");
 	sideNav = document.getElementById("sidenav");
 	mainNav = document.getElementById("mainnav");
 	timeLabel = document.getElementById("time");
+	topNav = document.getElementById("topnav");
 	editor = document.getElementById("editor");
 	tracks = document.getElementById("tracks");
 	step1 = document.getElementById("step1");
 	step2 = document.getElementById("step2");
+	popup = document.getElementById("popup");
 	window.addEventListener("mousemove", moved);
 	window.addEventListener("mouseup", ended);
 	window.addEventListener("resize", resize);
@@ -803,11 +891,9 @@ function setup() {
 	timelineCanvas.addEventListener("click", movePlayhead);
 	window.addEventListener("beforeunload", annoy);
 	window.addEventListener("keydown", function(e) {
-		if (e.keyCode === 32) {
-			playButton.click();
-			if (e.target === document.body) {
-				e.preventDefault();
-			}
+		if (e.keyCode === 32 && e.target === document.body) {
+			togglePlayback();
+			e.preventDefault();
 		}
 	});
 	window.addEventListener("click", function(e) {
@@ -826,6 +912,11 @@ function setup() {
 		}
 	});
 	requestFrame(draw);
+}
+
+function closePopup() {
+	popupOverlay.style.display = "none";
+	popup.style.display = "none";
 }
 
 function toggle(elem) {
@@ -859,11 +950,11 @@ function listPreset(name) {
 
 function loadPresets() {
 	if (presetsLoaded) {
-		setMenu("preset");
+		openPopup("preset");
 	} else {
 		urlJson("presets.json", function(presets) {
 			presetsLoaded = true;
-			setMenu("preset");
+			openPopup("preset");
 			for (let i = 0; i < presets.length; i++) {
 				const panel = document.createElement("div");
 				panel.className = "preset";
@@ -881,6 +972,7 @@ function loadPresets() {
 				panel.appendChild(desc);
 				panel.addEventListener("click", function() {
 					urlJson(presets[i].url, function(response) {
+						closePopup();
 						setMenu("step2");
 						ensurePlayer();
 						const elems = listPreset(presets[i].name);
@@ -917,12 +1009,21 @@ function checkJson(elem) {
 	}
 }
 
-function goBack() {
-	setMenu("step1");
+function transcribe() {
+	openPopup("transcript");
 }
 
-function transcribe() {
-	setMenu("transcript");
+function openPrefs() {
+	openPopup("prefs");
+}
+
+function toggleShake(elem) {
+	shaking = elem.checked;
+	if (shaking && player && !shakeAnalyser) {
+		createShakeAnalyser();
+	} else if (!shaking && shakeAnalyser) {
+		shakeAnalyser = undefined;
+	}
 }
 
 function newSession() {
@@ -1071,6 +1172,11 @@ function microphone(elem) {
 		}
 	}
 	elem.classList.toggle("active");
+}
+
+function submitTranscript() {
+	closePopup();
+	setMenu("step2");
 }
 
 /*function drawBoxes(json, audio) {

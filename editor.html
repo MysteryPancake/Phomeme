@@ -21,7 +21,7 @@
 	</head>
 	<body onload="setup();">
 		<div id="topnav">
-			<h1 id="title">Phomeme</h1>
+			<h1 id="title" onclick="openPrefs();">Phomeme</h1>
 			<div class="dropdown">
 				<a class="topbutton autoclosebutton" onclick="toggle(this);">File</a>
 				<div class="dropcontent autoclose">
@@ -48,7 +48,7 @@
 			<div class="dropdown">
 				<a class="topbutton autoclosebutton" onclick="toggle(this);">Align</a>
 				<div class="dropcontent autoclose">
-					<a class="dropoption">Gentle</a>
+					<a class="dropoption" onclick="transcribe();">Gentle</a>
 					<a class="dropoption">WebMAUS</a>
 				</div>
 			</div>
@@ -59,8 +59,8 @@
 				<div id="navigation">
 					<canvas id="zoom"></canvas>
 					<div id="zoomer">
-						<div id="zoomdragleft"></div>
 						<div id="zoomdragright"></div>
+						<div id="zoomdragleft"></div>
 					</div>
 					<canvas id="timeline"></canvas>
 				</div>
@@ -71,20 +71,26 @@
 				</div>
 				<div id="playback">
 					<span id="time" contenteditable="true" oninput="parseTime(this);">0:00:00.000</span>
-					<input type="button" id="play" value="&#9658;" onclick="togglePlayback();">
+					<a id="playbutton" class="playbackbutton" onclick="togglePlayback();">&#9658;</a>
+					<a id="zoomin" class="playbackbutton" onclick="zoomIn();">Zoom In</a>
+					<a id="zoomout" class="playbackbutton" onclick="zoomOut();">Zoom Out</a>
 				</div>
 			</div>
-			<div id="step1">
+			<div id="step1" class="step">
 				<span class="steplabel">Step 1: Source</span>
-				<label class="initialbutton" onclick="transcribe();">Upload Vocals</label>
+				<a class="largebutton" onclick="transcribe();">Upload Vocals</a>
 				<span>OR</span>
-				<label class="initialbutton" onclick="loadPresets();">Load Preset</label>
+				<a class="largebutton" onclick="loadPresets();">Load Preset</a>
 			</div>
-			<div id="step2">
+			<div id="step2" class="step">
 				<span class="steplabel">Step 2: Destination</span>
+				<a class="largebutton" onclick="transcribe();">Upload Vocals</a>
 			</div>
+		</div>
+		<div id="popupoverlay" onclick="closePopup();"></div>
+		<div id="popup">
+			<a id="closebutton" onclick="closePopup();">x</a>
 			<div id="transcriptmenu">
-				<a class="back" onclick="goBack();">< Back</a>
 				<div id="transcriptarea">
 					<div id="transcriptbuttons">
 						<label for="transcriptupload" id="uploadbutton">Upload</label>
@@ -96,13 +102,17 @@
 						<span id="finaltranscript"></span>
 						<span id="interimtranscript"></span>
 					</div>
-					<textarea id="transcript" class="padded" rows="16" placeholder="Type the transcript here"></textarea>
-					<a id="submitbutton">Submit<a>
+					<textarea id="transcript" class="padded" rows="24" placeholder="Type the transcript here"></textarea>
+					<a id="submitbutton" onclick="submitTranscript();">Submit<a>
 				</div>
 			</div>
 			<div id="presetmenu">
-				<a class="back" onclick="goBack();">< Back</a>
 				<div id="presets"></div>
+			</div>
+			<div id="prefsmenu">
+				<h2>Preferences</h2>
+				<label for="shake">Shake</label>
+				<input type="checkbox" id="shake" onchange="toggleShake(this);">
 			</div>
 		</div>
 	</body>
