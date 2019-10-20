@@ -589,9 +589,10 @@ function listFile(file) {
 	elem.draggable = true;
 	elem.innerHTML = file.name;
 	sideNav.appendChild(elem);
-	elem.addEventListener("dragstart", function() {
+	elem.addEventListener("dragstart", function(e) {
 		if (file.type.startsWith("audio")) {
 			draggedFile = file;
+			e.dataTransfer.setData("text/plain", "Firefox");
 		}
 	});
 	elem.addEventListener("click", function() {
