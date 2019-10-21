@@ -26,18 +26,28 @@ input[type="file"] {
 
 #addtrack {
 	display: block;
-	height: 128px;
+	height: 256px;
+}
+
+#boxselect {
+	-moz-user-select: none;
+	background-color: #00FF001A;
+	outline: 1px solid #00FF00;
+	pointer-events: none;
+	position: fixed;
+	user-select: none;
+	z-index: 9999;
 }
 
 .clip {
 	cursor: move;
 	height: 128px;
-	outline: 1px solid #00FF00;
 	position: relative;
 }
 
 .clipdiv {
 	height: 100%;
+	outline: 1px solid #00FF00;
 	position: absolute;
 }
 
@@ -49,6 +59,11 @@ input[type="file"] {
 .clipdiv:active {
 	background-color: #00000080;
 	z-index: 2;
+}
+
+.clipdiv.active {
+	background-color: #00FF0033;
+	box-shadow: 0 0 0 1px #00FF00 inset;
 }
 
 .clipdragleft, .clipdragright {
@@ -108,11 +123,11 @@ input[type="file"] {
 	font-weight: bold;
 }
 
-.filefolder.active > a {
+.filefolder.open > a {
 	background-color: #004000;
 }
 
-.filefolder.active > a:after {
+.filefolder.open > a:after {
 	content: "-";
 }
 
@@ -120,7 +135,7 @@ input[type="file"] {
 	background-color: #FF0000;
 }
 
-.filefolder.error.active > a {
+.filefolder.error.open > a {
 	background-color: #500000;
 }
 
@@ -300,10 +315,6 @@ input[type="file"] {
 	padding: 8px;
 }
 
-#sidenav .active {
-	background-color: #002000;
-}
-
 #sidenav .filefolder.error > a {
 	border-bottom: 1px solid #400000;
 }
@@ -468,7 +479,7 @@ input[type="file"] {
 	z-index: 8;
 }
 
-#editor, #presetmenu, #step2, #popupoverlay, #popup, #prefsmenu, #transcriptmenu, #transcriptplayer {
+#boxselect, #editor, #presetmenu, #step2, #popupoverlay, #popup, #prefsmenu, #transcriptmenu, #transcriptplayer {
 	display: none;
 }
 
@@ -485,4 +496,8 @@ input[type="file"] {
 	cursor: pointer;
 	outline: none;
 	user-select: none;
+}
+
+#sidenav a.active {
+	background-color: #004000;
 }

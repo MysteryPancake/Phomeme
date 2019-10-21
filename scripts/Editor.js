@@ -13,6 +13,7 @@ let zoomDrag;
 let playhead;
 let playlist;
 let recorder;
+let boxSelect;
 let timeLabel;
 let prefsMenu;
 let presetMenu;
@@ -37,9 +38,8 @@ let lastTopScroll = 0;
 let lastLeftScroll = 0;
 let shaking = false;
 let shakeAnalyser;
-let timeOffset = 0;
+let activeFiles = [];
 let recordIndex = 1;
-let playheadTime = 0;
 let sampleRate = 44100;
 let presetsLoaded = false;
 let playlistSetup = false;
@@ -49,7 +49,8 @@ const waveDetail = 16;
 const zoomAmount = 1.25;
 const minZoomWidth = 2;
 const minClipWidth = 0.05;
-let shakeData = new Uint8Array(2048);
+const shakeAnalyserPrecision = 2048;
+let shakeData = new Uint8Array(shakeAnalyserPrecision * 0.5);
 const requestFrame = window.requestAnimationFrame || window.webkitRequestAnimationFrame || window.mozRequestAnimationFrame || window.oRequestAnimationFrame || window.msRequestAnimationFrame || function(e) { return window.setTimeout(e, 1000 / 60); };
 
 function isLeftClick(e) {
@@ -63,10 +64,29 @@ function drawLine(context, x, y, x2, y2) {
 	context.stroke();
 }
 
+function deselectFiles() {
+	for (let i = 0; i < fileList.length; i++) {
+		fileList[i].elem.classList.remove("active");
+	}
+	activeFiles = [];
+}
+
+function deselectNonDraggableFiles() {
+	for (let i = 0; i < fileList.length; i++) {
+		const file = fileList[i];
+		if (!file.elem.draggable) {
+			const index = activeFiles.indexOf(file);
+			if (index !== -1) {
+				file.elem.classList.remove("active");
+				activeFiles.splice(index, 1);
+			}
+		}
+	}
+}
+
 function createShakeAnalyser() {
 	shakeAnalyser = player.createAnalyser();
-	shakeAnalyser.fftSize = 2048;
-	shakeAnalyser.connect(player.destination);
+	shakeAnalyser.fftSize = shakeAnalyserPrecision;
 }
 
 function restartPlayer() {
@@ -91,7 +111,7 @@ function pauseSession() {
 		document.body.style.transform = "none";
 		document.body.style.overflow = "initial";
 	}
-	timeOffset += player.currentTime;
+	activeSession.timeOffset += player.currentTime;
 	playButton.innerHTML = "►";
 	player.close();
 	restartPlayer();
@@ -202,28 +222,19 @@ function updateTimeCanvas() {
 		}
 	}
 	timelineContext.fillStyle = "white";
-	timelineContext.fillRect(activeSession.zoom * (playheadTime - activeSession.scroll), 0, 1, timelineCanvas.height);
-}
-
-function setPlayhead(seconds, updateLabel) {
-	playheadTime = seconds;
-	playhead.style.left = playheadTime * activeSession.zoom + "px";
-	updateTimeCanvas();
-	if (updateLabel) {
-		timeLabel.innerHTML = niceTime(seconds, true);
-	}
+	timelineContext.fillRect(activeSession.zoom * (activeSession.playheadTime - activeSession.scroll), 0, 1, timelineCanvas.height);
 }
 
 function parseTime(elem) {
 	pauseIfPlayingSession();
-	timeOffset = Math.min(timeStringToSeconds(elem.innerHTML), activeSession.duration);
-	setPlayhead(timeOffset, false);
+	activeSession.timeOffset = Math.min(timeStringToSeconds(elem.innerHTML), activeSession.duration);
+	activeSession.setPlayhead(activeSession.timeOffset, false);
 }
 
 function forceTime() {
 	pauseIfPlayingSession();
-	timeOffset = Math.min(timeStringToSeconds(timeLabel.innerHTML), activeSession.duration);
-	setPlayhead(timeOffset, true);
+	activeSession.timeOffset = Math.min(timeStringToSeconds(timeLabel.innerHTML), activeSession.duration);
+	activeSession.setPlayhead(activeSession.timeOffset, true);
 }
 
 function playSession() {
@@ -277,6 +288,16 @@ function urlJson(url, func, err) {
 	jsonRequest.send();
 }
 
+function updateClipCanvases() {
+	if (!activeSession) return;
+	for (let i = 0; i < activeSession.trackList.length; i++) {
+		const track = activeSession.trackList[i];
+		for (let j = 0; j < track.clips.length; j++) {
+			track.clips[j].updateCanvas();
+		}
+	}
+}
+
 function updateZoomDragger() {
 	if (!activeSession) return;
 	zoomDrag.style.left = activeSession.zoomPosition() + "px";
@@ -291,6 +312,7 @@ function resize() {
 	timelineCanvas.height = timelineCanvas.clientHeight;
 	updateTimeCanvas();
 	updateZoomDragger();
+	updateClipCanvases();
 }
 
 function updatePlaylistDuration() {
@@ -308,7 +330,7 @@ function updatePlaylistDuration() {
 }
 
 function updatePlaylistZoom() {
-	setPlayhead(playheadTime, false);
+	activeSession.setPlayhead(activeSession.playheadTime, false);
 	for (let i = 0; i < activeSession.trackList.length; i++) {
 		const track = activeSession.trackList[i];
 		for (let j = 0; j < track.clips.length; j++) {
@@ -321,12 +343,7 @@ function forceCanvasRedraw() {
 	window.setTimeout(function() {
 		updateZoomCanvas();
 		updateTimeCanvas();
-		for (let i = 0; i < activeSession.trackList.length; i++) {
-			const track = activeSession.trackList[i];
-			for (let j = 0; j < track.clips.length; j++) {
-				track.clips[j].updateCanvas();
-			}
-		}
+		updateClipCanvases();
 	}, 1000);
 }
 
@@ -350,7 +367,7 @@ function navScroll() {
 	}
 	if (activeSession && mainNav.scrollLeft !== lastLeftScroll) {
 		if (!activeDrag) {
-			activeSession.setScroll(mainNav.scrollLeft / activeSession.zoom);
+			activeSession.setScroll(mainNav.scrollLeft / activeSession.zoom, false);
 		}
 		updateTimeCanvas();
 		lastLeftScroll = mainNav.scrollLeft;
@@ -380,30 +397,30 @@ function setupZoomDraggers() {
 
 function draw() {
 	if (player && player.state === "running") {
-		const time = timeOffset + player.currentTime;
+		const time = activeSession.timeOffset + player.currentTime;
 		if (time > activeSession.duration) {
 			pauseIfPlayingSession();
 		} else {
-			setPlayhead(time, true);
+			activeSession.setPlayhead(time, true);
 		}
 		if (shakeAnalyser) {
 			shakeAnalyser.getByteFrequencyData(shakeData);
-			const bass = shakeData[0] - 120;
+			const bass = shakeData[0];
 			document.body.style.overflow = "hidden";
-			document.body.style.transform = "rotate(" + (bass * 0.001) + "deg) translateY(" + (bass * -0.1) + "px";
+			document.body.style.transform = "rotate(" + ((bass - 80) * 0.001) + "deg) translateY(" + ((bass - 120) * -0.1) + "px";
 			const mid = shakeData[256] - 40;
 			sideNav.style.transform = "rotate(" + (mid * -0.005) + "deg)";
-			const treble = shakeData[512] - 80;
-			topNav.style.transform = "rotate(" + (treble * 0.005) + "deg) translateY(" + (treble * 0.1) + "px";
+			const treble = shakeData[512];
+			topNav.style.transform = "rotate(" + ((treble - 80) * 0.005) + "deg) translateY(" + ((treble - 40) * 0.1) + "px";
 		}
 	}
 	requestFrame(draw);
 }
 
 function setupPlaylist() {
-	activeSession.setDuration(playlist.scrollWidth / activeSession.zoom);
 	setupZoomCanvas();
 	setupTimeCanvas();
+	setupZoomDraggers();
 	playlistSetup = true;
 }
 
@@ -421,9 +438,6 @@ function setMenu(name) {
 	editor.style.display = name === "editor" ? "block" : "none";
 	step1.style.display = name === "step1" ? "block" : "none";
 	step2.style.display = name === "step2" ? "block" : "none";
-	if (name === "editor" && !playlistSetup) {
-		setupPlaylist();
-	}
 }
 
 function addDragger(clip, left) {
@@ -471,7 +485,6 @@ function Clip(clipFile, clipTrack, clipSession) {
 	addDragger(this, false);
 	this.context = this.elem.getContext("2d", { alpha: true });
 	this.drawCanvas = function() {
-		this.elem.width = this.duration * this.session.zoom;
 		this.context.clearRect(0, 0, this.elem.width, this.elem.height);
 		const lines = this.elem.width * waveDetail;
 		this.context.lineWidth = 0.5;
@@ -480,17 +493,15 @@ function Clip(clipFile, clipTrack, clipSession) {
 		for (let k = 0; k < lines; k++) {
 			const x = k / lines * this.elem.width;
 			const y = this.elem.height * 0.5;
-			const index = this.audioData[Math.floor((k / waveDetail) * (sampleRate / this.session.zoom))];
-			drawLine(this.context, x, y, x, y + (index || 0) * y * peakScale);
+			const index = this.audioData[Math.floor((k * sampleRate) / (waveDetail * this.session.zoom) + (this.inTime * sampleRate))];
+			this.context.lineTo(x, y + (index || 0) * y * peakScale);
 		}
 		this.context.stroke();
 		this.context.lineWidth = 1;
 		this.context.strokeStyle = "#00FF00";
 		drawLine(this.context, 0, 16, this.elem.width, 16);
 		drawLine(this.context, 0, this.elem.height - 16, this.elem.width, this.elem.height - 16);
-		this.imageData = this.context.getImageData(0, 0, this.elem.width, this.elem.height);
 		//this.drawLabel();
-		forceCanvasRedraw();
 	};
 	/*this.drawLabel = function() {
 		this.context.fillStyle = "white";
@@ -500,15 +511,48 @@ function Clip(clipFile, clipTrack, clipSession) {
 		this.context.fillText("TESTING", this.elem.width * 0.5, 4);
 	};*/
 	this.updateCanvas = function() {
-		this.elem.width = (this.outTime - this.inTime) * this.session.zoom;
-		this.context.putImageData(this.imageData, -this.inTime * this.session.zoom, 0);
+		if (!this.audioData) return;
+		const realWidth = (this.outTime - this.inTime) * this.session.zoom;
+
+		// todo: clip left and right of canvas if not visible
+
+		//const fakeOutTime = Math.min(this.outTime, this.session.scroll + (zoomCanvas.width / this.session.zoom) - this.startTime);
+		//const width = (fakeOutTime - this.inTime) * this.session.zoom;
+
+		//console.log(zoomCanvas.width / this.session.zoom);
+
+		// force the canvas to be a certain size
+
+		//console.log(((this.session.scroll + (zoomCanvas.width / this.session.zoom) - this.startTime) - this.inTime) * this.session.zoom);
+
+		// ^ find a nice way to get this in the pixel domain
+
+		//if (width > 1) {
+			//this.elem.width = width;
+		//} else {
+			//this.elem.width = 1;
+		//}
+		this.elem.width = realWidth;
+
+		this.drawCanvas();
 		//this.drawLabel();
+	};
+	this.setActive = function() {
+		this.session.activeClips.push(this);
+		this.parent.classList.add("active");
 	};
 	this.clicked = function(e) {
 		if (!isLeftClick(e)) return;
 		e.preventDefault();
 		activeDrag = this;
-		this.drag = e.pageX - (this.startTime * this.session.zoom);
+		if (this.session.activeClips.indexOf(this) === -1) {
+			this.session.deselectClips();
+			deselectFiles();
+			this.setActive();
+		}
+		for (let i = 0; i < this.session.activeClips.length; i++) {
+			this.session.activeClips[i].drag = e.pageX - (this.session.activeClips[i].startTime * this.session.zoom);
+		}
 	};
 	this.elem.addEventListener("mousedown", this.clicked.bind(this));
 	this.setOutTime = function(time) {
@@ -523,7 +567,7 @@ function Clip(clipFile, clipTrack, clipSession) {
 	};
 	this.updateZoom = function() {
 		this.parent.style.left = this.startTime * this.session.zoom + "px";
-		this.elem.style.width = (this.outTime - this.inTime) * this.session.zoom + "px";
+		this.updateCanvas();
 	};
 	/*this.setScale = function(scale) {
 		this.scale = (scale + this.lastWidth) / this.elem.width;
@@ -544,8 +588,10 @@ function Clip(clipFile, clipTrack, clipSession) {
 			this.audioBuffer = buffer;
 			this.duration = buffer.duration;
 			this.outTime = buffer.duration;
+			this.elem.width = buffer.duration * this.session.zoom;
+			this.updateCanvas();
 			updatePlaylistDuration();
-			this.drawCanvas();
+			forceCanvasRedraw();
 		}.bind(this));
 	};
 	this.loadFile(clipFile);
@@ -557,13 +603,19 @@ function Clip(clipFile, clipTrack, clipSession) {
 	};
 	this.setStart = function(time) {
 		this.startTime = time;
-		updatePlaylistDuration();
 		this.parent.style.left = time * this.session.zoom + "px";
+		updatePlaylistDuration();
+		this.updateCanvas();
+	};
+	this.remove = function() {
+		this.track.removeClip(this);
+		this.parent.parentNode.removeChild(this.parent);
 	};
 }
 
 function Track(trackSession) {
 	this.clips = [];
+	this.index = 0;
 	this.session = trackSession;
 	this.elem = document.createElement("div");
 	this.elem.className = "track";
@@ -575,6 +627,7 @@ function Track(trackSession) {
 		pauseIfPlayingSession();
 		const clip = new Clip(file, this, this.session);
 		this.addClip(clip);
+		clip.setActive();
 		return clip;
 	};
 	this.removeClip = function(clip) {
@@ -600,9 +653,30 @@ function Track(trackSession) {
 	this.drop = function(e) {
 		if (draggedFile) {
 			e.preventDefault();
-			const clip = this.loadClip(draggedFile);
-			clip.setStart((e.clientX - this.elem.getBoundingClientRect().left) / this.session.zoom);
+			activeSession.deselectClips();
+			const clip = this.loadClip(draggedFile.file);
+			const start = (e.clientX - this.elem.getBoundingClientRect().left) / this.session.zoom;
+			clip.setStart(start);
+			if (draggedFile.elem.classList.contains("active") && activeFiles.length) {
+				let offset = 0;
+				for (let i = 0; i < activeFiles.length; i++) {
+					const active = activeFiles[i];
+					if (active !== draggedFile && active.file.type.startsWith("audio")) {
+						const nextClip = this.nextTrack(offset).loadClip(active.file);
+						nextClip.setStart(start);
+						offset++;
+					}
+				}
+			}
 			draggedFile = undefined;
+		}
+	};
+	this.nextTrack = function(offset) {
+		const next = this.session.trackList[this.index + 1 + offset];
+		if (next) {
+			return next;
+		} else {
+			return this.session.addTrack();
 		}
 	};
 	this.elem.addEventListener("drop", this.drop.bind(this));
@@ -612,15 +686,18 @@ function Session(name) {
 	this.scroll = 0;
 	this.zoom = 100;
 	this.duration = 0;
+	this.timeOffset = 0;
+	this.playheadTime = 0;
 	this.realName = name;
+	this.activeClips = [];
 	this.name = name + ".phomeme";
-	this.type = "application/json";
+	this.type = "session";
 	this.trackList = [];
 	this.schedule = function() {
 		for (let i = 0; i < this.trackList.length; i++) {
 			for (let j = 0; j < this.trackList[i].clips.length; j++) {
 				const clip = this.trackList[i].clips[j];
-				const duration = clip.outTime - clip.inTime - Math.max(0, timeOffset - clip.startTime);
+				const duration = clip.outTime - clip.inTime - Math.max(0, this.timeOffset - clip.startTime);
 				if (duration > 0) {
 					const bufferNode = player.createBufferSource();
 					//bufferNode.playbackRate.value = 1 / clip.scale;
@@ -629,8 +706,8 @@ function Session(name) {
 						bufferNode.connect(shakeAnalyser);
 					}
 					bufferNode.connect(player.destination);
-					//bufferNode.start(Math.max(0, clip.startTime - timeOffset), Math.max(0, (-clip.startTime + timeOffset) / clip.scale), clip.duration);
-					let when = clip.startTime - timeOffset;
+					//bufferNode.start(Math.max(0, clip.startTime - this.timeOffset), Math.max(0, (-clip.startTime + this.timeOffset) / clip.scale), clip.duration);
+					let when = clip.startTime - this.timeOffset;
 					let offset = clip.inTime;
 					if (when < 0) {
 						offset -= when;
@@ -641,9 +718,16 @@ function Session(name) {
 			}
 		}
 	};
+	this.deselectClips = function() {
+		for (let i = 0; i < this.activeClips.length; i++) {
+			this.activeClips[i].parent.classList.remove("active");
+		}
+		this.activeClips = [];
+	};
 	this.addTrack = function() {
 		const track = new Track(this);
 		this.trackList.push(track);
+		track.index = this.trackList.length - 1;
 		return track;
 	};
 	this.pixelWidth = function() {
@@ -655,7 +739,17 @@ function Session(name) {
 	this.zoomWidth = function() {
 		return (zoomCanvas.width * zoomCanvas.width) / this.pixelWidth();
 	};
+	this.setPlayhead = function(seconds, updateLabel) {
+		this.playheadTime = seconds;
+		playhead.style.left = this.playheadTime * this.zoom + "px";
+		updateTimeCanvas();
+		if (updateLabel) {
+			timeLabel.innerHTML = niceTime(seconds, true);
+		}
+	};
 	this.setActive = function() {
+		pauseIfPlayingSession();
+		setMenu("editor");
 		if (activeSession) {
 			for (let i = 0; i < activeSession.trackList.length; i++) {
 				activeSession.trackList[i].elem.style.display = "none";
@@ -664,9 +758,20 @@ function Session(name) {
 		for (let j = 0; j < this.trackList.length; j++) {
 			this.trackList[j].elem.style.display = "flex";
 		}
-		playlist.style.width = this.pixelWidth() + "px";
 		activeSession = this;
-		setMenu("editor");
+		playlist.style.width = this.pixelWidth() + "px";
+		playhead.style.left = this.playheadTime * this.zoom + "px";
+		timeLabel.innerHTML = niceTime(this.playheadTime, true);
+		if (!playlistSetup) {
+			setupPlaylist();
+		}
+		if (this.duration === 0) {
+			this.setDuration(playlist.scrollWidth / this.zoom);
+		}
+		mainNav.scrollLeft = this.scroll * this.zoom;
+		updateZoomDragger();
+		updateZoomCanvas();
+		updateTimeCanvas();
 	};
 	this.setDuration = function(time) {
 		this.duration = time;
@@ -677,32 +782,76 @@ function Session(name) {
 		playlist.style.width = this.pixelWidth() + "px";
 		updatePlaylistZoom();
 	};
-	this.setScroll = function(time) {
+	this.setScroll = function(time, updateNav) {
 		this.scroll = time;
-		mainNav.scrollLeft = time * this.zoom;
 		updateZoomDragger();
+		updateClipCanvases();
+		if (updateNav) {
+			mainNav.scrollLeft = time * this.zoom;
+		}
 	};
-	this.addTrack();
+	this.remove = function() {
+		for (let i = 0; i < this.trackList.length; i++) {
+			const trackElem = this.trackList[i].elem;
+			trackElem.parentNode.removeChild(trackElem);
+		}
+		setMenu("step1");
+		activeSession = undefined;
+	};
+}
+
+function ListedFile(file) {
+	this.file = file;
+	this.elem = document.createElement("a");
+	this.elem.innerHTML = file.name;
+	this.dragStart = function(e) {
+		deselectNonDraggableFiles();
+		draggedFile = this;
+		e.dataTransfer.setData("text/plain", "Firefox");
+	};
+	if (file.type.startsWith("audio")) {
+		this.elem.draggable = true;
+		this.elem.addEventListener("dragstart", this.dragStart.bind(this));
+	} else {
+		this.elem.classList.add("boxselectable");
+	}
+	this.setActive = function() {
+		activeFiles.push(this);
+		this.elem.classList.add("active");
+	};
+	this.clicked = function() {
+		deselectFiles();
+		if (activeSession) {
+			activeSession.deselectClips();
+		}
+		this.setActive();
+	};
+	this.elem.addEventListener("click", this.clicked.bind(this));
+	this.doubleClick = function() {
+		if (this.file.type === "session") {
+			this.file.setActive();
+		} else if (this.file.type.startsWith("audio") && activeSession) {
+			activeSession.deselectClips();
+			activeSession.addTrack().loadClip(this.file);
+		}
+	};
+	this.elem.addEventListener("dblclick", this.doubleClick.bind(this));
+	this.remove = function() {
+		const index = fileList.indexOf(this);
+		if (index !== -1) {
+			fileList.splice(index, 1);
+		}
+		if (this.file.type === "session") {
+			this.file.remove();
+		}
+		this.elem.parentNode.removeChild(this.elem);
+	};
+	fileList.push(this);
 }
 
 function listFile(file) {
-	const elem = document.createElement("a");
-	elem.draggable = true;
-	elem.innerHTML = file.name;
-	sideNav.appendChild(elem);
-	elem.addEventListener("dragstart", function(e) {
-		if (file.type.startsWith("audio")) {
-			draggedFile = file;
-			e.dataTransfer.setData("text/plain", "Firefox");
-		}
-	});
-	elem.addEventListener("click", function() {
-		//elem.classList.toggle("active");
-		if (file.trackList) {
-			file.setActive();
-		}
-	});
-	fileList.push({ file: file, elem: elem });
+	const listed = new ListedFile(file);
+	sideNav.appendChild(listed.elem);
 }
 
 function closeMenus() {
@@ -713,13 +862,17 @@ function closeMenus() {
 }
 
 function movePlayhead(e) {
-	timeOffset = (e.clientX - playlist.getBoundingClientRect().left) / activeSession.zoom;
+	activeSession.timeOffset = (e.clientX - playlist.getBoundingClientRect().left) / activeSession.zoom;
 	if (player) {
-		timeOffset -= player.currentTime;
+		activeSession.timeOffset -= player.currentTime;
 		pauseIfPlayingSession();
 	}
-	timeOffset = Math.max(0, timeOffset);
-	setPlayhead(timeOffset, true);
+	activeSession.timeOffset = Math.max(0, activeSession.timeOffset);
+	activeSession.setPlayhead(activeSession.timeOffset, true);
+}
+
+function isOverlapping(rect, x, y, width, height) {
+	return !((x + width) < rect.left || x > rect.right || (y + height) < rect.top || y > rect.bottom);
 }
 
 function moved(e) {
@@ -727,7 +880,9 @@ function moved(e) {
 	if (activeDrag.type === "clip") {
 		e.preventDefault();
 		pauseIfPlayingSession();
-		activeDrag.setStart((e.pageX - activeDrag.drag) / activeSession.zoom);
+		for (let i = 0; i < activeSession.activeClips.length; i++) {
+			activeSession.activeClips[i].setStart((e.pageX - activeSession.activeClips[i].drag) / activeSession.zoom);
+		}
 	} else if (activeDrag.type === "clipdragger") {
 		e.preventDefault();
 		pauseIfPlayingSession();
@@ -766,7 +921,7 @@ function moved(e) {
 		} else if (position + maxPosition > zoomCanvas.width) {
 			position = zoomCanvas.width - maxPosition;
 		}
-		activeSession.setScroll((activeSession.duration * position) / zoomCanvas.width);
+		activeSession.setScroll((activeSession.duration * position) / zoomCanvas.width, true);
 	} else if (activeDrag.type === "zoomdragleft") {
 		e.preventDefault();
 		let position = e.pageX - activeDrag.dragPosition;
@@ -784,7 +939,7 @@ function moved(e) {
 			position = zoomCanvas.width - newWidth;
 		}
 		activeSession.setZoom((zoomCanvas.width / newWidth) * (zoomCanvas.width / activeSession.duration));
-		activeSession.setScroll((activeSession.duration * position) / zoomCanvas.width);
+		activeSession.setScroll((activeSession.duration * position) / zoomCanvas.width, true);
 	} else if (activeDrag.type === "zoomdragright") {
 		e.preventDefault();
 		let newWidth = activeDrag.lastWidth - (activeDrag.drag - e.pageX);
@@ -794,28 +949,73 @@ function moved(e) {
 			newWidth = minZoomWidth;
 		}
 		activeSession.setZoom((zoomCanvas.width / newWidth) * (zoomCanvas.width / activeSession.duration));
-		activeSession.setScroll(activeDrag.lastScroll);
+		activeSession.setScroll(activeDrag.lastScroll, true);
 	} else if (activeDrag === "playhead") {
 		e.preventDefault();
 		pauseIfPlayingSession();
 		movePlayhead(e);
+	} else if (activeDrag.type === "boxselect") {
+		e.preventDefault();
+		const xDistance = e.pageX - activeDrag.dragX;
+		const yDistance = e.pageY - activeDrag.dragY;
+		const x = activeDrag.dragX + Math.min(0, xDistance);
+		const y = activeDrag.dragY + Math.min(0, yDistance);
+		const width = Math.abs(xDistance);
+		const height = Math.abs(yDistance);
+		boxSelect.style.left = x + "px";
+		boxSelect.style.top = y + "px";
+		boxSelect.style.width = width + "px";
+		boxSelect.style.height = height + "px";
+		if (activeDrag.side) {
+			activeFiles = [];
+			for (let i = 0; i < fileList.length; i++) {
+				const file = fileList[i];
+				const elem = file.elem;
+				const rect = elem.getBoundingClientRect();
+				if (isOverlapping(rect, x, y, width, height)) {
+					elem.classList.add("active");
+					activeFiles.push(file);
+				} else {
+					elem.classList.remove("active");
+				}
+			}
+		} else if (activeSession) {
+			activeSession.activeClips = [];
+			for (let i = 0; i < activeSession.trackList.length; i++) {
+				const track = activeSession.trackList[i];
+				for (let j = 0; j < track.clips.length; j++) {
+					const clip = track.clips[j];
+					const elem = clip.parent;
+					const rect = elem.getBoundingClientRect();
+					if (isOverlapping(rect, x, y, width, height)) {
+						clip.setActive();
+					} else {
+						elem.classList.remove("active");
+					}
+				}
+			}
+		}
 	}
 }
 
 function ended() {
+	if (!activeDrag) return;
+	if (activeDrag.type === "boxselect") {
+		boxSelect.style.display = "none";
+	}
 	activeDrag = undefined;
 }
 
 function zoomIn() {
 	activeSession.setZoom(activeSession.zoom * zoomAmount);
 	const visibleWidth = zoomCanvas.width / activeSession.zoom;
-	const newScroll = playheadTime - visibleWidth * 0.5;
+	const newScroll = activeSession.playheadTime - visibleWidth * 0.5;
 	if (newScroll < 0) {
-		activeSession.setScroll(0);
+		activeSession.setScroll(0, true);
 	} else if (visibleWidth + newScroll > activeSession.duration) {
-		activeSession.setScroll(activeSession.duration - visibleWidth);
+		activeSession.setScroll(activeSession.duration - visibleWidth, true);
 	} else {
-		activeSession.setScroll(newScroll);
+		activeSession.setScroll(newScroll, true);
 	}
 }
 
@@ -823,7 +1023,7 @@ function zoomOut() {
 	const newZoom = activeSession.zoom / zoomAmount;
 	if (zoomCanvas.width / activeSession.duration >= newZoom) {
 		activeSession.setZoom(zoomCanvas.width / activeSession.duration);
-		activeSession.setScroll(0);
+		activeSession.setScroll(0, true);
 	} else {
 		const lastScroll = activeSession.zoomPosition();
 		const lastWidth = activeSession.zoomWidth();
@@ -831,9 +1031,9 @@ function zoomOut() {
 		const half = lastScroll + (lastWidth - activeSession.zoomWidth()) * 0.5;
 		const newScroll = (half / zoomCanvas.width) * activeSession.duration;
 		if (newScroll < 0) {
-			activeSession.setScroll(0);
+			activeSession.setScroll(0, true);
 		} else {
-			activeSession.setScroll(newScroll);
+			activeSession.setScroll(newScroll, true);
 		}
 	}
 }
@@ -851,6 +1051,47 @@ function preventTimeInput(e) {
 	}
 }
 
+function keyDown(e) {
+	if (e.target !== document.body) return;
+	if (e.keyCode === 32) {
+		togglePlayback();
+		e.preventDefault();
+	} else if (e.keyCode === 8) {
+		if (activeSession && activeSession.activeClips.length) {
+			pauseIfPlayingSession();
+			for (let i = 0; i < activeSession.activeClips.length; i++) {
+				activeSession.activeClips[i].remove();
+			}
+			activeSession.activeClips = [];
+			updateZoomCanvas();
+			e.preventDefault();
+		} else if (activeFiles.length) {
+			for (let i = 0; i < activeFiles.length; i++) {
+				activeFiles[i].remove();
+			}
+			activeFiles = [];
+		}
+	}
+}
+
+function startBoxSelect(e) {
+	if (!isLeftClick(e)) return;
+	const side = e.target.id === "sidenav" || e.target.classList.contains("boxselectable");
+	if (e.target.id === "mainnav" || e.target.className === "track" || e.target.id === "addtrack" || side) {
+		e.preventDefault();
+		activeDrag = { type: "boxselect", dragX: e.pageX, dragY: e.pageY, side: side };
+		boxSelect.style.display = "block";
+		boxSelect.style.left = e.pageX + "px";
+		boxSelect.style.top = e.pageY + "px";
+		boxSelect.style.width = "1px";
+		boxSelect.style.height = "1px";
+		deselectFiles();
+		if (activeSession) {
+			activeSession.deselectClips();
+		}
+	}
+}
+
 function setup() {
 	interimTranscript = document.getElementById("interimtranscript");
 	transcriptPlayer = document.getElementById("transcriptplayer");
@@ -863,6 +1104,7 @@ function setup() {
 	playButton = document.getElementById("playbutton");
 	createTrack = document.getElementById("addtrack");
 	prefsMenu = document.getElementById("prefsmenu");
+	boxSelect = document.getElementById("boxselect");
 	presetList = document.getElementById("presets");
 	playlist = document.getElementById("playlist");
 	playhead = document.getElementById("playhead");
@@ -883,19 +1125,15 @@ function setup() {
 	window.addEventListener("orientationchange", resize);
 	timeLabel.addEventListener("keydown", preventTimeInput);
 	timeLabel.addEventListener("blur", forceTime);
-	setupZoomDraggers();
+	window.addEventListener("mousedown", startBoxSelect);
 	timelineCanvas.addEventListener("mousedown", function(e) {
 		if (!isLeftClick(e)) return;
+		e.preventDefault();
 		activeDrag = "playhead";
 	});
 	timelineCanvas.addEventListener("click", movePlayhead);
 	window.addEventListener("beforeunload", annoy);
-	window.addEventListener("keydown", function(e) {
-		if (e.keyCode === 32 && e.target === document.body) {
-			togglePlayback();
-			e.preventDefault();
-		}
-	});
+	window.addEventListener("keydown", keyDown);
 	window.addEventListener("click", function(e) {
 		if (!e.target.matches(".autoclosebutton")) {
 			closeMenus();
@@ -928,7 +1166,7 @@ function toggle(elem) {
 
 function listPreset(name) {
 	const parent = document.createElement("div");
-	parent.className = "filefolder active";
+	parent.className = "filefolder open";
 	sideNav.appendChild(parent);
 	const loader = document.createElement("div");
 	loader.className = "presetprogress";
@@ -941,10 +1179,10 @@ function listPreset(name) {
 	parent.appendChild(files);
 	preset.addEventListener("click", function() {
 		const previous = files.style.display;
-		parent.classList.toggle("active");
+		parent.classList.toggle("open");
 		files.style.display = previous === "none" ? "block" : "none";
 	});
-	fileList.push({ elem: parent });
+	//fileList.push({ elem: parent });
 	return { bar: loader, list: files, parent: parent };
 }
 
