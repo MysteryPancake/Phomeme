@@ -1211,17 +1211,17 @@ function wheel(e) {
 	if (e.ctrlKey) {
 		e.preventDefault();
 		const newZoom = activeSession.zoom - (e.deltaY * activeSession.zoom * 0.01);
+		activeSession.setZoom(newZoom);
 		if (zoomCanvas.width / activeSession.duration >= newZoom) {
 			activeSession.setZoom(zoomCanvas.width / activeSession.duration);
 			activeSession.setScroll(0, true);
 		} else {
-			const lastScroll = activeSession.zoomPosition();
-			const lastWidth = activeSession.zoomWidth();
-			activeSession.setZoom(newZoom);
-			const half = lastScroll + (lastWidth - activeSession.zoomWidth()) * 0.5;
-			const newScroll = (half / zoomCanvas.width) * activeSession.duration;
+			const visibleWidth = zoomCanvas.width / newZoom;
+			const newScroll = activeSession.playheadTime - visibleWidth * 0.5;
 			if (newScroll < 0) {
 				activeSession.setScroll(0, true);
+			} else if (visibleWidth + newScroll > activeSession.duration) {
+				activeSession.setScroll(activeSession.duration - visibleWidth, true);
 			} else {
 				activeSession.setScroll(newScroll, true);
 			}
