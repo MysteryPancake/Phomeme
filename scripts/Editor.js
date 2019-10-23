@@ -1171,7 +1171,7 @@ function keyDown(e) {
 	if (e.keyCode === 32) {
 		togglePlayback();
 		e.preventDefault();
-	} else if (e.keyCode === 8) {
+	} else if (e.keyCode === 8 || e.keyCode === 46) {
 		if (activeSession && activeSession.selectedClips.length) {
 			pauseIfPlayingSession();
 			for (let i = 0; i < activeSession.selectedClips.length; i++) {
