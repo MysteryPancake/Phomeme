@@ -140,6 +140,7 @@ input[type="file"] {
 }
 
 .filegroup {
+	background-color: #001C00;
 	margin-left: 16px;
 }
 
@@ -153,7 +154,7 @@ input[type="file"] {
 	border-radius: 2px;
 	color: white;
 	float: right;
-	font-size: smaller;
+	font-size: small;
 	font-weight: bold;
 	padding: 2px 6px;
 	pointer-events: none;
@@ -162,6 +163,49 @@ input[type="file"] {
 
 .filedetails span + span:before {
 	content: " + ";
+}
+
+#filetabs {
+	background-color: #002000;
+	box-shadow: 0 -2px 0 0 #00FF00 inset;
+	height: 24px;
+	overflow: hidden;
+	position: fixed;
+	width: calc(100vw - 320px);
+	z-index: 5;
+}
+
+#filetabs a {
+	border-right: 2px solid #00FF00;
+	border-bottom: 2px solid #00FF00;
+	display: inline-block;
+	height: 24px;
+	min-width: 128px;
+}
+
+#filetabs a:hover {
+	background-color: #003000;
+}
+
+#filetabs a:active {
+	background-color: #004000;
+}
+
+#filetabs a.active {
+	background-color: #005000;
+	border-bottom: 2px solid #005000;
+}
+
+.filetabname {
+	float: left;
+	font-size: small;
+	padding: 4px 8px;
+}
+
+.filetabclose {
+	float: right;
+	font-weight: bold;
+	padding: 2px 8px;
 }
 
 #interimtranscript {
@@ -184,7 +228,7 @@ input[type="file"] {
 	height: 50px;
 	overflow: hidden;
 	position: fixed;
-	top: 48px;
+	top: 72px;
 	width: calc(100vw - 320px);
 	z-index: 5;
 }
@@ -223,7 +267,7 @@ input[type="file"] {
 
 #playhead {
 	background-color: white;
-	height: calc(100vh - 98px);
+	height: calc(100vh - 122px);
 	mix-blend-mode: color-dodge;
 	pointer-events: none;
 	position: absolute;
@@ -234,7 +278,7 @@ input[type="file"] {
 
 #playlist {
 	display: inline-block;
-	margin-top: 50px;
+	margin-top: 74px;
 	min-width: 100%;
 	position: relative;
 }
@@ -278,7 +322,9 @@ input[type="file"] {
 }
 
 .preset > .presetauthor {
-	font-size: smaller;
+	color: darkgray;
+	font-size: small;
+	font-style: italic;
 }
 
 .preset > .presetdesc {
@@ -315,8 +361,16 @@ input[type="file"] {
 	padding: 8px;
 }
 
+#sidenav .filefolder > a:hover {
+	background-color: #003000;
+}
+
 #sidenav .filefolder.error > a {
 	border-bottom: 1px solid #400000;
+}
+
+#sidenav .filefolder.error > a:hover {
+	background-color: #400000;
 }
 
 #sidenav .filegroup a.error {
@@ -324,11 +378,11 @@ input[type="file"] {
 	border-bottom: 1px solid #180000;
 }
 
-#sidenav .error a:hover {
+#sidenav a.error:hover {
 	background-color: #300000;
 }
 
-#sidenav .error a:active {
+#sidenav a.error:active {
 	background-color: #400000;
 }
 
@@ -491,7 +545,7 @@ input[type="file"] {
 	background-color: #004000;
 }
 
-#closebutton, .dropoption, #transcriptmicrophone, .largebutton, .preset, .playbackbutton, #sidenav a, #submitbutton, .topbutton, #title, #uploadbutton {
+#closebutton, .dropoption, #filetabs a, #transcriptmicrophone, .largebutton, .preset, .playbackbutton, #sidenav a, #submitbutton, .topbutton, #title, #uploadbutton {
 	-moz-user-select: none;
 	cursor: pointer;
 	outline: none;
