@@ -114,7 +114,7 @@ function pauseSession() {
 		document.body.style.transform = "none";
 		document.body.style.overflow = "initial";
 	}
-	if (activeSession) {
+	if (activeSession && player && player.state === "running") {
 		activeSession.timeOffset += player.currentTime;
 	}
 	playButton.innerHTML = "►";
@@ -641,7 +641,9 @@ function Clip(clipFile, clipTrack, clipSession) {
 		ensurePlayer();
 		this.drawLoading();
 		fileBuffer(file, function(buffer) {
-			this.audioData = buffer.getChannelData(0);
+			const data = buffer.getChannelData(0);
+			this.audioData = new Float32Array(data.length);
+			this.audioData.set(data);
 			this.audioBuffer = buffer;
 			this.duration = buffer.duration;
 			this.outTime = buffer.duration;
@@ -999,9 +1001,9 @@ function closeMenus() {
 
 function movePlayhead(e) {
 	activeSession.timeOffset = (e.clientX - playlist.getBoundingClientRect().left) / activeSession.zoom;
-	if (player) {
+	if (player && player.state === "running") {
 		activeSession.timeOffset -= player.currentTime;
-		pauseIfPlayingSession();
+		pauseSession();
 	}
 	activeSession.timeOffset = Math.max(0, activeSession.timeOffset);
 	activeSession.setPlayhead(activeSession.timeOffset, true);
@@ -1066,7 +1068,6 @@ function moved(e) {
 		activeSession.setScroll(activeDrag.lastScroll, true);
 	} else if (activeDrag === "playhead") {
 		e.preventDefault();
-		pauseIfPlayingSession();
 		movePlayhead(e);
 	} else if (activeDrag.type === "boxselect") {
 		e.preventDefault();
