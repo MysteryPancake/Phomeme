@@ -387,13 +387,13 @@ function navScroll() {
 
 function setupZoomDraggers() {
 	const zoomDragLeft = document.getElementById("zoomdragleft");
+	const zoomDragRight = document.getElementById("zoomdragright");
 	zoomDragLeft.addEventListener("mousedown", function(e) {
 		if (!isLeftClick(e)) return;
 		e.preventDefault();
 		e.stopPropagation();
 		activeDrag = { type: "zoomdragleft", dragWidth: e.pageX, dragPosition: e.pageX - activeSession.zoomPosition(), leftElem: zoomDragLeft, rightElem: zoomDragRight, lastWidth: activeSession.zoomWidth(), lastPosition: activeSession.zoomPosition() + activeSession.zoomWidth() };
 	});
-	const zoomDragRight = document.getElementById("zoomdragright");
 	zoomDragRight.addEventListener("mousedown", function(e) {
 		if (!isLeftClick(e)) return;
 		e.preventDefault();
@@ -1206,6 +1206,28 @@ function startBoxSelect(e) {
 	}
 }
 
+function wheel(e) {
+	if (e.ctrlKey) {
+		e.preventDefault();
+		const newZoom = activeSession.zoom - (e.deltaY * activeSession.zoom * 0.01);
+		if (zoomCanvas.width / activeSession.duration >= newZoom) {
+			activeSession.setZoom(zoomCanvas.width / activeSession.duration);
+			activeSession.setScroll(0, true);
+		} else {
+			const lastScroll = activeSession.zoomPosition();
+			const lastWidth = activeSession.zoomWidth();
+			activeSession.setZoom(newZoom);
+			const half = lastScroll + (lastWidth - activeSession.zoomWidth()) * 0.5;
+			const newScroll = (half / zoomCanvas.width) * activeSession.duration;
+			if (newScroll < 0) {
+				activeSession.setScroll(0, true);
+			} else {
+				activeSession.setScroll(newScroll, true);
+			}
+		}
+	}
+}
+
 function setup() {
 	interimTranscript = document.getElementById("interimtranscript");
 	transcriptPlayer = document.getElementById("transcriptplayer");
@@ -1234,6 +1256,7 @@ function setup() {
 	step1 = document.getElementById("step1");
 	step2 = document.getElementById("step2");
 	popup = document.getElementById("popup");
+	mainNav.addEventListener("wheel", wheel);
 	window.addEventListener("mousemove", moved);
 	window.addEventListener("mouseup", ended);
 	window.addEventListener("resize", resize);
