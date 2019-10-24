@@ -765,11 +765,15 @@ function Track(trackSession) {
 		this.elem.appendChild(clip.parent);
 		this.clips.push(clip);
 	};
-	this.loadClip = function(file) {
+	this.loadClip = function(file, start) {
 		pauseIfPlayingSession();
 		const clip = new Clip(this.session);
-		clip.loadFile(file);
 		this.addClip(clip);
+		if (start) {
+			clip.startTime = start;
+			clip.parent.style.left = start * this.session.zoom + "px";
+		}
+		clip.loadFile(file);
 		clip.select();
 		return clip;
 	};
@@ -799,16 +803,14 @@ function Track(trackSession) {
 			e.preventDefault();
 			e.stopPropagation();
 			this.session.deselectClips();
-			const clip = this.loadClip(draggedFile.file);
 			const start = (e.clientX - this.elem.getBoundingClientRect().left) / this.session.zoom;
-			clip.setStart(start);
+			const clip = this.loadClip(draggedFile.file, start);
 			if (draggedFile.elem.classList.contains("active") && selectedFiles.length) {
 				let offset = 0;
 				for (let i = 0; i < selectedFiles.length; i++) {
 					const active = selectedFiles[i];
 					if (active !== draggedFile && active.file.type.startsWith("audio")) {
-						const nextClip = this.nextTrack(offset + 1).loadClip(active.file);
-						nextClip.setStart(start);
+						const nextClip = this.nextTrack(offset + 1).loadClip(active.file, start);
 						offset++;
 					}
 				}
@@ -823,8 +825,7 @@ function Track(trackSession) {
 				const file = e.dataTransfer.files[i];
 				listFile(file);
 				if (file.type.startsWith("audio")) {
-					const clip = this.nextTrack(offset).loadClip(file);
-					clip.setStart(start);
+					const clip = this.nextTrack(offset).loadClip(file, start);
 					offset++;
 				}
 			}
