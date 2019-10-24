@@ -1021,10 +1021,10 @@ function Session(name, duration) {
 	this.setZoom = function(zoom) {
 		this.zoom = zoom;
 		playlist.style.width = this.pixelWidth() + "px";
-		updatePlaylistZoom();
 	};
 	this.setScroll = function(time, updateNav) {
 		this.scroll = time;
+		updatePlaylistZoom();
 		updateZoomDragger();
 		updateClipCanvases();
 		if (updateNav) {
