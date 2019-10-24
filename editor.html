@@ -114,14 +114,18 @@
 				<h2>Preferences</h2>
 				<h3>Interface</h3>
 				<div>
-					<label for="wavedetail">Waveform Detail</label>
+					<label for="wavedetail">Waveform detail</label>
 					<input type="range" id="wavedetail" min="1" max="256" value="16" oninput="setWaveDetail(this);">
 					<span id="wavedetaillabel">16</span>
 				</div>
 				<div>
-					<label for="zoomamount">Zoom Button Amount</label>
+					<label for="zoomamount">Zoom button amount</label>
 					<input type="range" id="zoomamount" min="1.01" max="3" value="1.25" step="0.01" oninput="setZoomAmount(this);">
 					<span id="zoomamountlabel">1.25x</span>
+				</div>
+				<div>
+					<label for="autoscroll">Scroll with playhead</label>
+					<input type="checkbox" id="autoscroll" onchange="setAutoScroll(this);">
 				</div>
 				<h3>Fun</h3>
 				<div>

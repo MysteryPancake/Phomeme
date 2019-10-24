@@ -49,6 +49,7 @@ let recordIndex = 1;
 let waveDetail = 16;
 let zoomAmount = 1.25;
 let sampleRate = 44100;
+let autoScroll = false;
 let presetsLoaded = false;
 let playlistSetup = false;
 let ignoreScroll = false;
@@ -403,12 +404,7 @@ function updatePlaylistDuration() {
 
 function updatePlaylistZoom() {
 	activeSession.setPlayhead(activeSession.playheadTime, false);
-	for (let i = 0; i < activeSession.trackList.length; i++) {
-		const track = activeSession.trackList[i];
-		for (let j = 0; j < track.clips.length; j++) {
-			track.clips[j].updateZoom();
-		}
-	}
+	updateClipCanvases();
 }
 
 function forceCanvasRedraw() {
@@ -477,6 +473,13 @@ function draw() {
 			pauseIfPlayingSession();
 		} else {
 			activeSession.setPlayhead(time, true);
+		}
+		if (autoScroll) {
+			const visibleWidth = activeSession.visibleWidth(activeSession.zoom);
+			const scroll = time - visibleWidth * 0.5;
+			if (scroll > 0 && scroll + visibleWidth < activeSession.duration) {
+				activeSession.setScroll(scroll, true);
+			}
 		}
 		if (shakeAnalyser) {
 			shakeAnalyser.getByteFrequencyData(shakeData);
@@ -602,7 +605,7 @@ function Clip(session) {
 		for (let k = 0; k < lines; k++) {
 			const x = k / lines * this.elem.width;
 			const y = this.elem.height * 0.5;
-			const index = this.audioData[Math.floor((k * sampleRate) / scale + offset)];
+			const index = this.audioData[Math.floor(k * sampleRate / scale + offset)];
 			this.context.lineTo(x, y + (index || 0) * y * peakScale);
 		}
 		this.context.stroke();
@@ -687,10 +690,6 @@ function Clip(session) {
 	this.setInTime = function(time) {
 		this.inTime = time;
 		updateZoomCanvas();
-		this.updateCanvas();
-	};
-	this.updateZoom = function() {
-		this.parent.style.left = this.startTime * this.session.zoom + "px";
 		this.updateCanvas();
 	};
 	this.duplicate = function() {
@@ -810,13 +809,13 @@ function Track(trackSession) {
 			e.stopPropagation();
 			this.session.deselectClips();
 			const start = (e.clientX - this.elem.getBoundingClientRect().left) / this.session.zoom;
-			const clip = this.loadClip(draggedFile.file, start);
+			this.loadClip(draggedFile.file, start);
 			if (draggedFile.elem.classList.contains("active") && selectedFiles.length) {
 				let offset = 0;
 				for (let i = 0; i < selectedFiles.length; i++) {
 					const active = selectedFiles[i];
 					if (active !== draggedFile && active.file.type.startsWith("audio")) {
-						const nextClip = this.nextTrack(offset + 1).loadClip(active.file, start);
+						this.nextTrack(offset + 1).loadClip(active.file, start);
 						offset++;
 					}
 				}
@@ -831,7 +830,7 @@ function Track(trackSession) {
 				const file = e.dataTransfer.files[i];
 				listFile(file);
 				if (file.type.startsWith("audio")) {
-					const clip = this.nextTrack(offset).loadClip(file, start);
+					this.nextTrack(offset).loadClip(file, start);
 					offset++;
 				}
 			}
@@ -964,10 +963,16 @@ function Session(name, duration) {
 		return this.duration * this.zoom;
 	};
 	this.zoomPosition = function() {
-		return (this.scroll * zoomCanvas.width) / this.duration;
+		return this.scroll * zoomCanvas.width / this.duration;
 	};
 	this.zoomWidth = function() {
-		return (zoomCanvas.width * zoomCanvas.width) / this.pixelWidth();
+		return zoomCanvas.width * zoomCanvas.width / this.pixelWidth();
+	};
+	this.maxZoom = function() {
+		return zoomCanvas.width / this.duration;
+	};
+	this.visibleWidth = function(zoom) {
+		return zoomCanvas.width / zoom;
 	};
 	this.setPlayhead = function(seconds, updateLabel) {
 		this.playheadTime = seconds;
@@ -1026,16 +1031,27 @@ function Session(name, duration) {
 		playlist.style.width = time * this.zoom + "px";
 	};
 	this.setZoom = function(zoom) {
-		this.zoom = zoom;
+		const maxZoom = this.maxZoom();
+		if (maxZoom > zoom) {
+			this.zoom = maxZoom;
+		} else {
+			this.zoom = zoom;
+		}
 		playlist.style.width = this.pixelWidth() + "px";
 	};
 	this.setScroll = function(time, updateNav) {
-		this.scroll = time;
-		updatePlaylistZoom();
+		const visibleWidth = this.visibleWidth(this.zoom);
+		if (time < 0) {
+			this.scroll = 0;
+		} else if (time + visibleWidth > this.duration) {
+			this.scroll = this.duration - visibleWidth;
+		} else {
+			this.scroll = time;
+		}
 		updateZoomDragger();
-		updateClipCanvases();
+		updatePlaylistZoom();
 		if (updateNav) {
-			mainNav.scrollLeft = time * this.zoom;
+			mainNav.scrollLeft = this.scroll * this.zoom;
 		}
 	};
 	this.remove = function() {
@@ -1077,47 +1093,30 @@ function moved(e) {
 		activeDrag.updateDrag(e.pageX);
 	} else if (activeDrag.type === "zoomdrag") {
 		e.preventDefault();
-		const maxPosition = activeSession.zoomWidth();
-		let position = e.pageX - activeDrag.drag;
-		if (position < 0) {
-			position = 0;
-		} else if (position + maxPosition > zoomCanvas.width) {
-			position = zoomCanvas.width - maxPosition;
-		}
-		activeSession.setScroll((activeSession.duration * position) / zoomCanvas.width, true);
+		activeSession.setScroll(activeSession.duration * (e.pageX - activeDrag.drag) / zoomCanvas.width, true);
 	} else if (activeDrag.type === "zoomdragleft") {
 		e.preventDefault();
 		let position = e.pageX - activeDrag.dragPosition;
 		let newWidth = activeDrag.lastWidth - (e.pageX - activeDrag.dragWidth);
-		if (newWidth > zoomCanvas.width) {
-			newWidth = zoomCanvas.width;
-			position = 0;
-		} else if (newWidth < minZoomWidth) {
+		if (newWidth < minZoomWidth) {
 			newWidth = minZoomWidth;
 			position = activeDrag.lastPosition - minZoomWidth;
 		}
-		if (position < 0) {
-			position = 0;
-		} else if (position + newWidth > zoomCanvas.width) {
-			position = zoomCanvas.width - newWidth;
-		}
 		const offset = getZoomDraggerOffset(newWidth);
 		activeDrag.leftElem.style.left = offset + "px";
 		activeDrag.rightElem.style.right = offset + "px";
-		activeSession.setZoom((zoomCanvas.width / newWidth) * (zoomCanvas.width / activeSession.duration));
-		activeSession.setScroll((activeSession.duration * position) / zoomCanvas.width, true);
+		activeSession.setZoom(zoomCanvas.width / newWidth * activeSession.maxZoom());
+		activeSession.setScroll(activeSession.duration * position / zoomCanvas.width, true);
 	} else if (activeDrag.type === "zoomdragright") {
 		e.preventDefault();
 		let newWidth = activeDrag.lastWidth - (activeDrag.drag - e.pageX);
-		if (newWidth > zoomCanvas.width) {
-			newWidth = zoomCanvas.width;
-		} else if (newWidth < minZoomWidth) {
+		if (newWidth < minZoomWidth) {
 			newWidth = minZoomWidth;
 		}
 		const offset = getZoomDraggerOffset(newWidth);
 		activeDrag.leftElem.style.left = offset + "px";
 		activeDrag.rightElem.style.right = offset + "px";
-		activeSession.setZoom((zoomCanvas.width / newWidth) * (zoomCanvas.width / activeSession.duration));
+		activeSession.setZoom(zoomCanvas.width / newWidth * activeSession.maxZoom());
 		activeSession.setScroll(activeDrag.lastScroll, true);
 	} else if (activeDrag === "playhead") {
 		e.preventDefault();
@@ -1174,46 +1173,27 @@ function ended() {
 	activeDrag = undefined;
 }
 
+function centerZoom(newZoom) {
+	const lastScroll = activeSession.zoomPosition();
+	const lastWidth = activeSession.zoomWidth();
+	activeSession.setZoom(newZoom);
+	const half = lastScroll + (lastWidth - activeSession.zoomWidth()) * 0.5;
+	activeSession.setScroll(half / zoomCanvas.width * activeSession.duration, true);
+}
+
 function zoomIn() {
 	const newZoom = activeSession.zoom * zoomAmount;
-	const visibleWidth = zoomCanvas.width / newZoom;
-	let newScroll = 0;
+	const visibleWidth = activeSession.visibleWidth(newZoom);
 	if (activeSession.playheadTime >= activeSession.scroll && activeSession.playheadTime <= activeSession.scroll + visibleWidth) {
 		activeSession.setZoom(newZoom);
-		newScroll = activeSession.playheadTime - visibleWidth * 0.5;
+		activeSession.setScroll(activeSession.playheadTime - visibleWidth * 0.5, true);
 	} else {
-		const lastScroll = activeSession.zoomPosition();
-		const lastWidth = activeSession.zoomWidth();
-		activeSession.setZoom(newZoom);
-		const half = lastScroll + (lastWidth - activeSession.zoomWidth()) * 0.5;
-		newScroll = (half / zoomCanvas.width) * activeSession.duration;
-	}
-	if (newScroll < 0) {
-		activeSession.setScroll(0, true);
-	} else if (visibleWidth + newScroll > activeSession.duration) {
-		activeSession.setScroll(activeSession.duration - visibleWidth, true);
-	} else {
-		activeSession.setScroll(newScroll, true);
+		centerZoom(newZoom);
 	}
 }
 
 function zoomOut() {
-	const newZoom = activeSession.zoom / zoomAmount;
-	if (zoomCanvas.width / activeSession.duration >= newZoom) {
-		activeSession.setZoom(zoomCanvas.width / activeSession.duration);
-		activeSession.setScroll(0, true);
-	} else {
-		const lastScroll = activeSession.zoomPosition();
-		const lastWidth = activeSession.zoomWidth();
-		activeSession.setZoom(newZoom);
-		const half = lastScroll + (lastWidth - activeSession.zoomWidth()) * 0.5;
-		const newScroll = (half / zoomCanvas.width) * activeSession.duration;
-		if (newScroll < 0) {
-			activeSession.setScroll(0, true);
-		} else {
-			activeSession.setScroll(newScroll, true);
-		}
-	}
+	centerZoom(activeSession.zoom / zoomAmount);
 }
 
 function annoy(e) {
@@ -1288,25 +1268,13 @@ function navWheel(e) {
 			wheelZoom.distance = undefined;
 		}, 250);
 		const newZoom = activeSession.zoom - (e.deltaY * activeSession.zoom * 0.01);
-		if (zoomCanvas.width / activeSession.duration >= newZoom) {
-			activeSession.setZoom(zoomCanvas.width / activeSession.duration);
-			activeSession.setScroll(0, true);
-		} else {
-			const visibleWidth = zoomCanvas.width / newZoom;
-			if (!wheelZoom.distance) {
-				wheelZoom.distance = (e.clientX - playlist.getBoundingClientRect().left) - (activeSession.scroll * activeSession.zoom);
-			}
-			const newScroll = activeSession.scroll + (wheelZoom.distance / activeSession.zoom) - (wheelZoom.distance / newZoom);
-			activeSession.setZoom(newZoom);
-			ignoreScroll = true;
-			if (newScroll < 0) {
-				activeSession.setScroll(0, true);
-			} else if (visibleWidth + newScroll > activeSession.duration) {
-				activeSession.setScroll(activeSession.duration - visibleWidth, true);
-			} else {
-				activeSession.setScroll(newScroll, true);
-			}
+		if (!wheelZoom.distance) {
+			wheelZoom.distance = (e.clientX - playlist.getBoundingClientRect().left) - (activeSession.scroll * activeSession.zoom);
 		}
+		const newScroll = activeSession.scroll + (wheelZoom.distance / activeSession.zoom) - (wheelZoom.distance / newZoom);
+		activeSession.setZoom(newZoom);
+		ignoreScroll = true;
+		activeSession.setScroll(newScroll, true);
 	}
 }
 
@@ -1514,6 +1482,10 @@ function openPrefs() {
 function setZoomAmount(elem) {
 	zoomAmountElem.innerHTML = elem.value + "x";
 	zoomAmount = elem.value;
+}
+
+function setAutoScroll(elem) {
+	autoScroll = elem.checked;
 }
 
 function setWaveDetail(elem) {
