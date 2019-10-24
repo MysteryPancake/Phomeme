@@ -74,6 +74,10 @@ function drawLine(context, x, y, x2, y2) {
 	context.stroke();
 }
 
+function isDecodable(file) {
+	return file.type.startsWith("audio") || file.type.startsWith("video");
+}
+
 function deselectFiles() {
 	for (let i = 0; i < fileList.length; i++) {
 		fileList[i].elem.classList.remove("active");
@@ -144,7 +148,7 @@ function ListedFile(file) {
 		draggedFile = this;
 		e.dataTransfer.setData("text/plain", "Firefox");
 	};
-	if (file.type.startsWith("audio")) {
+	if (isDecodable(file)) {
 		this.elem.draggable = true;
 		this.elem.addEventListener("dragstart", this.dragStart.bind(this));
 	} else {
@@ -165,7 +169,7 @@ function ListedFile(file) {
 	this.doubleClick = function() {
 		if (this.file.type === "session" && activeSession !== this.file) {
 			this.file.open();
-		} else if (this.file.type.startsWith("audio") && activeSession) {
+		} else if (isDecodable(this.file) && activeSession) {
 			activeSession.deselectClips();
 			activeSession.addTrack().loadClip(this.file);
 		}
@@ -814,7 +818,7 @@ function Track(trackSession) {
 				let offset = 0;
 				for (let i = 0; i < selectedFiles.length; i++) {
 					const active = selectedFiles[i];
-					if (active !== draggedFile && active.file.type.startsWith("audio")) {
+					if (active !== draggedFile && isDecodable(active.file)) {
 						this.nextTrack(offset + 1).loadClip(active.file, start);
 						offset++;
 					}
@@ -829,7 +833,7 @@ function Track(trackSession) {
 			for (let i = 0; i < e.dataTransfer.files.length; i++) {
 				const file = e.dataTransfer.files[i];
 				listFile(file);
-				if (file.type.startsWith("audio")) {
+				if (isDecodable(file)) {
 					this.nextTrack(offset).loadClip(file, start);
 					offset++;
 				}
