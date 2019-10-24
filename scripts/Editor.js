@@ -31,6 +31,8 @@ let draggedFile;
 let popupOverlay;
 let navigatorElem;
 let activeSession;
+let waveDetailElem;
+let zoomAmountElem;
 let transcriptMenu;
 let transcriptElem;
 let timelineCanvas;
@@ -44,6 +46,8 @@ let shaking = false;
 let shakeAnalyser;
 let selectedFiles = [];
 let recordIndex = 1;
+let waveDetail = 16;
+let zoomAmount = 1.25;
 let sampleRate = 44100;
 let presetsLoaded = false;
 let playlistSetup = false;
@@ -52,8 +56,6 @@ const wheelZoom = {};
 const tabList = [];
 const fileList = [];
 const peakScale = 0.7;
-const waveDetail = 16;
-const zoomAmount = 1.25;
 const minZoomWidth = 2;
 const minClipWidth = 0.05;
 const shakeAnalyserPrecision = 2048;
@@ -1337,6 +1339,8 @@ function setup() {
 	interimTranscript = document.getElementById("interimtranscript");
 	transcriptPlayer = document.getElementById("transcriptplayer");
 	finalTranscript = document.getElementById("finaltranscript");
+	waveDetailElem = document.getElementById("wavedetaillabel");
+	zoomAmountElem = document.getElementById("zoomamountlabel");
 	transcriptMenu = document.getElementById("transcriptmenu");
 	transcriptElem = document.getElementById("transcript");
 	popupOverlay = document.getElementById("popupoverlay");
@@ -1505,6 +1509,17 @@ function transcribe() {
 
 function openPrefs() {
 	openPopup("prefs");
+}
+
+function setZoomAmount(elem) {
+	zoomAmountElem.innerHTML = elem.value + "x";
+	zoomAmount = elem.value;
+}
+
+function setWaveDetail(elem) {
+	waveDetailElem.innerHTML = elem.value;
+	waveDetail = elem.value;
+	updateClipCanvases();
 }
 
 function toggleShake(elem) {

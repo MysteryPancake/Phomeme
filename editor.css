@@ -343,8 +343,21 @@ input[type="file"] {
 }
 
 #prefsmenu > h2 {
+	border-bottom: 1px solid #00FF00;
+	display: inline-block;
+	font-weight: normal;
 	margin: 0;
-	margin-bottom: 16px;
+	padding-bottom: 8px;
+}
+
+#prefsmenu > h3 {
+	border-bottom: 1px solid gray;
+	margin: 16px 0;
+	padding: 8px 0;
+}
+
+#prefsmenu > div {
+	margin: 8px 0;
 }
 
 #sidenav {
