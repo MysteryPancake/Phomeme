@@ -640,6 +640,10 @@ function Clip(session) {
 			this.leftDragger.allow();
 		}
 		if (width > 1) {
+			if (width <= 8) {
+				this.leftDragger.deny();
+				this.rightDragger.deny();
+			}
 			this.elem.width = width;
 			this.parent.style.display = "block";
 			this.drawCanvas();

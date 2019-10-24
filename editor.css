@@ -71,16 +71,16 @@ input[type="file"] {
 	height: 100%;
 	position: absolute;
 	top: 0;
-	width: 8px;
+	width: 4px;
 	z-index: 3;
 }
 
 .clipdragleft {
-	left: -4px;
+	left: 0;
 }
 
 .clipdragright {
-	right: -4px;
+	right: 0;
 }
 
 #closebutton {
@@ -352,7 +352,7 @@ input[type="file"] {
 	overflow-x: hidden;
 	overflow-y: scroll;
 	padding: 8px;
-	z-index: 9;
+	z-index: 8;
 }
 
 #sidenav a {
@@ -433,7 +433,7 @@ input[type="file"] {
 	box-shadow: 0 -32px 32px -32px #00FF00 inset;
 	grid-column: 1 / span 2;
 	overflow: hidden;
-	z-index: 10;
+	z-index: 9;
 }
 
 .topbutton {
@@ -522,16 +522,15 @@ input[type="file"] {
 	position: absolute;
 	top: 0;
 	width: 8px;
+	z-index: 7;
 }
 
 #zoomdragleft {
 	left: 0;
-	z-index: 7;
 }
 
 #zoomdragright {
 	right: 0;
-	z-index: 8;
 }
 
 #boxselect, #editor, #presetmenu, #step2, #popupoverlay, #popup, #prefsmenu, #transcriptmenu, #transcriptplayer {
