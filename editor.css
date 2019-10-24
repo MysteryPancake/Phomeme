@@ -358,6 +358,7 @@ input[type="file"] {
 #sidenav a {
 	border-bottom: 1px solid #004000;
 	display: block;
+	overflow-wrap: break-word;
 	padding: 8px;
 }
 

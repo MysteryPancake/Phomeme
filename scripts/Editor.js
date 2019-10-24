@@ -11,9 +11,11 @@ let mainNav;
 let sideNav;
 let zoomDrag;
 let playhead;
+let playback;
 let playlist;
 let recorder;
 let fileTabs;
+let activeTab;
 let boxSelect;
 let timeLabel;
 let prefsMenu;
@@ -27,7 +29,7 @@ let recognition;
 let createTrack;
 let draggedFile;
 let popupOverlay;
-let activeTab;
+let navigatorElem;
 let activeSession;
 let transcriptMenu;
 let transcriptElem;
@@ -41,11 +43,13 @@ let lastLeftScroll = 0;
 let shaking = false;
 let shakeAnalyser;
 let selectedFiles = [];
-let tabList = [];
 let recordIndex = 1;
 let sampleRate = 44100;
 let presetsLoaded = false;
 let playlistSetup = false;
+let ignoreScroll = false;
+const wheelZoom = {};
+const tabList = [];
 const fileList = [];
 const peakScale = 0.7;
 const waveDetail = 16;
@@ -126,6 +130,60 @@ function pauseIfPlayingSession() {
 	if (player && player.state === "running") {
 		pauseSession();
 	}
+}
+
+function ListedFile(file) {
+	this.file = file;
+	this.elem = document.createElement("a");
+	this.elem.innerHTML = file.name;
+	this.dragStart = function(e) {
+		deselectNonDraggableFiles();
+		draggedFile = this;
+		e.dataTransfer.setData("text/plain", "Firefox");
+	};
+	if (file.type.startsWith("audio")) {
+		this.elem.draggable = true;
+		this.elem.addEventListener("dragstart", this.dragStart.bind(this));
+	} else {
+		this.elem.className = "boxselectable";
+	}
+	this.select = function() {
+		selectedFiles.push(this);
+		this.elem.classList.add("active");
+	};
+	this.clicked = function() {
+		deselectFiles();
+		if (activeSession) {
+			activeSession.deselectClips();
+		}
+		this.select();
+	};
+	this.elem.addEventListener("click", this.clicked.bind(this));
+	this.doubleClick = function() {
+		if (this.file.type === "session" && activeSession !== this.file) {
+			this.file.open();
+		} else if (this.file.type.startsWith("audio") && activeSession) {
+			activeSession.deselectClips();
+			activeSession.addTrack().loadClip(this.file);
+		}
+	};
+	this.elem.addEventListener("dblclick", this.doubleClick.bind(this));
+	this.remove = function() {
+		const index = fileList.indexOf(this);
+		if (index !== -1) {
+			fileList.splice(index, 1);
+		}
+		if (this.file.type === "session") {
+			this.file.remove();
+		}
+		this.elem.parentNode.removeChild(this.elem);
+	};
+	fileList.push(this);
+}
+
+function listFile(file) {
+	const listed = new ListedFile(file);
+	sideNav.appendChild(listed.elem);
 }
 
 function setMenu(name) {
@@ -372,16 +430,20 @@ function setupTimeCanvas() {
 }
 
 function navScroll() {
-	if (mainNav.scrollTop !== lastTopScroll) {
-		playhead.style.top = mainNav.scrollTop + "px";
-		lastTopScroll = mainNav.scrollTop;
-	}
-	if (activeSession && mainNav.scrollLeft !== lastLeftScroll) {
-		if (!activeDrag) {
-			activeSession.setScroll(mainNav.scrollLeft / activeSession.zoom, false);
+	if (ignoreScroll) {
+		ignoreScroll = false;
+	} else {
+		if (mainNav.scrollTop !== lastTopScroll) {
+			playhead.style.top = mainNav.scrollTop + "px";
+			lastTopScroll = mainNav.scrollTop;
 		}
-		updateTimeCanvas();
-		lastLeftScroll = mainNav.scrollLeft;
+		if (activeSession && mainNav.scrollLeft !== lastLeftScroll) {
+			if (!activeDrag) {
+				activeSession.setScroll(mainNav.scrollLeft / activeSession.zoom, false);
+			}
+			updateTimeCanvas();
+			lastLeftScroll = mainNav.scrollLeft;
+		}
 	}
 }
 
@@ -520,8 +582,8 @@ function Clip(clipFile, clipTrack, clipSession) {
 	this.fakeOffset = 0;
 	this.elem = document.createElement("canvas");
 	this.elem.className = "clip";
-	this.elem.width = "128";
-	this.elem.height = "128";
+	this.elem.width = 128;
+	this.elem.height = 128;
 	this.parent = document.createElement("div");
 	this.parent.className = "clipdiv";
 	this.parent.appendChild(this.elem);
@@ -705,6 +767,7 @@ function Track(trackSession) {
 	this.dragover = function(e) {
 		if (draggedFile) {
 			e.preventDefault();
+			e.stopPropagation();
 			e.dataTransfer.dropEffect = "copy";
 		}
 	};
@@ -712,6 +775,7 @@ function Track(trackSession) {
 	this.drop = function(e) {
 		if (draggedFile) {
 			e.preventDefault();
+			e.stopPropagation();
 			activeSession.deselectClips();
 			const clip = this.loadClip(draggedFile.file);
 			const start = (e.clientX - this.elem.getBoundingClientRect().left) / this.session.zoom;
@@ -721,17 +785,31 @@ function Track(trackSession) {
 				for (let i = 0; i < selectedFiles.length; i++) {
 					const active = selectedFiles[i];
 					if (active !== draggedFile && active.file.type.startsWith("audio")) {
-						const nextClip = this.nextTrack(offset).loadClip(active.file);
+						const nextClip = this.nextTrack(offset + 1).loadClip(active.file);
 						nextClip.setStart(start);
 						offset++;
 					}
 				}
 			}
 			draggedFile = undefined;
+		} else if (e.dataTransfer && e.dataTransfer.files) {
+			e.preventDefault();
+			e.stopPropagation();
+			let offset = 0;
+			const start = (e.clientX - this.elem.getBoundingClientRect().left) / this.session.zoom;
+			for (let i = 0; i < e.dataTransfer.files.length; i++) {
+				const file = e.dataTransfer.files[i];
+				listFile(file);
+				if (file.type.startsWith("audio")) {
+					const clip = this.nextTrack(offset).loadClip(file);
+					clip.setStart(start);
+					offset++;
+				}
+			}
 		}
 	};
 	this.nextTrack = function(offset) {
-		const next = this.session.trackList[this.index + 1 + offset];
+		const next = this.session.trackList[this.index + offset];
 		if (next) {
 			return next;
 		} else {
@@ -938,60 +1016,6 @@ function Session(name, duration) {
 	};
 }
 
-function ListedFile(file) {
-	this.file = file;
-	this.elem = document.createElement("a");
-	this.elem.innerHTML = file.name;
-	this.dragStart = function(e) {
-		deselectNonDraggableFiles();
-		draggedFile = this;
-		e.dataTransfer.setData("text/plain", "Firefox");
-	};
-	if (file.type.startsWith("audio")) {
-		this.elem.draggable = true;
-		this.elem.addEventListener("dragstart", this.dragStart.bind(this));
-	} else {
-		this.elem.className = "boxselectable";
-	}
-	this.select = function() {
-		selectedFiles.push(this);
-		this.elem.classList.add("active");
-	};
-	this.clicked = function() {
-		deselectFiles();
-		if (activeSession) {
-			activeSession.deselectClips();
-		}
-		this.select();
-	};
-	this.elem.addEventListener("click", this.clicked.bind(this));
-	this.doubleClick = function() {
-		if (this.file.type === "session") {
-			this.file.open();
-		} else if (this.file.type.startsWith("audio") && activeSession) {
-			activeSession.deselectClips();
-			activeSession.addTrack().loadClip(this.file);
-		}
-	};
-	this.elem.addEventListener("dblclick", this.doubleClick.bind(this));
-	this.remove = function() {
-		const index = fileList.indexOf(this);
-		if (index !== -1) {
-			fileList.splice(index, 1);
-		}
-		if (this.file.type === "session") {
-			this.file.remove();
-		}
-		this.elem.parentNode.removeChild(this.elem);
-	};
-	fileList.push(this);
-}
-
-function listFile(file) {
-	const listed = new ListedFile(file);
-	sideNav.appendChild(listed.elem);
-}
-
 function closeMenus() {
 	const dropdowns = document.getElementsByClassName("autoclose");
 	for (let i = 0; i < dropdowns.length; i++) {
@@ -1122,9 +1146,19 @@ function ended() {
 }
 
 function zoomIn() {
-	activeSession.setZoom(activeSession.zoom * zoomAmount);
-	const visibleWidth = zoomCanvas.width / activeSession.zoom;
-	const newScroll = activeSession.playheadTime - visibleWidth * 0.5;
+	const newZoom = activeSession.zoom * zoomAmount;
+	const visibleWidth = zoomCanvas.width / newZoom;
+	let newScroll = 0;
+	if (activeSession.playheadTime >= activeSession.scroll && activeSession.playheadTime <= activeSession.scroll + visibleWidth) {
+		activeSession.setZoom(newZoom);
+		newScroll = activeSession.playheadTime - visibleWidth * 0.5;
+	} else {
+		const lastScroll = activeSession.zoomPosition();
+		const lastWidth = activeSession.zoomWidth();
+		activeSession.setZoom(newZoom);
+		const half = lastScroll + (lastWidth - activeSession.zoomWidth()) * 0.5;
+		newScroll = (half / zoomCanvas.width) * activeSession.duration;
+	}
 	if (newScroll < 0) {
 		activeSession.setScroll(0, true);
 	} else if (visibleWidth + newScroll > activeSession.duration) {
@@ -1207,17 +1241,28 @@ function startBoxSelect(e) {
 	}
 }
 
-function wheel(e) {
+function navWheel(e) {
+	if (!activeSession) return;
 	if (e.ctrlKey) {
 		e.preventDefault();
+		if (wheelZoom.timer) {
+			window.clearTimeout(wheelZoom.timer);
+		}
+		wheelZoom.timer = window.setTimeout(function() {
+			wheelZoom.distance = undefined;
+		}, 250);
 		const newZoom = activeSession.zoom - (e.deltaY * activeSession.zoom * 0.01);
-		activeSession.setZoom(newZoom);
 		if (zoomCanvas.width / activeSession.duration >= newZoom) {
 			activeSession.setZoom(zoomCanvas.width / activeSession.duration);
 			activeSession.setScroll(0, true);
 		} else {
 			const visibleWidth = zoomCanvas.width / newZoom;
-			const newScroll = activeSession.playheadTime - visibleWidth * 0.5;
+			if (!wheelZoom.distance) {
+				wheelZoom.distance = (e.clientX - playlist.getBoundingClientRect().left) - (activeSession.scroll * activeSession.zoom);
+			}
+			const newScroll = activeSession.scroll + (wheelZoom.distance / activeSession.zoom) - (wheelZoom.distance / newZoom);
+			activeSession.setZoom(newZoom);
+			ignoreScroll = true;
 			if (newScroll < 0) {
 				activeSession.setScroll(0, true);
 			} else if (visibleWidth + newScroll > activeSession.duration) {
@@ -1229,6 +1274,31 @@ function wheel(e) {
 	}
 }
 
+function fakeScroll(e) {
+	if (!e.ctrlKey) {
+		e.preventDefault();
+		mainNav.scrollLeft += e.deltaX;
+		mainNav.scrollTop += e.deltaY;
+	}
+}
+
+function dragFile(e) {
+	if (e.dataTransfer && e.dataTransfer.files) {
+		e.preventDefault();
+		e.dataTransfer.dropEffect = "copy";
+	}
+}
+
+function dropFile(e) {
+	e.preventDefault();
+	if (e.dataTransfer && e.dataTransfer.files) {
+		for (let i = 0; i < e.dataTransfer.files.length; i++) {
+			const file = e.dataTransfer.files[i];
+			listFile(file);
+		}
+	}
+}
+
 function setup() {
 	interimTranscript = document.getElementById("interimtranscript");
 	transcriptPlayer = document.getElementById("transcriptplayer");
@@ -1236,6 +1306,7 @@ function setup() {
 	transcriptMenu = document.getElementById("transcriptmenu");
 	transcriptElem = document.getElementById("transcript");
 	popupOverlay = document.getElementById("popupoverlay");
+	navigatorElem = document.getElementById("navigation");
 	timelineCanvas = document.getElementById("timeline");
 	presetMenu = document.getElementById("presetmenu");
 	playButton = document.getElementById("playbutton");
@@ -1245,6 +1316,7 @@ function setup() {
 	presetList = document.getElementById("presets");
 	fileTabs = document.getElementById("filetabs");
 	playlist = document.getElementById("playlist");
+	playback = document.getElementById("playback");
 	playhead = document.getElementById("playhead");
 	zoomDrag = document.getElementById("zoomer");
 	zoomCanvas = document.getElementById("zoom");
@@ -1257,11 +1329,18 @@ function setup() {
 	step1 = document.getElementById("step1");
 	step2 = document.getElementById("step2");
 	popup = document.getElementById("popup");
-	mainNav.addEventListener("wheel", wheel);
+	window.addEventListener("dragenter", dragFile);
+	window.addEventListener("dragover", dragFile);
+	window.addEventListener("drop", dropFile);
 	window.addEventListener("mousemove", moved);
 	window.addEventListener("mouseup", ended);
 	window.addEventListener("resize", resize);
 	window.addEventListener("orientationchange", resize);
+	mainNav.addEventListener("scroll", navScroll);
+	mainNav.addEventListener("wheel", navWheel);
+	fileTabs.addEventListener("wheel", fakeScroll);
+	playback.addEventListener("wheel", fakeScroll);
+	navigatorElem.addEventListener("wheel", fakeScroll);
 	timeLabel.addEventListener("keydown", preventTimeInput);
 	timeLabel.addEventListener("blur", forceTime);
 	window.addEventListener("mousedown", startBoxSelect);
