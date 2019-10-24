@@ -57,8 +57,7 @@ const wheelZoom = {};
 const tabList = [];
 const fileList = [];
 const peakScale = 0.7;
-const minZoomWidth = 2;
-const minClipWidth = 0.05;
+const minCanvasWidth = 1;
 const shakeAnalyserPrecision = 2048;
 let shakeData = new Uint8Array(shakeAnalyserPrecision * 0.5);
 const requestFrame = window.requestAnimationFrame || window.webkitRequestAnimationFrame || window.mozRequestAnimationFrame || window.oRequestAnimationFrame || window.msRequestAnimationFrame || function(e) { return window.setTimeout(e, 1000 / 60); };
@@ -139,6 +138,13 @@ function pauseIfPlayingSession() {
 	}
 }
 
+function setMenu(name) {
+	pauseIfPlayingSession();
+	editor.style.display = name === "editor" ? "block" : "none";
+	step1.style.display = name === "step1" ? "block" : "none";
+	step2.style.display = name === "step2" ? "block" : "none";
+}
+
 function ListedFile(file) {
 	this.file = file;
 	this.elem = document.createElement("a");
@@ -167,8 +173,11 @@ function ListedFile(file) {
 	};
 	this.elem.addEventListener("click", this.clicked.bind(this));
 	this.doubleClick = function() {
-		if (this.file.type === "session" && activeSession !== this.file) {
-			this.file.open();
+		if (this.file.type === "session") {
+			setMenu("editor");
+			if (activeSession !== this.file) {
+				this.file.open();
+			}
 		} else if (isDecodable(this.file) && activeSession) {
 			activeSession.deselectClips();
 			activeSession.addTrack().loadClip(this.file);
@@ -191,13 +200,6 @@ function ListedFile(file) {
 function listFile(file) {
 	const listed = new ListedFile(file);
 	sideNav.appendChild(listed.elem);
-}
-
-function setMenu(name) {
-	pauseIfPlayingSession();
-	editor.style.display = name === "editor" ? "block" : "none";
-	step1.style.display = name === "step1" ? "block" : "none";
-	step2.style.display = name === "step2" ? "block" : "none";
 }
 
 function fileBuffer(file, func) {
@@ -378,7 +380,12 @@ function updateClipCanvases() {
 function updateZoomDragger() {
 	if (!activeSession) return;
 	zoomDrag.style.left = activeSession.zoomPosition() + "px";
-	zoomDrag.style.width = activeSession.zoomWidth() + "px";
+	const width = activeSession.zoomWidth();
+	if (width < minCanvasWidth) {
+		zoomDrag.style.width = minCanvasWidth + "px";
+	} else {
+		zoomDrag.style.width = width + "px";
+	}
 }
 
 function resize() {
@@ -500,7 +507,6 @@ function draw() {
 }
 
 function setupPlaylist() {
-	setMenu("editor");
 	setupZoomCanvas();
 	setupTimeCanvas();
 	setupZoomDraggers();
@@ -543,7 +549,7 @@ function ClipDragger(clip, left) {
 		if (this.left) {
 			//this.clip.setScale(this.drag - newPosition);
 			const inTime = (newPosition - this.drag.in) / this.clip.session.zoom;
-			const minimum = this.clip.outTime - minClipWidth;
+			const minimum = ((this.clip.outTime * this.clip.session.zoom) - minCanvasWidth) / this.clip.session.zoom;
 			if (inTime > minimum) {
 				this.clip.setStart(this.drag.lastStart + minimum);
 				this.clip.setInTime(minimum);
@@ -556,7 +562,7 @@ function ClipDragger(clip, left) {
 			}
 		} else {
 			const outTime = (newPosition - this.drag) / this.clip.session.zoom;
-			const maximum = this.clip.inTime + minClipWidth;
+			const maximum = ((this.clip.inTime * this.clip.session.zoom) + minCanvasWidth) / this.clip.session.zoom;
 			if (outTime < maximum) {
 				this.clip.setOutTime(maximum);
 			} else if (outTime > this.clip.duration) {
@@ -626,9 +632,12 @@ function Clip(session) {
 		this.context.font = "12px Arial";
 		this.context.fillText("TESTING", this.elem.width * 0.5, 4);
 	};*/
+	this.pixelWidth = function() {
+		return (this.outTime - this.inTime) * this.session.zoom;
+	};
 	this.updateCanvas = function() {
 		if (!this.audioData) return;
-		let width = (this.outTime - this.inTime) * this.session.zoom;
+		let width = this.pixelWidth();
 		const startTime = this.startTime - this.session.scroll;
 		const startPosition = startTime * this.session.zoom;
 		const amountOver = startPosition + width - zoomCanvas.width;
@@ -648,12 +657,16 @@ function Clip(session) {
 			this.fakeOffset = 0;
 			this.leftDragger.allow();
 		}
-		if (width > 1) {
+		if (width > 0) {
 			if (width <= 8) {
 				this.leftDragger.deny();
 				this.rightDragger.deny();
 			}
-			this.elem.width = width;
+			if (width < minCanvasWidth) {
+				this.elem.width = minCanvasWidth;
+			} else {
+				this.elem.width = width;
+			}
 			this.parent.style.display = "block";
 			this.drawCanvas();
 		} else {
@@ -687,14 +700,37 @@ function Clip(session) {
 	};
 	this.elem.addEventListener("mousedown", this.clicked.bind(this));
 	this.setOutTime = function(time) {
-		this.outTime = time;
+		if (time > this.duration) {
+			this.outTime = this.duration;
+		} else {
+			this.outTime = time;
+		}
 		updateZoomCanvas();
 		this.updateCanvas();
 	};
 	this.setInTime = function(time) {
-		this.inTime = time;
+		if (time < 0) {
+			this.inTime = 0;
+		} else {
+			this.inTime = time;
+		}
 		updateZoomCanvas();
 		this.updateCanvas();
+	};
+	this.setPlayheadInTime = function(time) {
+		const inTime = this.inTime + time - this.startTime;
+		if ((this.outTime - inTime) * this.session.zoom < minCanvasWidth) return;
+		if (inTime > 0) {
+			this.setStart(time);
+		} else {
+			this.setStart(time - inTime);
+		}
+		this.setInTime(inTime);
+	};
+	this.setPlayheadOutTime = function(time) {
+		const outTime = time - this.startTime + this.inTime;
+		if ((outTime - this.inTime) * this.session.zoom < minCanvasWidth) return;
+		this.setOutTime(outTime);
 	};
 	this.duplicate = function() {
 		const clip = new Clip(this.session);
@@ -709,8 +745,8 @@ function Clip(session) {
 	this.splitClip = function(time) {
 		const inTime = this.inTime + time - this.startTime;
 		const outTime = time - this.startTime + this.inTime;
-		if ((this.outTime - inTime) * this.session.zoom < 1) return;
-		if ((outTime - this.inTime) * this.session.zoom < 1) return;
+		if ((this.outTime - inTime) * this.session.zoom < minCanvasWidth) return;
+		if ((outTime - this.inTime) * this.session.zoom < minCanvasWidth) return;
 		const dupe = this.duplicate();
 		dupe.startTime = time;
 		dupe.inTime = inTime;
@@ -755,6 +791,9 @@ function Clip(session) {
 		this.startTime = time;
 		updatePlaylistDuration();
 		this.updateCanvas();
+	};
+	this.setEnd = function(time) {
+		this.setStart(time - this.outTime + this.inTime);
 	};
 	this.remove = function() {
 		this.track.removeClip(this);
@@ -1021,7 +1060,6 @@ function Session(name, duration) {
 	};
 	this.open = function() {
 		pauseIfPlayingSession();
-		setMenu("editor");
 		if (activeTab) {
 			activeTab.deactivate();
 		}
@@ -1087,7 +1125,7 @@ function isOverlapping(rect, x, y, width, height) {
 }
 
 function getZoomDraggerOffset(width) {
-	return (zoomCanvas.width - width) / (zoomCanvas.width - minZoomWidth) * -8;
+	return (zoomCanvas.width - width) / (zoomCanvas.width - minCanvasWidth) * -8;
 }
 
 function moved(e) {
@@ -1102,9 +1140,9 @@ function moved(e) {
 		e.preventDefault();
 		let position = e.pageX - activeDrag.dragPosition;
 		let newWidth = activeDrag.lastWidth - (e.pageX - activeDrag.dragWidth);
-		if (newWidth < minZoomWidth) {
-			newWidth = minZoomWidth;
-			position = activeDrag.lastPosition - minZoomWidth;
+		if (newWidth < minCanvasWidth) {
+			newWidth = minCanvasWidth;
+			position = activeDrag.lastPosition - minCanvasWidth;
 		}
 		const offset = getZoomDraggerOffset(newWidth);
 		activeDrag.leftElem.style.left = offset + "px";
@@ -1114,8 +1152,8 @@ function moved(e) {
 	} else if (activeDrag.type === "zoomdragright") {
 		e.preventDefault();
 		let newWidth = activeDrag.lastWidth - (activeDrag.drag - e.pageX);
-		if (newWidth < minZoomWidth) {
-			newWidth = minZoomWidth;
+		if (newWidth < minCanvasWidth) {
+			newWidth = minCanvasWidth;
 		}
 		const offset = getZoomDraggerOffset(newWidth);
 		activeDrag.leftElem.style.left = offset + "px";
@@ -1238,6 +1276,34 @@ function keyDown(e) {
 			e.preventDefault();
 			for (let i = 0; i < activeSession.selectedClips.length; i++) {
 				activeSession.selectedClips[i].splitClip(activeSession.playheadTime);
+			}
+		}
+	} else if (e.key === "[") {
+		if (activeSession && activeSession.selectedClips.length) {
+			e.preventDefault();
+			for (let i = 0; i < activeSession.selectedClips.length; i++) {
+				activeSession.selectedClips[i].setStart(activeSession.playheadTime);
+			}
+		}
+	} else if (e.key === "]") {
+		if (activeSession && activeSession.selectedClips.length) {
+			e.preventDefault();
+			for (let i = 0; i < activeSession.selectedClips.length; i++) {
+				activeSession.selectedClips[i].setEnd(activeSession.playheadTime);
+			}
+		}
+	} else if (e.key === "{") {
+		if (activeSession && activeSession.selectedClips.length) {
+			e.preventDefault();
+			for (let i = 0; i < activeSession.selectedClips.length; i++) {
+				activeSession.selectedClips[i].setPlayheadInTime(activeSession.playheadTime);
+			}
+		}
+	} else if (e.key === "}") {
+		if (activeSession && activeSession.selectedClips.length) {
+			e.preventDefault();
+			for (let i = 0; i < activeSession.selectedClips.length; i++) {
+				activeSession.selectedClips[i].setPlayheadOutTime(activeSession.playheadTime);
 			}
 		}
 	}
@@ -1510,6 +1576,7 @@ function toggleShake(elem) {
 function newSession() {
 	const sessionName = window.prompt("Please enter a session name", "Untitled Session");
 	if (sessionName) {
+		setMenu("editor");
 		if (!playlistSetup) {
 			setupPlaylist();
 		}
