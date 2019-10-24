@@ -567,15 +567,14 @@ function ClipDragger(clip, left) {
 	this.elem.addEventListener("mousedown", this.clicked.bind(this));
 }
 
-function Clip(clipFile, clipTrack, clipSession) {
-	this.session = clipSession;
+function Clip(session) {
+	this.session = session;
 	this.drag = 0;
 	//this.scale = 1;
 	this.audioData;
 	this.type = "clip";
 	this.audioBuffer;
 	this.duration = 0;
-	this.track = clipTrack;
 	this.inTime = 0;
 	this.outTime = 0;
 	this.startTime = 0;
@@ -587,7 +586,6 @@ function Clip(clipFile, clipTrack, clipSession) {
 	this.parent = document.createElement("div");
 	this.parent.className = "clipdiv";
 	this.parent.appendChild(this.elem);
-	this.track.elem.appendChild(this.parent);
 	this.leftDragger = new ClipDragger(this, true);
 	this.rightDragger = new ClipDragger(this, false);
 	this.context = this.elem.getContext("2d", { alpha: true });
@@ -637,6 +635,7 @@ function Clip(clipFile, clipTrack, clipSession) {
 			this.leftDragger.deny();
 			width += startPosition;
 		} else {
+			this.parent.style.left = this.startTime * this.session.zoom + "px";
 			this.fakeOffset = 0;
 			this.leftDragger.allow();
 		}
@@ -688,6 +687,30 @@ function Clip(clipFile, clipTrack, clipSession) {
 		this.parent.style.left = this.startTime * this.session.zoom + "px";
 		this.updateCanvas();
 	};
+	this.duplicate = function() {
+		const clip = new Clip(this.session);
+		clip.duration = this.duration;
+		clip.inTime = this.inTime;
+		clip.startTime = this.startTime;
+		clip.outTime = this.outTime;
+		clip.audioData = this.audioData;
+		clip.audioBuffer = this.audioBuffer;
+		return clip;
+	};
+	this.splitClip = function(time) {
+		const inTime = this.inTime + time - this.startTime;
+		const outTime = time - this.startTime + this.inTime;
+		if ((this.outTime - inTime) * this.session.zoom < 1) return;
+		if ((outTime - this.inTime) * this.session.zoom < 1) return;
+		const dupe = this.duplicate();
+		dupe.startTime = time;
+		dupe.inTime = inTime;
+		this.track.addClip(dupe);
+		dupe.updateCanvas();
+		dupe.select();
+		this.outTime = outTime;
+		this.updateCanvas();
+	};
 	/*this.setScale = function(scale) {
 		this.scale = (scale + this.lastWidth) / this.elem.width;
 		this.elem.style.width = this.scale * this.elem.width + "px";
@@ -715,16 +738,12 @@ function Clip(clipFile, clipTrack, clipSession) {
 			forceCanvasRedraw();
 		}.bind(this));
 	};
-	this.loadFile(clipFile);
 	this.changeTrack = function(track) {
 		this.track.removeClip(this);
 		track.addClip(this);
-		this.track = track;
-		track.elem.appendChild(this.parent);
 	};
 	this.setStart = function(time) {
 		this.startTime = time;
-		this.parent.style.left = time * this.session.zoom + "px";
 		updatePlaylistDuration();
 		this.updateCanvas();
 	};
@@ -742,11 +761,14 @@ function Track(trackSession) {
 	this.elem.className = "track";
 	tracks.appendChild(this.elem);
 	this.addClip = function(clip) {
+		clip.track = this;
+		this.elem.appendChild(clip.parent);
 		this.clips.push(clip);
 	};
 	this.loadClip = function(file) {
 		pauseIfPlayingSession();
-		const clip = new Clip(file, this, this.session);
+		const clip = new Clip(this.session);
+		clip.loadFile(file);
 		this.addClip(clip);
 		clip.select();
 		return clip;
@@ -776,7 +798,7 @@ function Track(trackSession) {
 		if (draggedFile) {
 			e.preventDefault();
 			e.stopPropagation();
-			activeSession.deselectClips();
+			this.session.deselectClips();
 			const clip = this.loadClip(draggedFile.file);
 			const start = (e.clientX - this.elem.getBoundingClientRect().left) / this.session.zoom;
 			clip.setStart(start);
@@ -1203,22 +1225,29 @@ function preventTimeInput(e) {
 function keyDown(e) {
 	if (e.target !== document.body) return;
 	if (e.keyCode === 32) {
-		togglePlayback();
 		e.preventDefault();
+		togglePlayback();
 	} else if (e.keyCode === 8 || e.keyCode === 46) {
 		if (activeSession && activeSession.selectedClips.length) {
+			e.preventDefault();
 			pauseIfPlayingSession();
 			for (let i = 0; i < activeSession.selectedClips.length; i++) {
 				activeSession.selectedClips[i].remove();
 			}
 			activeSession.selectedClips = [];
 			updateZoomCanvas();
-			e.preventDefault();
 		} else if (selectedFiles.length) {
 			for (let i = 0; i < selectedFiles.length; i++) {
 				selectedFiles[i].remove();
 			}
 			selectedFiles = [];
+		}
+	} else if (e.keyCode === 75) {
+		if (activeSession && activeSession.selectedClips.length) {
+			e.preventDefault();
+			for (let i = 0; i < activeSession.selectedClips.length; i++) {
+				activeSession.selectedClips[i].splitClip(activeSession.playheadTime);
+			}
 		}
 	}
 }
