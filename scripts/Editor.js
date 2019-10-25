@@ -4,7 +4,6 @@ let step1;
 let step2;
 let popup;
 let editor;
-let player;
 let tracks;
 let topNav;
 let mainNav;
@@ -42,13 +41,10 @@ let interimTranscript;
 let finalTranscript;
 let lastTopScroll = 0;
 let lastLeftScroll = 0;
-let shaking = false;
-let shakeAnalyser;
 let selectedFiles = [];
 let recordIndex = 1;
 let waveDetail = 16;
 let zoomAmount = 1.25;
-let sampleRate = 44100;
 let autoScroll = false;
 let presetsLoaded = false;
 let playlistSetup = false;
@@ -58,9 +54,114 @@ const tabList = [];
 const fileList = [];
 const peakScale = 0.7;
 const minCanvasWidth = 1;
-const shakeAnalyserPrecision = 2048;
-let shakeData = new Uint8Array(shakeAnalyserPrecision * 0.5);
 const requestFrame = window.requestAnimationFrame || window.webkitRequestAnimationFrame || window.mozRequestAnimationFrame || window.oRequestAnimationFrame || window.msRequestAnimationFrame || function(e) { return window.setTimeout(e, 1000 / 60); };
+
+function SessionPlayer() {
+	this.bufferSize = 4096;
+	this.frameSize = 2048;
+	this.sampleRate = 44100;
+	this.running = false;
+	this.lastPlayhead = 0;
+	this.lastTime = 0;
+	this.bufferNodes = [];
+	this.ensureContext = function() {
+		if (!this.context) {
+			this.context = new (window.AudioContext || window.webkitAudioContext)({ sampleRate: this.sampleRate });
+		}
+	};
+	this.toggleShakeAnalyser = function(enabled) {
+		if (enabled) {
+			if (!this.shakeAnalyser) {
+				this.shakeAnalyser = this.context.createAnalyser();
+				this.shakeAnalyser.fftSize = 2048;
+			}
+			if (!this.shakeData) {
+				this.shakeData = new Uint8Array(this.shakeAnalyser.frequencyBinCount);
+			}
+		} else {
+			this.shakeAnalyser = undefined;
+		}
+	};
+	this.pause = function() {
+		playButton.innerHTML = "►";
+		for (let i = 0; i < this.bufferNodes.length; i++) {
+			this.bufferNodes[i].stop();
+		}
+		this.bufferNodes = [];
+		if (this.shakeAnalyser) {
+			sideNav.style.transform = "none";
+			topNav.style.transform = "none";
+			document.body.style.transform = "none";
+			document.body.style.overflow = "initial";
+		}
+		this.running = false;
+	};
+	this.shake = function() {
+		this.shakeAnalyser.getByteFrequencyData(this.shakeData);
+		const bass = this.shakeData[0];
+		document.body.style.overflow = "hidden";
+		document.body.style.transform = "rotate(" + ((bass - 80) * 0.001) + "deg) translateY(" + ((bass - 120) * -0.1) + "px";
+		const mid = this.shakeData[256] - 40;
+		sideNav.style.transform = "rotate(" + (mid * -0.005) + "deg)";
+		const treble = this.shakeData[512];
+		topNav.style.transform = "rotate(" + ((treble - 80) * 0.005) + "deg) translateY(" + ((treble - 40) * 0.1) + "px";
+	};
+	this.schedule = function() {
+		for (let i = 0; i < activeSession.trackList.length; i++) {
+			for (let j = 0; j < activeSession.trackList[i].clips.length; j++) {
+				const clip = activeSession.trackList[i].clips[j];
+				const clipDuration = clip.outTime - clip.inTime - Math.max(0, this.lastPlayhead - clip.startTime);
+				if (clipDuration > 0) {
+					const bufferNode = this.context.createBufferSource();
+					//bufferNode.playbackRate.value = 1 / clip.scale;
+					bufferNode.buffer = clip.audioBuffer;
+					if (this.shakeAnalyser) {
+						bufferNode.connect(this.shakeAnalyser);
+					}
+					bufferNode.connect(this.context.destination);
+					//bufferNode.start(Math.max(0, clip.startTime - this.timeOffset), Math.max(0, (-clip.startTime + this.timeOffset) / clip.scale), clip.duration);
+					let when = clip.startTime - this.lastPlayhead;
+					let offset = clip.inTime;
+					if (when < 0) {
+						offset -= when;
+						when = 0;
+					}
+					bufferNode.start(this.lastTime + when, offset, clipDuration);
+					this.bufferNodes.push(bufferNode);
+				}
+			}
+		}
+	};
+	this.playingTime = function() {
+		return this.lastPlayhead + this.context.currentTime - this.lastTime;
+	};
+	this.play = function() {
+		this.ensureContext();
+		this.lastTime = this.context.currentTime;
+		this.lastPlayhead = activeSession.playheadTime;
+		playButton.innerHTML = "❚❚";
+		this.schedule();
+		this.running = true;
+	};
+	this.pauseIfPlaying = function() {
+		if (this.running) {
+			this.pause();
+		}
+	};
+	this.togglePlayback = function() {
+		if (this.running) {
+			this.pause();
+		} else {
+			this.play();
+		}
+	};
+	this.decode = function(data, func) {
+		this.ensureContext();
+		this.context.decodeAudioData(data, func);
+	};
+}
+
+const player = new SessionPlayer();
 
 function isLeftClick(e) {
 	return e.which === 1 || e.button === 0;
@@ -97,49 +198,8 @@ function deselectNonDraggableFiles() {
 	}
 }
 
-function createShakeAnalyser() {
-	shakeAnalyser = player.createAnalyser();
-	shakeAnalyser.fftSize = shakeAnalyserPrecision;
-}
-
-function restartPlayer() {
-	player = new (window.AudioContext || window.webkitAudioContext)();
-	sampleRate = player.sampleRate;
-	if (shaking) {
-		createShakeAnalyser();
-	}
-	player.suspend();
-}
-
-function ensurePlayer() {
-	if (!player) {
-		restartPlayer();
-	}
-}
-
-function pauseSession() {
-	if (shakeAnalyser) {
-		sideNav.style.transform = "none";
-		topNav.style.transform = "none";
-		document.body.style.transform = "none";
-		document.body.style.overflow = "initial";
-	}
-	if (activeSession && player && player.state === "running") {
-		activeSession.timeOffset += player.currentTime;
-	}
-	playButton.innerHTML = "►";
-	player.close();
-	restartPlayer();
-}
-
-function pauseIfPlayingSession() {
-	if (player && player.state === "running") {
-		pauseSession();
-	}
-}
-
 function setMenu(name) {
-	pauseIfPlayingSession();
+	player.pauseIfPlaying();
 	editor.style.display = name === "editor" ? "block" : "none";
 	step1.style.display = name === "step1" ? "block" : "none";
 	step2.style.display = name === "step2" ? "block" : "none";
@@ -180,7 +240,7 @@ function ListedFile(file) {
 			}
 		} else if (isDecodable(this.file) && activeSession) {
 			activeSession.deselectClips();
-			activeSession.addTrack().loadClip(this.file);
+			activeSession.addTrack().loadClip(this.file, activeSession.playheadTime);
 		}
 	};
 	this.elem.addEventListener("dblclick", this.doubleClick.bind(this));
@@ -205,9 +265,7 @@ function listFile(file) {
 function fileBuffer(file, func) {
 	const reader = new FileReader();
 	reader.onload = function() {
-		player.decodeAudioData(this.result, function(buffer) {
-			func(buffer);
-		});
+		player.decode(this.result, func);
 	};
 	reader.readAsArrayBuffer(file);
 }
@@ -305,31 +363,17 @@ function updateTimeCanvas() {
 }
 
 function parseTime(elem) {
-	pauseIfPlayingSession();
-	activeSession.timeOffset = Math.min(timeStringToSeconds(elem.innerHTML), activeSession.duration);
-	activeSession.setPlayhead(activeSession.timeOffset, false);
+	player.pauseIfPlaying();
+	activeSession.setPlayhead(Math.min(timeStringToSeconds(elem.innerHTML), activeSession.duration), false);
 }
 
 function forceTime() {
-	pauseIfPlayingSession();
-	activeSession.timeOffset = Math.min(timeStringToSeconds(timeLabel.innerHTML), activeSession.duration);
-	activeSession.setPlayhead(activeSession.timeOffset, true);
-}
-
-function playSession() {
-	if (!activeSession) return;
-	playButton.innerHTML = "❚❚";
-	activeSession.schedule();
-	player.resume();
+	player.pauseIfPlaying();
+	activeSession.setPlayhead(Math.min(timeStringToSeconds(timeLabel.innerHTML), activeSession.duration), true);
 }
 
 function togglePlayback() {
-	ensurePlayer();
-	if (player.state === "running") {
-		pauseSession();
-	} else {
-		playSession();
-	}
+	player.togglePlayback();
 }
 
 function urlBuffer(url, func, err) {
@@ -339,9 +383,7 @@ function urlBuffer(url, func, err) {
 	audioRequest.onreadystatechange = function() {
 		if (this.readyState === 4) {
 			if (this.status === 200) {
-				player.decodeAudioData(this.response, function(buffer) {
-					func(buffer);
-				});
+				player.decode(this.response, func);
 			} else if (this.status === 404 && err) {
 				err();
 			}
@@ -478,10 +520,10 @@ function setupZoomDraggers() {
 }
 
 function draw() {
-	if (player && player.state === "running") {
-		const time = activeSession.timeOffset + player.currentTime;
+	if (player.running) {
+		const time = player.playingTime();
 		if (time > activeSession.duration) {
-			pauseIfPlayingSession();
+			player.pauseIfPlaying();
 		} else {
 			activeSession.setPlayhead(time, true);
 		}
@@ -492,15 +534,8 @@ function draw() {
 				activeSession.setScroll(scroll, true);
 			}
 		}
-		if (shakeAnalyser) {
-			shakeAnalyser.getByteFrequencyData(shakeData);
-			const bass = shakeData[0];
-			document.body.style.overflow = "hidden";
-			document.body.style.transform = "rotate(" + ((bass - 80) * 0.001) + "deg) translateY(" + ((bass - 120) * -0.1) + "px";
-			const mid = shakeData[256] - 40;
-			sideNav.style.transform = "rotate(" + (mid * -0.005) + "deg)";
-			const treble = shakeData[512];
-			topNav.style.transform = "rotate(" + ((treble - 80) * 0.005) + "deg) translateY(" + ((treble - 40) * 0.1) + "px";
+		if (player.shakeAnalyser) {
+			player.shake();
 		}
 	}
 	requestFrame(draw);
@@ -514,7 +549,7 @@ function setupPlaylist() {
 }
 
 function openPopup(name) {
-	pauseIfPlayingSession();
+	player.pauseIfPlaying();
 	transcriptMenu.style.display = name === "transcript" ? "block" : "none";
 	presetMenu.style.display = name === "preset" ? "block" : "none";
 	prefsMenu.style.display = name === "prefs" ? "block" : "none";
@@ -545,7 +580,7 @@ function ClipDragger(clip, left) {
 		}
 	};
 	this.updateDrag = function(newPosition) {
-		pauseIfPlayingSession();
+		player.pauseIfPlaying();
 		if (this.left) {
 			//this.clip.setScale(this.drag - newPosition);
 			const inTime = (newPosition - this.drag.in) / this.clip.session.zoom;
@@ -611,11 +646,11 @@ function Clip(session) {
 		this.context.strokeStyle = "white";
 		this.context.beginPath();
 		const scale = waveDetail * this.session.zoom;
-		const offset = this.inTime * sampleRate - this.fakeOffset;
+		const offset = this.inTime * player.sampleRate - this.fakeOffset;
 		for (let k = 0; k < lines; k++) {
 			const x = k / lines * this.elem.width;
 			const y = this.elem.height * 0.5;
-			const index = this.audioData[Math.floor(k * sampleRate / scale + offset)];
+			const index = this.audioData[Math.floor(k * player.sampleRate / scale + offset)];
 			this.context.lineTo(x, y + (index || 0) * y * peakScale);
 		}
 		this.context.stroke();
@@ -649,7 +684,7 @@ function Clip(session) {
 		}
 		if (startPosition < 0) {
 			this.parent.style.left = (this.session.scroll * this.session.zoom) + "px";
-			this.fakeOffset = startTime * sampleRate;
+			this.fakeOffset = startTime * player.sampleRate;
 			this.leftDragger.deny();
 			width += startPosition;
 		} else {
@@ -680,7 +715,7 @@ function Clip(session) {
 		this.parent.classList.add("active");
 	};
 	this.updateDrag = function(newPosition) {
-		pauseIfPlayingSession();
+		player.pauseIfPlaying();
 		for (let i = 0; i < this.session.selectedClips.length; i++) {
 			this.session.selectedClips[i].setStart((newPosition - this.session.selectedClips[i].drag) / this.session.zoom);
 		}
@@ -768,7 +803,6 @@ function Clip(session) {
 		this.context.fillText("LOADING...", this.elem.width * 0.5, this.elem.height * 0.5);
 	};
 	this.loadFile = function(file) {
-		ensurePlayer();
 		this.drawLoading();
 		fileBuffer(file, function(buffer) {
 			const data = buffer.getChannelData(0);
@@ -814,7 +848,7 @@ function Track(trackSession) {
 		this.clips.push(clip);
 	};
 	this.loadClip = function(file, start) {
-		pauseIfPlayingSession();
+		player.pauseIfPlaying();
 		const clip = new Clip(this.session);
 		this.addClip(clip);
 		if (start) {
@@ -904,7 +938,7 @@ function FileTab(session) {
 	this.elem.appendChild(this.closeButton);
 	this.activate = function() {
 		if (activeTab === this) return;
-		pauseIfPlayingSession();
+		player.pauseIfPlaying();
 		if (activeTab) {
 			activeTab.deactivate();
 		}
@@ -920,7 +954,7 @@ function FileTab(session) {
 		}
 	};
 	this.remove = function() {
-		pauseIfPlayingSession();
+		player.pauseIfPlaying();
 		this.elem.parentNode.removeChild(this.elem);
 		this.session.tab = undefined;
 		this.session.close();
@@ -958,38 +992,12 @@ function Session(name, duration) {
 	this.scroll = 0;
 	this.zoom = timelineCanvas.width / duration;
 	this.duration = duration;
-	this.timeOffset = 0;
 	this.playheadTime = 0;
 	this.realName = name;
 	this.selectedClips = [];
 	this.name = name + ".phomeme";
 	this.type = "session";
 	this.trackList = [];
-	this.schedule = function() {
-		for (let i = 0; i < this.trackList.length; i++) {
-			for (let j = 0; j < this.trackList[i].clips.length; j++) {
-				const clip = this.trackList[i].clips[j];
-				const clipDuration = clip.outTime - clip.inTime - Math.max(0, this.timeOffset - clip.startTime);
-				if (clipDuration > 0) {
-					const bufferNode = player.createBufferSource();
-					//bufferNode.playbackRate.value = 1 / clip.scale;
-					bufferNode.buffer = clip.audioBuffer;
-					if (shakeAnalyser) {
-						bufferNode.connect(shakeAnalyser);
-					}
-					bufferNode.connect(player.destination);
-					//bufferNode.start(Math.max(0, clip.startTime - this.timeOffset), Math.max(0, (-clip.startTime + this.timeOffset) / clip.scale), clip.duration);
-					let when = clip.startTime - this.timeOffset;
-					let offset = clip.inTime;
-					if (when < 0) {
-						offset -= when;
-						when = 0;
-					}
-					bufferNode.start(when, offset, clipDuration);
-				}
-			}
-		}
-	};
 	this.deselectClips = function() {
 		for (let i = 0; i < this.selectedClips.length; i++) {
 			this.selectedClips[i].parent.classList.remove("active");
@@ -1059,7 +1067,7 @@ function Session(name, duration) {
 		}
 	};
 	this.open = function() {
-		pauseIfPlayingSession();
+		player.pauseIfPlaying();
 		if (activeTab) {
 			activeTab.deactivate();
 		}
@@ -1111,13 +1119,8 @@ function closeMenus() {
 }
 
 function movePlayhead(e) {
-	activeSession.timeOffset = (e.clientX - playlist.getBoundingClientRect().left) / activeSession.zoom;
-	if (player && player.state === "running") {
-		activeSession.timeOffset -= player.currentTime;
-		pauseSession();
-	}
-	activeSession.timeOffset = Math.max(0, activeSession.timeOffset);
-	activeSession.setPlayhead(activeSession.timeOffset, true);
+	player.pauseIfPlaying();
+	activeSession.setPlayhead((e.clientX - playlist.getBoundingClientRect().left) / activeSession.zoom, true);
 }
 
 function isOverlapping(rect, x, y, width, height) {
@@ -1259,7 +1262,7 @@ function keyDown(e) {
 	} else if (e.keyCode === 8 || e.keyCode === 46) {
 		if (activeSession && activeSession.selectedClips.length) {
 			e.preventDefault();
-			pauseIfPlayingSession();
+			player.pauseIfPlaying();
 			for (let i = 0; i < activeSession.selectedClips.length; i++) {
 				activeSession.selectedClips[i].remove();
 			}
@@ -1506,7 +1509,6 @@ function loadPresets() {
 					urlJson(presets[i].url, function(response) {
 						closePopup();
 						setMenu("step2");
-						ensurePlayer();
 						const elems = listPreset(presets[i].name);
 						loadParts(response, elems, -1);
 					}, function() {
@@ -1554,7 +1556,7 @@ function setZoomAmount(elem) {
 	zoomAmount = elem.value;
 }
 
-function setAutoScroll(elem) {
+function toggleAutoScroll(elem) {
 	autoScroll = elem.checked;
 }
 
@@ -1565,12 +1567,7 @@ function setWaveDetail(elem) {
 }
 
 function toggleShake(elem) {
-	shaking = elem.checked;
-	if (shaking && player && !shakeAnalyser) {
-		createShakeAnalyser();
-	} else if (!shaking && shakeAnalyser) {
-		shakeAnalyser = undefined;
-	}
+	player.toggleShakeAnalyser(elem.checked);
 }
 
 function newSession() {
