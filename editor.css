@@ -7,6 +7,25 @@ html, body {
 	background-color: #061306;
 	margin: 0;
 	padding: 0;
+	scrollbar-color: #006000 #003000;
+	scrollbar-width: thin;
+}
+
+::-webkit-scrollbar {
+	height: 10px;
+	width: 10px;
+}
+
+::-webkit-scrollbar-track, ::-webkit-scrollbar-corner {
+	background: #003000;
+}
+
+::-webkit-scrollbar-thumb {
+	background: #006000;
+}
+
+::-webkit-scrollbar-thumb:hover {
+	background: #008000;
 }
 
 body {
@@ -22,11 +41,6 @@ input[type="file"] {
 	right: 0;
 	top: 0;
 	width: 0;
-}
-
-#addtrack {
-	display: block;
-	height: 128px;
 }
 
 #boxselect {
@@ -62,8 +76,9 @@ input[type="file"] {
 }
 
 .clipdiv.active {
-	background-color: #00FF0033;
+	background-color: #00FF0040;
 	box-shadow: 0 0 0 1px #00FF00 inset;
+	z-index: 3;
 }
 
 .clipdragleft, .clipdragright {
@@ -72,7 +87,7 @@ input[type="file"] {
 	position: absolute;
 	top: 0;
 	width: 4px;
-	z-index: 3;
+	z-index: 4;
 }
 
 .clipdragleft {
@@ -168,18 +183,15 @@ input[type="file"] {
 #filetabs {
 	background-color: #002000;
 	box-shadow: 0 -2px 0 0 #00FF00 inset;
-	height: 24px;
-	overflow: hidden;
-	position: fixed;
-	width: calc(100vw - 320px);
-	z-index: 5;
+	display: flex;
+	overflow: auto;
+	z-index: 100;
 }
 
 #filetabs a {
-	border-right: 2px solid #00FF00;
 	border-bottom: 2px solid #00FF00;
-	display: inline-block;
-	height: 24px;
+	border-right: 2px solid #00FF00;
+	display: inline-flex;
 	min-width: 128px;
 }
 
@@ -220,17 +232,16 @@ input[type="file"] {
 	padding: 16px 64px;
 }
 
-#mainnav {
-	overflow: scroll;
+#navigationarea {
+	position: sticky;
+	top: 0;
+	width: calc(100vw - 320px);
+	z-index: 6;
 }
 
 #navigation {
-	height: 50px;
 	overflow: hidden;
-	position: fixed;
-	top: 72px;
-	width: calc(100vw - 320px);
-	z-index: 5;
+	position: relative;
 }
 
 .padded {
@@ -244,7 +255,6 @@ input[type="file"] {
 	height: 24px;
 	line-height: 24px;
 	padding: 0 24px;
-	pointer-events: all;
 	text-align: center;
 	vertical-align: middle;
 }
@@ -254,32 +264,36 @@ input[type="file"] {
 }
 
 #playback {
-	background-color: #000000B3;
+	background-color: black;
 	border-top: 2px solid #00FF00;
 	bottom: 0;
 	height: 32px;
 	padding: 16px;
 	position: fixed;
 	width: 100%;
-	z-index: 5;
-	pointer-events: none;
+	z-index: 6;
 }
 
 #playhead {
 	background-color: white;
-	height: calc(100vh - 122px);
-	mix-blend-mode: color-dodge;
+	height: calc(100vh - 188px);
+	mix-blend-mode: difference;
 	pointer-events: none;
 	position: absolute;
 	user-select: none;
 	width: 1px;
-	z-index: 4;
+	z-index: 5;
+}
+
+#playlistarea {
+	height: calc(100vh - 188px);
+	overflow-x: hidden;
+	overflow-y: auto;
+	width: calc(100vw - 320px);
 }
 
 #playlist {
-	display: inline-block;
-	margin-top: 74px;
-	min-width: 100%;
+	margin-bottom: 64px;
 	position: relative;
 }
 
@@ -360,12 +374,17 @@ input[type="file"] {
 	margin: 8px 0;
 }
 
+#recordbutton.active {
+	background-color: #00FF00;
+	color: black;
+}
+
 #sidenav {
 	border-right: 1px solid #00FF00;
 	overflow-x: hidden;
-	overflow-y: scroll;
+	overflow-y: auto;
 	padding: 8px;
-	z-index: 8;
+	z-index: 997;
 }
 
 #sidenav a {
@@ -421,7 +440,6 @@ input[type="file"] {
 
 #time {
 	font-size: large;
-	pointer-events: all;
 	vertical-align: middle;
 }
 
@@ -435,6 +453,7 @@ input[type="file"] {
 
 #title {
 	float: left;
+	height: 100%;
 	margin: 0;
 	mix-blend-mode: screen;
 	padding: 4px 16px;
@@ -446,7 +465,7 @@ input[type="file"] {
 	box-shadow: 0 -32px 32px -32px #00FF00 inset;
 	grid-column: 1 / span 2;
 	overflow: hidden;
-	z-index: 9;
+	z-index: 998;
 }
 
 .topbutton {
@@ -490,6 +509,10 @@ input[type="file"] {
 	width: 100%;
 }
 
+.track.active {
+	background-color: #002000;
+}
+
 #transcriptarea {
 	padding: 12px;
 }
@@ -526,7 +549,11 @@ input[type="file"] {
 	position: absolute;
 	top: 0;
 	width: 100%;
-	z-index: 6;
+	z-index: 420;
+}
+
+#zoomer:active {
+	cursor: grabbing;
 }
 
 #zoomdragleft, #zoomdragright {
@@ -535,7 +562,7 @@ input[type="file"] {
 	position: absolute;
 	top: 0;
 	width: 8px;
-	z-index: 7;
+	z-index: 421;
 }
 
 #zoomdragleft {

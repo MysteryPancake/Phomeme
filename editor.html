@@ -12,12 +12,7 @@
 		<meta property="og:description" content="Simple sentence mixing tool.">
 		<meta name="viewport" content="width=device-width, initial-scale=1">
 		<link rel="stylesheet" type="text/css" href="editor.css">
-		<script defer src="scripts/Triphone.js"></script>
-		<script defer src="scripts/Session.js"></script>
-		<script defer src="scripts/Convert.js"></script>
-		<script defer src="scripts/Speak.js"></script>
-		<script defer src="scripts/Sing.js"></script>
-		<script defer src="scripts/Editor.js"></script>
+		<script src="scripts/Editor.js"></script>
 	</head>
 	<body onload="setup();">
 		<div id="topnav">
@@ -56,25 +51,29 @@
 		<div id="sidenav"></div>
 		<div id="mainnav">
 			<div id="editor">
-				<div id="filetabs"></div>
-				<div id="navigation">
-					<canvas id="zoom"></canvas>
-					<div id="zoomer">
-						<div id="zoomdragright"></div>
-						<div id="zoomdragleft"></div>
+				<div id="navigationarea">
+					<div id="filetabs"></div>
+					<div id="navigation">
+						<canvas id="zoom"></canvas>
+						<div id="zoomer">
+							<div id="zoomdragright"></div>
+							<div id="zoomdragleft"></div>
+						</div>
+						<canvas id="timeline"></canvas>
 					</div>
-					<canvas id="timeline"></canvas>
 				</div>
-				<div id="playlist">
-					<div id="playhead"></div>
-					<div id="tracks"></div>
-					<div id="addtrack"></div>
+				<div id="playlistarea">
+					<div id="playlist">
+						<div id="playhead"></div>
+						<div id="tracks"></div>
+					</div>
 				</div>
 				<div id="playback">
 					<span id="time" contenteditable="true" oninput="parseTime(this);">0:00:00.000</span>
 					<a id="playbutton" class="playbackbutton" onclick="togglePlayback();">&#9658;</a>
 					<a id="zoomin" class="playbackbutton" onclick="zoomIn();">Zoom In</a>
 					<a id="zoomout" class="playbackbutton" onclick="zoomOut();">Zoom Out</a>
+					<a id="recordbutton" class="playbackbutton" onclick="record(this);">Record</a>
 				</div>
 			</div>
 			<div id="step1" class="step">
@@ -96,7 +95,7 @@
 					<div id="transcriptbuttons">
 						<label for="transcriptupload" id="uploadbutton">Upload</label>
 						<input multiple type="file" accept="audio/*,application/json,.json,.TextGrid" id="transcriptupload" onchange="checkJson(this);">
-						<input type="image" alt="Microphone" src="microphone.png" id="transcriptmicrophone" width="32" height="32" onclick="microphone(this);">
+						<input type="image" alt="Microphone" src="microphone.png" id="transcriptmicrophone" width="32" height="32" onclick="recordTranscript(this);">
 						<audio controls id="transcriptplayer"></audio>
 					</div>
 					<div class="padded">
