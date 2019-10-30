@@ -13,7 +13,7 @@ function addClip(target, phones, mix, method, diphones, triphones, func) {
 function sing(source, destination, chooseMethod, matchWords, matchDiphones, matchTriphones, matchPunctuation, matchExact, overlapStart, overlapEnd) {
 	const input = convert(source.data, source.type, "input.wav", matchPunctuation, matchExact);
 	const output = convert(destination.data, destination.type, "output.wav", matchPunctuation, matchExact);
-	const mix = new AuditionSession("session", 32, 44100);
+	const mix = new AuditionSession("session", 32, 48000);
 	mix.overlapStart = overlapStart;
 	mix.overlapEnd = overlapEnd;
 	if (matchWords && input.words && output.words) {
