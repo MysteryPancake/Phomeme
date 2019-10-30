@@ -184,7 +184,7 @@ function SessionPlayer() {
 		return this.lastPlayhead + this.context.currentTime - this.lastTime;
 	};
 	this.play = function() {
-		if (player.recordingClip) return;
+		if (this.recordingClip) return;
 		this.ensureContext();
 		this.lastTime = this.context.currentTime;
 		this.lastPlayhead = activeSession.playheadTime;
@@ -899,13 +899,6 @@ function Clip(session) {
 		this.updateCanvas();
 		updatePlaylistDuration();
 	};
-	/*this.loadedChunks = function(buffer) {
-		this.loadedBuffer(buffer);
-		this.session.setPlayhead(this.endTime(), true);
-	};
-	this.loadChunks = function(blob) {
-		fileBuffer(blob, this.loadedChunks.bind(this), this.drawError.bind(this));
-	};*/
 	this.loadedFile = function(buffer) {
 		this.loadedBuffer(buffer);
 		forceCanvasRedraw();
