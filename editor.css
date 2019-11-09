@@ -287,8 +287,7 @@ input[type="file"] {
 
 #playlistarea {
 	height: calc(100vh - 188px);
-	overflow-x: hidden;
-	overflow-y: auto;
+	overflow: auto;
 	width: calc(100vw - 320px);
 }
 

@@ -24,7 +24,6 @@ let zoomCanvas;
 let zoomContext;
 let recognition;
 let draggedFile;
-let clipRecorder;
 let playlistArea;
 let popupOverlay;
 let navigationArea;
@@ -37,14 +36,12 @@ let timelineCanvas;
 let timelineContext;
 let transcriptPlayer;
 let interimTranscript;
-let transcriptRecorder;
 let finalTranscript;
 let lastTopScroll = 0;
 let lastLeftScroll = 0;
 let selectedFiles = [];
 let recordIndex = 1;
 let waveDetail = 16;
-let recording = false;
 let zoomAmount = 1.25;
 let autoScroll = false;
 let presetsLoaded = false;
@@ -57,160 +54,57 @@ const peakScale = 0.7;
 const minCanvasWidth = 1;
 const requestFrame = window.requestAnimationFrame || window.webkitRequestAnimationFrame || window.mozRequestAnimationFrame || window.oRequestAnimationFrame || window.msRequestAnimationFrame || function(e) { return window.setTimeout(e, 1000 / 60); };
 
-function SessionPlayer() {
-	this.sampleRate = 44100;
-	this.running = false;
-	this.lastPlayhead = 0;
-	this.lastTime = 0;
-	this.bufferNodes = [];
-	this.ensureContext = function() {
-		if (!this.context) {
-			this.context = new (window.AudioContext || window.webkitAudioContext)({ sampleRate: this.sampleRate });
-		}
-	};
-	this.unshake = function() {
-		sideNav.style.transform = "none";
-		topNav.style.transform = "none";
-		document.body.style.transform = "none";
-		document.body.style.overflow = "initial";
-	};
-	this.toggleShakeAnalyser = function(enabled) {
-		if (enabled) {
-			if (!this.shakeAnalyser) {
-				this.shakeAnalyser = this.context.createAnalyser();
-				this.shakeAnalyser.fftSize = 2048;
-				if (this.bufferNodes.length) {
-					for (let i = 0; i < this.bufferNodes.length; i++) {
-						this.bufferNodes[i].connect(this.shakeAnalyser);
-					}
-				}
-			}
-			if (!this.shakeData) {
-				this.shakeData = new Uint8Array(this.shakeAnalyser.frequencyBinCount);
-			}
-		} else {
-			this.shakeAnalyser = undefined;
-			this.unshake();
-		}
-	};
-	this.pause = function() {
-		playButton.innerHTML = "►";
-		if (this.bufferNodes.length) {
-			for (let i = 0; i < this.bufferNodes.length; i++) {
-				this.bufferNodes[i].stop();
-			}
-			this.bufferNodes = [];
-		}
-		if (this.shakeAnalyser) {
-			this.unshake();
-		}
-		this.running = false;
-	};
-	this.startRecording = function(stream) {
-		this.ensureContext();
-		this.recordingClip = activeSession.decentTrack().addClip(activeSession.playheadTime);
-		this.recordingClip.startRecording();
-		const mediaStream = this.context.createMediaStreamSource(stream);
-		this.recordingProcessor = this.context.createScriptProcessor(4096, 2, 2);
-		this.recordingProcessor.onaudioprocess = function(e) {
-			if (this.recordingClip) {
-				this.recordingClip.addData(e.inputBuffer.getChannelData(0));
-			}
-		}.bind(this);
-		mediaStream.connect(this.recordingProcessor);
-		this.recordingProcessor.connect(this.context.destination);
-	};
-	this.stopRecording = function(blob) {
-		this.recordingProcessor.disconnect();
-		this.recordingProcessor = undefined;
-		this.recordingClip.stopRecording(blob);
-		this.recordingClip = undefined;
-	};
-	this.shake = function() {
-		this.shakeAnalyser.getByteFrequencyData(this.shakeData);
-		const bass = this.shakeData[0];
-		document.body.style.overflow = "hidden";
-		document.body.style.transform = "rotate(" + ((bass - 80) * 0.001) + "deg) translateY(" + ((bass - 120) * -0.1) + "px";
-		const mid = this.shakeData[256] - 40;
-		sideNav.style.transform = "rotate(" + (mid * -0.005) + "deg)";
-		const treble = this.shakeData[512];
-		topNav.style.transform = "rotate(" + ((treble - 80) * 0.005) + "deg) translateY(" + ((treble - 40) * 0.1) + "px";
-	};
-	this.schedule = function() {
-		for (let i = 0; i < activeSession.trackList.length; i++) {
-			for (let j = 0; j < activeSession.trackList[i].clips.length; j++) {
-				const clip = activeSession.trackList[i].clips[j];
-				if (clip.scale === 1) {
-					const clipDuration = clip.outTime - clip.inTime - Math.max(0, this.lastPlayhead - clip.startTime);
-					if (clipDuration > 0) {
-						const bufferNode = this.context.createBufferSource();
-						//bufferNode.playbackRate.value = 1 / clip.scale;
-						bufferNode.buffer = clip.audioBuffer;
-						if (this.shakeAnalyser) {
-							bufferNode.connect(this.shakeAnalyser);
-						}
-						bufferNode.connect(this.context.destination);
-						//bufferNode.start(Math.max(0, clip.startTime - this.timeOffset), Math.max(0, (-clip.startTime + this.timeOffset) / clip.scale), clip.duration);
-						let when = clip.startTime - this.lastPlayhead;
-						let offset = clip.inTime;
-						if (when < 0) {
-							offset -= when;
-							when = 0;
-						}
-						bufferNode.start(this.lastTime + when, offset, clipDuration);
-						this.bufferNodes.push(bufferNode);
-					}
-				} else {
-					// todo: use phase vocoding to stretch audio
-					/*const script = this.context.createScriptProcessor(this.bufferSize, 2, 2);
-					script.onaudioprocess = function(e) {
-
-					}
-					script.connect(this.context.destination)
-					const vocoder = new PhaseVocoder2(4096, this.sampleRate);
-					vocoder.init();
-					vocoder.set_alpha(clip.scale);
-					const outData = new Float32Array(clip.audioData.length);
-					vocoder.process(numSampsToProcess, clip.audioData, 0, outData, 0);
-					console.log(outData);
-					const result = vocoder.process(clip.audioData);
-					console.log(result);
-					vocoder.process(numSampsToProcess, inData, inDataOffset, outData, outDataOffset)*/
-				}
-			}
-		}
-	};
-	this.playingTime = function() {
-		return this.lastPlayhead + this.context.currentTime - this.lastTime;
-	};
-	this.play = function() {
-		if (this.recordingClip) return;
-		this.ensureContext();
-		this.lastTime = this.context.currentTime;
-		this.lastPlayhead = activeSession.playheadTime;
-		playButton.innerHTML = "❚❚";
-		this.schedule();
-		this.running = true;
-	};
-	this.pauseIfPlaying = function() {
-		if (this.running) {
-			this.pause();
-		}
-	};
-	this.togglePlayback = function() {
-		if (this.running) {
-			this.pause();
-		} else {
-			this.play();
-		}
-	};
-	this.decode = function(data, func, err) {
-		this.ensureContext();
-		this.context.decodeAudioData(data, func, err);
-	};
+function interleave(inputL, inputR) {
+	const length = inputL.length + inputR.length;
+	const result = new Float32Array(length);
+	let index = 0;
+	let inputIndex = 0;
+	while (index < length) {
+		result[index++] = inputL[inputIndex];
+		result[index++] = inputR[inputIndex];
+		inputIndex++;
+	}
+	return result;
 }
 
-const player = new SessionPlayer();
+function floatTo16BitPCM(output, offset, input) {
+	for (let i = 0; i < input.length; i++, offset += 2) {
+		const s = Math.max(-1, Math.min(1, input[i]));
+		output.setInt16(offset, s < 0 ? s * 0x8000 : s * 0x7FFF, true);
+	}
+}
+
+function writeString(view, offset, str) {
+	for (let i = 0; i < str.length; i++) {
+		view.setUint8(offset + i, str.charCodeAt(i));
+	}
+}
+
+function encodeWAV(samples, sampleRate, numChannels) {
+	const buffer = new ArrayBuffer(44 + samples.length * 2);
+	const view = new DataView(buffer);
+	writeString(view, 0, "RIFF");
+	view.setUint32(4, 36 + samples.length * 2, true);
+	writeString(view, 8, "WAVE");
+	writeString(view, 12, "fmt ");
+	view.setUint32(16, 16, true);
+	view.setUint16(20, 1, true);
+	view.setUint16(22, numChannels, true);
+	view.setUint32(24, sampleRate, true);
+	view.setUint32(28, sampleRate * numChannels * 2, true);
+	view.setUint16(32, numChannels * 2, true);
+	view.setUint16(34, 16, true);
+	writeString(view, 36, "data");
+	view.setUint32(40, samples.length * 2, true);
+	floatTo16BitPCM(view, 44, samples);
+	return view;
+}
+
+function updateTranscriptPlayer(file) {
+	const url = window.URL.createObjectURL(file);
+	transcriptPlayer.style.display = "inline-block";
+	transcriptPlayer.src = url;
+}
 
 function isLeftClick(e) {
 	return e.which === 1 || e.button === 0;
@@ -310,6 +204,211 @@ function listFile(file) {
 	const listed = new ListedFile(file);
 	sideNav.appendChild(listed.elem);
 }
+
+function SessionPlayer() {
+	this.sampleRate = 44100;
+	this.running = false;
+	this.recording = false;
+	this.lastPlayhead = 0;
+	this.lastTime = 0;
+	this.bufferNodes = [];
+	this.chunks = [];
+	this.ensureContext = function() {
+		if (!this.context) {
+			this.context = new (window.AudioContext || window.webkitAudioContext)({ sampleRate: this.sampleRate });
+		}
+	};
+	this.unshake = function() {
+		sideNav.style.transform = "none";
+		topNav.style.transform = "none";
+		document.body.style.transform = "none";
+		document.body.style.overflow = "initial";
+	};
+	this.toggleShakeAnalyser = function(enabled) {
+		if (enabled) {
+			if (!this.shakeAnalyser) {
+				this.shakeAnalyser = this.context.createAnalyser();
+				this.shakeAnalyser.fftSize = 2048;
+				if (this.bufferNodes.length) {
+					for (let i = 0; i < this.bufferNodes.length; i++) {
+						this.bufferNodes[i].connect(this.shakeAnalyser);
+					}
+				}
+			}
+			if (!this.shakeData) {
+				this.shakeData = new Uint8Array(this.shakeAnalyser.frequencyBinCount);
+			}
+		} else {
+			this.shakeAnalyser = undefined;
+			this.unshake();
+		}
+	};
+	this.pause = function() {
+		if (this.bufferNodes.length) {
+			for (let i = 0; i < this.bufferNodes.length; i++) {
+				this.bufferNodes[i].stop();
+			}
+			this.bufferNodes = [];
+		}
+		if (this.shakeAnalyser) {
+			this.unshake();
+		}
+		playButton.innerHTML = "►";
+		this.running = false;
+	};
+	this.startRecording = function(stream, createClip) {
+		if (this.recording) return;
+		this.ensureContext();
+		this.stream = stream;
+		this.chunks = [];
+		if (createClip) {
+			this.recordingClip = activeSession.decentTrack().addClip(activeSession.playheadTime);
+			this.recordingClip.startRecording();
+		}
+		const mediaStream = this.context.createMediaStreamSource(stream);
+		this.recordingProcessor = this.context.createScriptProcessor(4096, 2, 2);
+		this.recordingProcessor.onaudioprocess = function(e) {
+			for (let i = 0; i < e.inputBuffer.numberOfChannels; i++) {
+				this.chunks[i] = this.chunks[i] || [];
+				const data = e.inputBuffer.getChannelData(i).slice();
+				this.chunks[i].push(data);
+				if (this.recordingClip && i === 0) {
+					this.recordingClip.addDisplayData(data);
+				}
+			}
+		}.bind(this);
+		mediaStream.connect(this.recordingProcessor);
+		this.recordingProcessor.connect(this.context.destination);
+		this.recording = true;
+	};
+	this.mergeChunks = function() {
+		if (!this.chunks.length) return;
+		let length = 0;
+		for (let i = 0; i < this.chunks[0].length; i++) {
+			length += this.chunks[0][i].length;
+		}
+		const buffer = this.context.createBuffer(this.chunks.length, length, this.sampleRate);
+		for (let i = 0; i < this.chunks.length; i++) {
+			let offset = 0;
+			for (let j = 0; j < this.chunks[i].length; j++) {
+				buffer.copyToChannel(this.chunks[i][j], i, offset);
+				offset += this.chunks[i][j].length;
+			}
+		}
+		return buffer;
+	};
+	this.bufferToFile = function(buffer) {
+		let interleaved;
+		if (buffer.numberOfChannels > 1) {
+			interleaved = interleave(buffer.getChannelData(0), buffer.getChannelData(1));
+		} else {
+			interleaved = buffer.getChannelData(0);
+		}
+		const view = encodeWAV(interleaved, buffer.sampleRate, Math.min(buffer.numberOfChannels, 2));
+		return new File([new Blob([view], { type: "audio/wav" })], "Recording" + recordIndex + ".wav", { type: "audio/wav" });
+	};
+	this.stopRecording = function() {
+		if (!this.recording) return;
+		this.stream.getTracks()[0].stop();
+		this.recordingProcessor.disconnect();
+		this.recordingProcessor = undefined;
+		const buffer = this.mergeChunks();
+		const file = this.bufferToFile(buffer);
+		if (this.recordingClip) {
+			this.recordingClip.stopRecording(buffer);
+			this.recordingClip = undefined;
+		} else {
+			updateTranscriptPlayer(file);
+		}
+		listFile(file);
+		recordIndex++;
+		this.recording = false;
+	};
+	this.shake = function() {
+		this.shakeAnalyser.getByteFrequencyData(this.shakeData);
+		const bass = this.shakeData[0];
+		document.body.style.overflow = "hidden";
+		document.body.style.transform = "rotate(" + ((bass - 80) * 0.001) + "deg) translateY(" + ((bass - 120) * -0.1) + "px";
+		const mid = this.shakeData[256] - 40;
+		sideNav.style.transform = "rotate(" + (mid * -0.005) + "deg)";
+		const treble = this.shakeData[512];
+		topNav.style.transform = "rotate(" + ((treble - 80) * 0.005) + "deg) translateY(" + ((treble - 40) * 0.1) + "px";
+	};
+	this.schedule = function() {
+		for (let i = 0; i < activeSession.trackList.length; i++) {
+			for (let j = 0; j < activeSession.trackList[i].clips.length; j++) {
+				const clip = activeSession.trackList[i].clips[j];
+				if (clip.scale === 1) {
+					const clipDuration = clip.outTime - clip.inTime - Math.max(0, this.lastPlayhead - clip.startTime);
+					if (clipDuration > 0) {
+						const bufferNode = this.context.createBufferSource();
+						//bufferNode.playbackRate.value = 1 / clip.scale;
+						bufferNode.buffer = clip.audioBuffer;
+						if (this.shakeAnalyser) {
+							bufferNode.connect(this.shakeAnalyser);
+						}
+						bufferNode.connect(this.context.destination);
+						//bufferNode.start(Math.max(0, clip.startTime - this.timeOffset), Math.max(0, (-clip.startTime + this.timeOffset) / clip.scale), clip.duration);
+						let when = clip.startTime - this.lastPlayhead;
+						let offset = clip.inTime;
+						if (when < 0) {
+							offset -= when;
+							when = 0;
+						}
+						bufferNode.start(this.lastTime + when, offset, clipDuration);
+						this.bufferNodes.push(bufferNode);
+					}
+				} else {
+					// todo: use phase vocoding to stretch audio
+					/*const script = this.context.createScriptProcessor(this.bufferSize, 2, 2);
+					script.onaudioprocess = function(e) {
+
+					}
+					script.connect(this.context.destination)
+					const vocoder = new PhaseVocoder2(4096, this.sampleRate);
+					vocoder.init();
+					vocoder.set_alpha(clip.scale);
+					const outData = new Float32Array(clip.audioData.length);
+					vocoder.process(numSampsToProcess, clip.audioData, 0, outData, 0);
+					console.log(outData);
+					const result = vocoder.process(clip.audioData);
+					console.log(result);
+					vocoder.process(numSampsToProcess, inData, inDataOffset, outData, outDataOffset)*/
+				}
+			}
+		}
+	};
+	this.playingTime = function() {
+		return this.lastPlayhead + this.context.currentTime - this.lastTime;
+	};
+	this.play = function() {
+		if (this.recordingClip) return;
+		this.ensureContext();
+		this.lastTime = this.context.currentTime;
+		this.lastPlayhead = activeSession.playheadTime;
+		this.schedule();
+		playButton.innerHTML = "❚❚";
+		this.running = true;
+	};
+	this.pauseIfPlaying = function() {
+		if (this.running) {
+			this.pause();
+		}
+	};
+	this.togglePlayback = function() {
+		if (this.running) {
+			this.pause();
+		} else {
+			this.play();
+		}
+	};
+	this.decode = function(data, func, err) {
+		this.ensureContext();
+		this.context.decodeAudioData(data, func, err);
+	};
+}
+
+const player = new SessionPlayer();
 
 function fileBuffer(file, func, err) {
 	const reader = new FileReader();
@@ -671,7 +770,7 @@ function Clip(session) {
 	this.session = session;
 	this.drag = 0;
 	this.scale = 1;
-	this.audioData;
+	this.displayWave;
 	this.type = "clip";
 	this.audioBuffer;
 	this.duration = 0;
@@ -700,7 +799,7 @@ function Clip(session) {
 		for (let k = 0; k < lines; k++) {
 			const x = k / lines * this.elem.width;
 			const y = this.elem.height * 0.5;
-			const index = this.audioData[Math.floor(k * player.sampleRate / scale + offset)];
+			const index = this.displayWave[Math.floor(k * player.sampleRate / scale + offset)];
 			this.context.lineTo(x, y + (index || 0) * y * peakScale);
 		}
 		this.context.stroke();
@@ -721,7 +820,7 @@ function Clip(session) {
 		return (this.outTime - this.inTime) * this.session.zoom;
 	};
 	this.updateCanvas = function() {
-		if (this.audioData) {
+		if (this.displayWave) {
 			let width = this.pixelWidth();
 			const startTime = this.startTime - this.session.scroll;
 			const startPosition = startTime * this.session.zoom;
@@ -829,7 +928,7 @@ function Clip(session) {
 		clip.inTime = this.inTime;
 		clip.startTime = this.startTime;
 		clip.outTime = this.outTime;
-		clip.audioData = this.audioData;
+		clip.displayWave = this.displayWave;
 		clip.audioBuffer = this.audioBuffer;
 		return clip;
 	};
@@ -872,11 +971,9 @@ function Clip(session) {
 		this.context.font = "16px Arial";
 		this.context.fillText("ERROR", this.elem.width * 0.5, this.elem.height * 0.5);
 	};
-	this.loadedBuffer = function(buffer) {
-		const data = buffer.getChannelData(0);
-		this.audioData = new Float32Array(data.length);
-		this.audioData.set(data);
+	this.loadBuffer = function(buffer) {
 		this.audioBuffer = buffer;
+		this.displayWave = buffer.getChannelData(0).slice();
 		this.duration = buffer.duration;
 		this.outTime = this.duration;
 		this.elem.width = this.duration * this.session.zoom;
@@ -884,23 +981,25 @@ function Clip(session) {
 		updatePlaylistDuration();
 	};
 	this.startRecording = function() {
-		this.audioData = [];
+		this.displayWave = [];
 	};
-	this.stopRecording = function(blob) {
-		fileBuffer(blob, this.loadedBuffer.bind(this), this.drawError.bind(this));
+	this.stopRecording = function(buffer) {
+		this.loadBuffer(buffer);
+		this.session.setPlayhead(this.endTime(), true);
 	};
-	this.addData = function(data) {
-		for (let i = 0; i < data.length; i++) {
-			this.audioData.push(data[i]);
+	this.addDisplayData = function(left) {
+		for (let i = 0; i < left.length; i++) {
+			this.displayWave.push(left[i]);
 		}
-		this.duration = this.audioData.length / player.sampleRate;
+		this.duration = this.displayWave.length / player.sampleRate;
 		this.outTime = this.duration;
 		this.elem.width = this.duration * this.session.zoom;
 		this.updateCanvas();
 		updatePlaylistDuration();
+		this.session.setPlayhead(this.endTime(), true);
 	};
 	this.loadedFile = function(buffer) {
-		this.loadedBuffer(buffer);
+		this.loadBuffer(buffer);
 		forceCanvasRedraw();
 	};
 	this.loadFile = function(file) {
@@ -1575,8 +1674,10 @@ function navWheel(e) {
 	}
 }
 
-function fakeScroll(e) {
-	if (!e.ctrlKey) {
+function fakeNavEvents(e) {
+	if (e.ctrlKey) {
+		navWheel(e);
+	} else {
 		e.preventDefault();
 		playlistArea.scrollLeft += e.deltaX;
 		playlistArea.scrollTop += e.deltaY;
@@ -1640,8 +1741,8 @@ function setup() {
 	window.addEventListener("orientationchange", resize);
 	playlistArea.addEventListener("scroll", navScroll);
 	playlistArea.addEventListener("wheel", navWheel);
-	playback.addEventListener("wheel", fakeScroll);
-	navigationArea.addEventListener("wheel", fakeScroll);
+	playback.addEventListener("wheel", fakeNavEvents);
+	navigationArea.addEventListener("wheel", fakeNavEvents);
 	timeLabel.addEventListener("keydown", preventTimeInput);
 	timeLabel.addEventListener("blur", forceTime);
 	window.addEventListener("mousedown", startBoxSelect);
@@ -1754,12 +1855,6 @@ function loadPresets() {
 	}
 }
 
-function updateTranscriptPlayer(file) {
-	const url = window.URL.createObjectURL(file);
-	transcriptPlayer.style.display = "inline-block";
-	transcriptPlayer.src = url;
-}
-
 function checkJson(elem) {
 	const file = elem.files[0];
 	if (!file) return;
@@ -1817,6 +1912,11 @@ function newSession() {
 function loadSession(elem) {
 	console.log(elem.files[0]);
 	elem.value = null;
+}
+
+function exportSession() {
+	// todo: export each session as audition .sesx and all subfiles using jszip
+	// also add option for wav export
 }
 
 function importFile(elem) {
@@ -1908,77 +2008,31 @@ function setupRecognition() {
 	};
 }
 
-function setupRecording(elem) {
-	if (!window.MediaRecorder) return;
-	navigator.mediaDevices.getUserMedia({ audio: true, video: false }).then(function(stream) {
-		transcriptRecorder = new MediaRecorder(stream, { mimeType: "audio/webm" });
-		const chunks = [];
-		transcriptRecorder.ondataavailable = function(e) {
-			if (e.data.size > 0) {
-				chunks.push(e.data);
-			}
-		};
-		transcriptRecorder.onstop = function() {
-			stream.getTracks()[0].stop();
-			const file = new File([new Blob(chunks, { type: "audio/webm" })], "Recording" + recordIndex + ".webm", { type: "audio/webm" });
-			updateTranscriptPlayer(file);
-			listFile(file);
-			recordIndex++;
-		};
-		transcriptRecorder.onstart = function() {
-			elem.src = "micactive.png";
-			recording = true;
-		};
-		transcriptRecorder.start(100);
-	});
-}
-
 function record(elem) {
-	if (elem.classList.contains("active")) {
-		if (clipRecorder) {
-			clipRecorder.stop();
-		}
+	if (player.recording) {
+		player.stopRecording();
 		elem.classList.remove("active");
-	} else {
-		if (!window.MediaRecorder) return;
+	} else if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
 		navigator.mediaDevices.getUserMedia({ audio: true, video: false }).then(function(stream) {
-			clipRecorder = new MediaRecorder(stream, { mimeType: "audio/webm" });
-			const chunks = [];
-			clipRecorder.ondataavailable = function(e) {
-				if (e.data.size > 0) {
-					chunks.push(e.data);
-				}
-			};
-			clipRecorder.onstop = function() {
-				stream.getTracks()[0].stop();
-				const blob = new Blob(chunks, { type: "audio/webm" });
-				player.stopRecording(blob);
-				const file = new File([blob], "Recording" + recordIndex + ".webm", { type: "audio/webm" });
-				listFile(file);
-				recordIndex++;
-			};
-			clipRecorder.onstart = function() {
-				elem.classList.add("active");
-				player.startRecording(stream);
-			};
-			clipRecorder.start(100);
+			player.startRecording(stream, true);
+			elem.classList.add("active");
 		});
 	}
 }
 
 function recordTranscript(elem) {
-	if (recording) {
-		if (transcriptRecorder) {
-			transcriptRecorder.stop();
-		}
+	if (player.recording) {
+		player.stopRecording();
 		if (recognition) {
 			recognition.stop();
 		}
 		elem.src = "microphone.png";
-		recording = false;
 	} else {
 		if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
-			setupRecording(elem);
+			navigator.mediaDevices.getUserMedia({ audio: true, video: false }).then(function(stream) {
+				player.startRecording(stream, false);
+				elem.src = "micactive.png";
+			});
 		}
 		if (!recognition) {
 			setupRecognition();

@@ -12,6 +12,7 @@
 		<meta property="og:description" content="Simple sentence mixing tool.">
 		<meta name="viewport" content="width=device-width, initial-scale=1">
 		<link rel="stylesheet" type="text/css" href="editor.css">
+		<script src="scripts/modules/jszip.js"></script>
 		<script src="scripts/Editor.js"></script>
 	</head>
 	<body onload="setup();">
@@ -30,7 +31,7 @@
 						<label for="importfile" class="dropoption">Import</label>
 						<input multiple type="file" accept="audio/*,video/*,application/json,.json,.TextGrid,.txt" id="importfile" onchange="importFile(this);">
 					</div>
-					<a class="dropoption">Export</a>
+					<a class="dropoption" onclick="exportSession();">Export</a>
 				</div>
 			</div>
 			<div class="dropdown">
