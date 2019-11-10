@@ -41,6 +41,7 @@ let lastTopScroll = 0;
 let lastLeftScroll = 0;
 let selectedFiles = [];
 let recordIndex = 1;
+let mixdownIndex = 1;
 let waveDetail = 16;
 let zoomAmount = 1.25;
 let autoScroll = false;
@@ -53,52 +54,6 @@ const fileList = [];
 const peakScale = 0.7;
 const minCanvasWidth = 1;
 const requestFrame = window.requestAnimationFrame || window.webkitRequestAnimationFrame || window.mozRequestAnimationFrame || window.oRequestAnimationFrame || window.msRequestAnimationFrame || function(e) { return window.setTimeout(e, 1000 / 60); };
-
-function interleave(inputL, inputR) {
-	const length = inputL.length + inputR.length;
-	const result = new Float32Array(length);
-	let index = 0;
-	let inputIndex = 0;
-	while (index < length) {
-		result[index++] = inputL[inputIndex];
-		result[index++] = inputR[inputIndex];
-		inputIndex++;
-	}
-	return result;
-}
-
-function floatTo16BitPCM(output, offset, input) {
-	for (let i = 0; i < input.length; i++, offset += 2) {
-		const s = Math.max(-1, Math.min(1, input[i]));
-		output.setInt16(offset, s < 0 ? s * 0x8000 : s * 0x7FFF, true);
-	}
-}
-
-function writeString(view, offset, str) {
-	for (let i = 0; i < str.length; i++) {
-		view.setUint8(offset + i, str.charCodeAt(i));
-	}
-}
-
-function encodeWAV(samples, sampleRate, numChannels) {
-	const buffer = new ArrayBuffer(44 + samples.length * 2);
-	const view = new DataView(buffer);
-	writeString(view, 0, "RIFF");
-	view.setUint32(4, 36 + samples.length * 2, true);
-	writeString(view, 8, "WAVE");
-	writeString(view, 12, "fmt ");
-	view.setUint32(16, 16, true);
-	view.setUint16(20, 1, true);
-	view.setUint16(22, numChannels, true);
-	view.setUint32(24, sampleRate, true);
-	view.setUint32(28, sampleRate * numChannels * 2, true);
-	view.setUint16(32, numChannels * 2, true);
-	view.setUint16(34, 16, true);
-	writeString(view, 36, "data");
-	view.setUint32(40, samples.length * 2, true);
-	floatTo16BitPCM(view, 44, samples);
-	return view;
-}
 
 function updateTranscriptPlayer(file) {
 	const url = window.URL.createObjectURL(file);
@@ -297,23 +252,13 @@ function SessionPlayer() {
 		}
 		return buffer;
 	};
-	this.bufferToFile = function(buffer) {
-		let interleaved;
-		if (buffer.numberOfChannels > 1) {
-			interleaved = interleave(buffer.getChannelData(0), buffer.getChannelData(1));
-		} else {
-			interleaved = buffer.getChannelData(0);
-		}
-		const view = encodeWAV(interleaved, buffer.sampleRate, Math.min(buffer.numberOfChannels, 2));
-		return new File([new Blob([view], { type: "audio/wav" })], "Recording" + recordIndex + ".wav", { type: "audio/wav" });
-	};
 	this.stopRecording = function() {
 		if (!this.recording) return;
 		this.stream.getTracks()[0].stop();
 		this.recordingProcessor.disconnect();
 		this.recordingProcessor = undefined;
 		const buffer = this.mergeChunks();
-		const file = this.bufferToFile(buffer);
+		const file = bufferToFile("Recording" + recordIndex, buffer, true);
 		if (this.recordingClip) {
 			this.recordingClip.stopRecording(buffer);
 			this.recordingClip = undefined;
@@ -334,20 +279,20 @@ function SessionPlayer() {
 		const treble = this.shakeData[512];
 		topNav.style.transform = "rotate(" + ((treble - 80) * 0.005) + "deg) translateY(" + ((treble - 40) * 0.1) + "px";
 	};
-	this.schedule = function() {
+	this.schedule = function(context, shake) {
 		for (let i = 0; i < activeSession.trackList.length; i++) {
 			for (let j = 0; j < activeSession.trackList[i].clips.length; j++) {
 				const clip = activeSession.trackList[i].clips[j];
 				if (clip.scale === 1) {
 					const clipDuration = clip.outTime - clip.inTime - Math.max(0, this.lastPlayhead - clip.startTime);
 					if (clipDuration > 0) {
-						const bufferNode = this.context.createBufferSource();
+						const bufferNode = context.createBufferSource();
 						//bufferNode.playbackRate.value = 1 / clip.scale;
 						bufferNode.buffer = clip.audioBuffer;
-						if (this.shakeAnalyser) {
-							bufferNode.connect(this.shakeAnalyser);
+						if (shake) {
+							bufferNode.connect(shake);
 						}
-						bufferNode.connect(this.context.destination);
+						bufferNode.connect(context.destination);
 						//bufferNode.start(Math.max(0, clip.startTime - this.timeOffset), Math.max(0, (-clip.startTime + this.timeOffset) / clip.scale), clip.duration);
 						let when = clip.startTime - this.lastPlayhead;
 						let offset = clip.inTime;
@@ -381,12 +326,25 @@ function SessionPlayer() {
 	this.playingTime = function() {
 		return this.lastPlayhead + this.context.currentTime - this.lastTime;
 	};
+	this.render = function() {
+		this.pauseIfPlaying();
+		const renderer = new (window.OfflineAudioContext || window.webkitOfflineAudioContext)({ numberOfChannels: 2, length: activeSession.duration * this.sampleRate, sampleRate: this.sampleRate });
+		this.lastTime = 0;
+		this.lastPlayhead = 0;
+		this.schedule(renderer, false);
+		renderer.startRendering().then(function(buffer) {
+			listFile(bufferToFile("Mixdown" + mixdownIndex, buffer, true));
+			mixdownIndex++;
+		}.bind(this)).catch(function(err) {
+			alert("Rendering failed! " + err);
+		});
+	};
 	this.play = function() {
 		if (this.recordingClip) return;
 		this.ensureContext();
 		this.lastTime = this.context.currentTime;
 		this.lastPlayhead = activeSession.playheadTime;
-		this.schedule();
+		this.schedule(this.context, this.shakeAnalyser);
 		playButton.innerHTML = "❚❚";
 		this.running = true;
 	};
@@ -1915,8 +1873,9 @@ function loadSession(elem) {
 }
 
 function exportSession() {
+	player.render();
 	// todo: export each session as audition .sesx and all subfiles using jszip
-	// also add option for wav export
+	// also add option for wav export using player.render
 }
 
 function importFile(elem) {
