@@ -53,6 +53,7 @@ const tabList = [];
 const fileList = [];
 const peakScale = 0.7;
 const minCanvasWidth = 1;
+const microphoneConstraints = { audio: { autoGainControl: false, echoCancellation: false, noiseSuppression: false }, video: false };
 const requestFrame = window.requestAnimationFrame || window.webkitRequestAnimationFrame || window.mozRequestAnimationFrame || window.oRequestAnimationFrame || window.msRequestAnimationFrame || function(e) { return window.setTimeout(e, 1000 / 60); };
 
 function updateTranscriptPlayer(file) {
@@ -138,7 +139,7 @@ function ListedFile(file) {
 			}
 		} else if (isDecodable(this.file) && activeSession) {
 			activeSession.deselectClips();
-			activeSession.decentTrack().addClip(activeSession.playheadTime, this.file);
+			activeSession.addTrack().addClip(activeSession.playheadTime, this.file);
 		}
 	};
 	this.elem.addEventListener("dblclick", this.doubleClick.bind(this));
@@ -1972,7 +1973,7 @@ function record(elem) {
 		player.stopRecording();
 		elem.classList.remove("active");
 	} else if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
-		navigator.mediaDevices.getUserMedia({ audio: true, video: false }).then(function(stream) {
+		navigator.mediaDevices.getUserMedia(microphoneConstraints).then(function(stream) {
 			player.startRecording(stream, true);
 			elem.classList.add("active");
 		});
@@ -1988,7 +1989,7 @@ function recordTranscript(elem) {
 		elem.src = "microphone.png";
 	} else {
 		if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
-			navigator.mediaDevices.getUserMedia({ audio: true, video: false }).then(function(stream) {
+			navigator.mediaDevices.getUserMedia(microphoneConstraints).then(function(stream) {
 				player.startRecording(stream, false);
 				elem.src = "micactive.png";
 			});
