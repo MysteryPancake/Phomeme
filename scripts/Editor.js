@@ -1378,6 +1378,7 @@ function closeMenus() {
 }
 
 function movePlayhead(e) {
+	if (player.recordingClip) return;
 	player.pauseIfPlaying();
 	activeSession.setPlayhead(Math.max(0, (e.clientX - playlist.getBoundingClientRect().left) / activeSession.zoom), true);
 }
