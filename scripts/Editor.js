@@ -185,11 +185,6 @@ function SessionPlayer() {
 			if (!this.shakeAnalyser) {
 				this.shakeAnalyser = this.context.createAnalyser();
 				this.shakeAnalyser.fftSize = 2048;
-				if (this.bufferNodes.length) {
-					for (let i = 0; i < this.bufferNodes.length; i++) {
-						this.bufferNodes[i].connect(this.shakeAnalyser);
-					}
-				}
 			}
 			if (!this.shakeData) {
 				this.shakeData = new Uint8Array(this.shakeAnalyser.frequencyBinCount);
@@ -284,11 +279,11 @@ function SessionPlayer() {
 		for (let i = 0; i < activeSession.trackList.length; i++) {
 			for (let j = 0; j < activeSession.trackList[i].clips.length; j++) {
 				const clip = activeSession.trackList[i].clips[j];
-				if (clip.scale === 1) {
+				//if (clip.scale === 1) {
 					const clipDuration = clip.outTime - clip.inTime - Math.max(0, this.lastPlayhead - clip.startTime);
 					if (clipDuration > 0) {
 						const bufferNode = context.createBufferSource();
-						//bufferNode.playbackRate.value = 1 / clip.scale;
+						bufferNode.playbackRate.value = 1 / clip.scale;
 						bufferNode.buffer = clip.audioBuffer;
 						if (shake) {
 							bufferNode.connect(shake);
@@ -304,7 +299,7 @@ function SessionPlayer() {
 						bufferNode.start(this.lastTime + when, offset, clipDuration);
 						this.bufferNodes.push(bufferNode);
 					}
-				} else {
+				//} else {
 					// todo: use phase vocoding to stretch audio
 					/*const script = this.context.createScriptProcessor(this.bufferSize, 2, 2);
 					script.onaudioprocess = function(e) {
@@ -320,7 +315,7 @@ function SessionPlayer() {
 					const result = vocoder.process(clip.audioData);
 					console.log(result);
 					vocoder.process(numSampsToProcess, inData, inDataOffset, outData, outDataOffset)*/
-				}
+				//}
 			}
 		}
 	};
@@ -1519,7 +1514,7 @@ function holdingCtrl(e) {
 }
 
 function keyDown(e) {
-	if (e.target !== document.body) return;
+	if (e.target !== document.body || player.recordingClip) return;
 	if (e.keyCode === 32) {
 		e.preventDefault();
 		togglePlayback();
