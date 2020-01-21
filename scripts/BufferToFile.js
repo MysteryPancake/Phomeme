@@ -1,6 +1,7 @@
 "use strict";
 
 const bufferToFile = (function() {
+
 	function interleave(inputL, inputR) {
 		const length = inputL.length + inputR.length;
 		const result = new Float32Array(length);
@@ -70,4 +71,5 @@ const bufferToFile = (function() {
 		const view = encodeWAV(interleaved, float32 ? 3 : 1, buffer.sampleRate, numChannels, float32 ? 32 : 16);
 		return new File([view], name + ".wav", { type: "audio/wav" });
 	};
+	
 }());

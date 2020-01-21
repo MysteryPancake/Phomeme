@@ -95,9 +95,10 @@ function updateDownloads() {
 	const matchTriphones = document.getElementById("matchTriphones").checked;
 	const matchPunctuation = document.getElementById("matchPunctuation").checked;
 	const matchExact = document.getElementById("matchExact").checked;
+	const ignoreWordGaps = document.getElementById("ignoreWordGaps").checked;
 	const overlapStart = parseFloat(document.getElementById("overlapStart").value);
 	const overlapEnd = parseFloat(document.getElementById("overlapEnd").value);
-	const final = (dictionary ? speak : sing)(inputData, outputData, chooseMethod, matchWords, matchDiphones, matchTriphones, matchPunctuation, matchExact, overlapStart, overlapEnd);
+	const final = (dictionary ? speak : sing)(inputData, outputData, chooseMethod, matchWords, matchDiphones, matchTriphones, matchPunctuation, matchExact, ignoreWordGaps, overlapStart, overlapEnd);
 	addLink("session", final, "application/xml", "sesx");
 }
 

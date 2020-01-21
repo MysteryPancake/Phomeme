@@ -1,6 +1,7 @@
 "use strict";
 
 const triphone = (function() {
+
 	function choosePhone(method, target, phones) {
 		if (method === "first") {
 			return phones[0];
@@ -72,4 +73,5 @@ const triphone = (function() {
 			return choosePhone(method, target.dur, phones);
 		}
 	};
+	
 }());

@@ -1,6 +1,7 @@
 "use strict";
 
 const sing = (function() {
+
 	function addClip(target, phones, mix, method, diphones, triphones, func) {
 		if (phones) {
 			const match = triphone(target, phones, method, diphones, triphones);
@@ -11,9 +12,9 @@ const sing = (function() {
 		}
 	}
 
-	return function(source, destination, chooseMethod, matchWords, matchDiphones, matchTriphones, matchPunctuation, matchExact, overlapStart, overlapEnd) {
-		const input = convert(source.data, source.type, "input.wav", matchPunctuation, matchExact);
-		const output = convert(destination.data, destination.type, "output.wav", matchPunctuation, matchExact);
+	return function(source, destination, chooseMethod, matchWords, matchDiphones, matchTriphones, matchPunctuation, matchExact, ignoreWordGaps, overlapStart, overlapEnd) {
+		const input = convert(source.data, source.type, "input.wav", matchPunctuation, matchExact, ignoreWordGaps);
+		const output = convert(destination.data, destination.type, "output.wav", matchPunctuation, matchExact, ignoreWordGaps);
 		const mix = new AuditionSession("session", 32, 48000);
 		mix.overlapStart = overlapStart;
 		mix.overlapEnd = overlapEnd;
@@ -42,4 +43,5 @@ const sing = (function() {
 		}
 		return mix.compile();
 	};
+	
 }());

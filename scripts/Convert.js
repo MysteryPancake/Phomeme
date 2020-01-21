@@ -1,6 +1,7 @@
 "use strict";
 
 const convert = (function() {
+
 	const isPunctuation = { "?": true, "!": true, ".": true };
 
 	function convertSentence(sentence, matchPunctuation) {
@@ -105,8 +106,8 @@ const convert = (function() {
 		return transcript;
 	}
 
-	function convertJson(transcript, json, file, matchPunctuation, matchExact) {
-		let prev = {};
+	function convertJson(transcript, json, file, matchPunctuation, matchExact, ignoreWordGaps) {
+		const prev = {};
 		for (let i = 0; i < json.words.length; i++) {
 			const word = json.words[i];
 			if (word.case === "not-found-in-audio") continue;
@@ -125,7 +126,11 @@ const convert = (function() {
 				phones: [],
 				file: file
 			});
-			prev = { word: aligned, char: char };
+			prev.word = aligned;
+			prev.char = char;
+			if (!ignoreWordGaps) {
+				prev.phone = undefined;
+			}
 			let start = word.start;
 			for (let j = 0; j < word.phones.length; j++) {
 				const phone = word.phones[j];
@@ -155,9 +160,9 @@ const convert = (function() {
 		return transcript;
 	}
 
-	function convertMultiple(transcript, json, matchPunctuation, matchExact) {
+	function convertMultiple(transcript, json, matchPunctuation, matchExact, ignoreWordGaps) {
 		for (let i = 0; i < json.length; i++) {
-			const script = convert(json[i].script, json[i].type, json[i].file, matchPunctuation, matchExact);
+			const script = convert(json[i].script, json[i].type, json[i].file, matchPunctuation, matchExact, ignoreWordGaps);
 			for (let word in script.words) {
 				transcript.words[word] = transcript.words[word] || [];
 				for (let j = 0; j < script.words[word].length; j++) {
@@ -174,7 +179,7 @@ const convert = (function() {
 		return transcript;
 	}
 
-	return function(data, type, file, matchPunctuation, matchExact) {
+	return function(data, type, file, matchPunctuation, matchExact, ignoreWordGaps) {
 		const transcript = {
 			words: {},
 			phones: {}
@@ -185,12 +190,13 @@ const convert = (function() {
 		} else if (lower === "json") {
 			const json = JSON.parse(data);
 			if (Array.isArray(json)) {
-				return convertMultiple(transcript, json, matchPunctuation, matchExact);
+				return convertMultiple(transcript, json, matchPunctuation, matchExact, ignoreWordGaps);
 			} else {
-				return convertJson(transcript, json, file, matchPunctuation, matchExact);
+				return convertJson(transcript, json, file, matchPunctuation, matchExact, ignoreWordGaps);
 			}
 		} else {
 			return convertSentence(data, matchPunctuation);
 		}
 	};
+
 }());
