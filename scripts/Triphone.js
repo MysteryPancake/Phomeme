@@ -3,13 +3,14 @@
 const triphone = (function() {
 
 	function choosePhone(method, target, phones) {
-		if (method === "first") {
+		switch (method) {
+		case "first":
 			return phones[0];
-		} else if (method === "last") {
+		case "last":
 			return phones[phones.length - 1];
-		} else if (method === "random") {
+		case "random":
 			return phones[Math.floor(Math.random() * phones.length)];
-		} else if (method === "duration") {
+		case "duration": {
 			let match;
 			let difference;
 			for (let i = 0; i < phones.length; i++) {
@@ -20,7 +21,8 @@ const triphone = (function() {
 				}
 			}
 			return match;
-		} else if (method === "longest") {
+		}
+		case "longest": {
 			let match = phones[0];
 			for (let i = 0; i < phones.length; i++) {
 				if (phones[i].dur > match.dur) {
@@ -28,7 +30,8 @@ const triphone = (function() {
 				}
 			}
 			return match;
-		} else if (method === "shortest") {
+		}
+		case "shortest": {
 			let match = phones[0];
 			for (let i = 0; i < phones.length; i++) {
 				if (phones[i].dur < match.dur) {
@@ -36,14 +39,16 @@ const triphone = (function() {
 				}
 			}
 			return match;
-		} else if (method === "average") {
+		}
+		case "average": {
 			let sum = 0;
 			for (let i = 0; i < phones.length; i++) {
 				sum += phones[i].dur;
 			}
 			const average = sum / phones.length;
 			return choosePhone("duration", average, phones);
-		} else {
+		}
+		default:
 			return phones[0];
 		}
 	}
@@ -73,5 +78,5 @@ const triphone = (function() {
 			return choosePhone(method, target.dur, phones);
 		}
 	};
-	
+
 }());

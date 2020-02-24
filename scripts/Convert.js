@@ -2,10 +2,12 @@
 
 const convert = (function() {
 
-	const isPunctuation = { "?": true, "!": true, ".": true };
+	function isPunctuation(char) {
+		return "!?.".indexOf(char) !== -1;
+	}
 
 	function convertSentence(sentence, matchPunctuation) {
-		const words = sentence.toLowerCase().match(/\w+(?:'\w+)*|[!?.](?![!?.])/g);
+		const words = sentence.toLowerCase().match(matchPunctuation ? /\w+(?:'\w+)*|[!?.](?![!?.])/g : /\w+(?:'\w+)*/g);
 		const transcript = {
 			transcript: sentence,
 			words: [],
@@ -13,10 +15,10 @@ const convert = (function() {
 		};
 		for (let i = 0; i < words.length; i++) {
 			const word = words[i];
-			if (isPunctuation[word]) continue;
+			if (isPunctuation(word)) continue;
 			transcript.words.push({
-				prev: words[i - (matchPunctuation && isPunctuation[words[i - 1]] ? 1 : 2)],
-				next: words[i + (matchPunctuation && isPunctuation[words[i + 1]] ? 1 : 2)],
+				prev: words[i - 1],
+				next: words[i + 1],
 				phone: word
 			});
 			const phones = dictionary[word];
@@ -114,7 +116,7 @@ const convert = (function() {
 			const aligned = word.word.toLowerCase();
 			const char = json.transcript.charAt(word.endOffset);
 			if (prev.word) {
-				transcript.words[prev.word][transcript.words[prev.word].length - 1].next = matchPunctuation && isPunctuation[char] ? char : aligned;
+				transcript.words[prev.word][transcript.words[prev.word].length - 1].next = matchPunctuation && isPunctuation(char) ? char : aligned;
 			}
 			transcript.words[aligned] = transcript.words[aligned] || [];
 			transcript.words[aligned].push({
@@ -122,7 +124,7 @@ const convert = (function() {
 				end: word.end,
 				dur: word.end - word.start,
 				phone: aligned,
-				prev: matchPunctuation && isPunctuation[char] ? prev.char : prev.word,
+				prev: matchPunctuation && isPunctuation(char) ? prev.char : prev.word,
 				phones: [],
 				file: file
 			});

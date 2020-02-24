@@ -9,7 +9,10 @@ read link
 # youtube-dl -f bestvideo+bestaudio --write-sub --write-auto-sub --all-subs $link
 
 # FOR YOUTUBE MP4:
-youtube-dl -f 'bestvideo[ext=mp4]+bestaudio[ext=m4a]/bestvideo+bestaudio' --merge-output-format mp4 --write-sub --write-auto-sub --all-subs $link
+# youtube-dl -f 'bestvideo[ext=mp4]+bestaudio[ext=m4a]/bestvideo+bestaudio' --merge-output-format mp4 --write-sub --write-auto-sub --all-subs $link
+
+# FOR YOUTUBE WAV:
+youtube-dl -f bestaudio -x --audio-format wav --add-metadata --write-sub --write-auto-sub --all-subs $link
 
 # FOR SUBTITLES ONLY:
 # youtube-dl --skip-download --write-sub --write-auto-sub --all-subs $link
