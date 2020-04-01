@@ -16,22 +16,23 @@ const convert = (function() {
 		for (let i = 0; i < words.length; i++) {
 			const word = words[i];
 			if (isPunctuation(word)) continue;
-			transcript.words.push({
+			const wordData = {
 				prev: words[i - 1],
 				next: words[i + 1],
 				phone: word
-			});
+			};
+			transcript.words.push(wordData);
 			const phones = dictionary[word];
 			if (phones) {
-				transcript.words[transcript.words.length - 1].phones = [];
+				wordData.phones = [];
 				for (let j = 0; j < phones.length; j++) {
-					const data = {
+					const phoneData = {
 						prev: phones[j - 1],
 						next: phones[j + 1],
 						phone: phones[j]
 					};
-					transcript.words[transcript.words.length - 1].phones.push(data);
-					transcript.phones.push(data);
+					wordData.phones.push(phoneData);
+					transcript.phones.push(phoneData);
 				}
 			} else {
 				console.log("MISSING DEFINITION: " + word);
@@ -56,53 +57,126 @@ const convert = (function() {
 				for (let i = 0; i < 3; i++) {
 					lines.shift();
 				}
-				if (mode) {
-					const count = parseInt(lines.shift().split("=").pop());
-					for (let j = 0; j < count; j++) {
-						let xmin = lines.shift();
-						if (xmin.match(/\[[0-9]+\]:/)) {
-							xmin = lines.shift();
-						}
-						xmin = parseFloat(xmin.split("=").pop());
-						const xmax = parseFloat(lines.shift().split("=").pop());
-						let text = lines.shift().split("=").pop().trim().slice(1, -1);
-						if (mode === "words") {
-							text = text.toLowerCase();
+				const count = parseInt(lines.shift().split("=").pop());
+				for (let j = 0; j < count; j++) {
+					let xmin = lines.shift();
+					if (xmin.match(/\[[0-9]+\]:/)) {
+						xmin = lines.shift();
+					}
+					xmin = parseFloat(xmin.split("=").pop());
+					const xmax = parseFloat(lines.shift().split("=").pop());
+					let text = lines.shift().split("=").pop().trim().slice(1, -1);
+					if (mode === "words") {
+						if (text === "") continue;
+						text = text.toLowerCase();
+					} else {
+						const match = matchExact ? text : lookup.textgrid[text];
+						if (match === undefined) {
+							console.log("USING OOV FOR: " + text);
+							text = "OOV";
 						} else {
-							const match = matchExact ? text : lookup.textgrid[text];
-							if (!match) {
-								console.log("USING OOV FOR: " + text);
-							}
-							text = match || "OOV";
+							text = match;
 						}
-						if (prev) {
-							transcript[mode][prev][transcript[mode][prev].length - 1].next = text;
-						}
-						transcript[mode][text] = transcript[mode][text] || [];
-						const data = {
-							start: xmin,
-							end: xmax,
-							dur: xmax - xmin,
-							phone: text,
-							prev: prev,
-							file: file
-						};
-						transcript[mode][text].push(data);
-						if (mode === "phones") {
-							for (let word in transcript.words) {
-								for (let k = 0; k < transcript.words[word].length; k++) {
-									const phone = transcript.words[word][k];
-									if (xmin >= phone.start && xmax <= phone.end) {
-										phone.phones = phone.phones || [];
-										phone.phones.push(data);
-									}
+					}
+					if (prev !== undefined) {
+						transcript[mode][prev][transcript[mode][prev].length - 1].next = text;
+					}
+					transcript[mode][text] = transcript[mode][text] || [];
+					const data = {
+						start: xmin,
+						end: xmax,
+						dur: xmax - xmin,
+						phone: text,
+						prev: prev,
+						file: file
+					};
+					transcript[mode][text].push(data);
+					if (mode === "phones") {
+						for (let word in transcript.words) {
+							for (let k = 0; k < transcript.words[word].length; k++) {
+								const phone = transcript.words[word][k];
+								if (xmin >= phone.start && xmax <= phone.end) {
+									phone.phones = phone.phones || [];
+									phone.phones.push(data);
 								}
 							}
 						}
-						prev = text;
+					}
+					prev = text;
+				}
+				if (intervals + 1 === size) {
+					mode = "phones";
+				}
+			}
+		}
+		return transcript;
+	}
+
+	function convertVdat(transcript, str, file, matchExact, ignoreWordGaps) {
+		const lines = str.split("\n");
+		const prev = {};
+		while (lines.length > 0) {
+			const line = lines.shift().trim();
+			if (line.startsWith("PLAINTEXT")) {
+				lines.shift();
+				transcript.transcript = lines.shift().trim();
+			} else if (line.startsWith("WORD") && line !== "WORDS") {
+				const wordParts = line.split(" ");
+				if (wordParts.length >= 4) {
+					const word = wordParts[1].trim().toLowerCase();
+					if (prev.word) {
+						prev.word.next = word;
+					}
+					transcript.words[word] = transcript.words[word] || [];
+					const wordStart = parseFloat(wordParts[2]);
+					const wordEnd = parseFloat(wordParts[3]);
+					const wordData = {
+						start: wordStart,
+						end: wordEnd,
+						dur: wordEnd - wordStart,
+						phone: word,
+						prev: prev.word && prev.word.phone,
+						phones: [],
+						file: file
+					};
+					transcript.words[word].push(wordData);
+					prev.word = wordData;
+					if (!ignoreWordGaps) {
+						prev.phone = undefined;
+					}
+					let nextLine = lines.shift();
+					while (!nextLine.endsWith("}")) {
+						const phoneParts = nextLine.split(" ");
+						if (phoneParts.length >= 4) {
+							let phone = phoneParts[1].trim();
+							const match = matchExact ? phone : lookup.vdat[phone];
+							if (match === undefined) {
+								console.log("USING OOV FOR: " + phone);
+								phone = "OOV";
+							} else {
+								phone = match;
+							}
+							if (prev.phone) {
+								prev.phone.next = phone;
+							}
+							transcript.phones[phone] = transcript.phones[phone] || [];
+							const phoneStart = parseFloat(phoneParts[2]);
+							const phoneEnd = parseFloat(phoneParts[3]);
+							const phoneData = {
+								start: phoneStart,
+								end: phoneEnd,
+								dur: phoneEnd - phoneStart,
+								phone: phone,
+								prev: prev.phone && prev.phone.phone,
+								file: file
+							};
+							wordData.phones.push(phoneData);
+							transcript.phones[phone].push(phoneData);
+							prev.phone = phoneData;
+						}
+						nextLine = lines.shift();
 					}
 				}
-				mode = intervals + 1 === size && "phones";
 			}
 		}
 		return transcript;
@@ -110,53 +184,55 @@ const convert = (function() {
 
 	function convertJson(transcript, json, file, matchPunctuation, matchExact, ignoreWordGaps) {
 		const prev = {};
+		transcript.transcript = json.transcript;
 		for (let i = 0; i < json.words.length; i++) {
-			const word = json.words[i];
-			if (word.case === "not-found-in-audio") continue;
-			const aligned = word.word.toLowerCase();
-			const char = json.transcript.charAt(word.endOffset);
+			const wordObj = json.words[i];
+			if (wordObj.case === "not-found-in-audio") continue;
+			const word = wordObj.word.toLowerCase();
+			const char = json.transcript.charAt(wordObj.endOffset);
 			if (prev.word) {
-				transcript.words[prev.word][transcript.words[prev.word].length - 1].next = matchPunctuation && isPunctuation(char) ? char : aligned;
+				prev.word.next = matchPunctuation && isPunctuation(char) ? char : word;
 			}
-			transcript.words[aligned] = transcript.words[aligned] || [];
-			transcript.words[aligned].push({
-				start: word.start,
-				end: word.end,
-				dur: word.end - word.start,
-				phone: aligned,
-				prev: matchPunctuation && isPunctuation(char) ? prev.char : prev.word,
+			transcript.words[word] = transcript.words[word] || [];
+			const wordData = {
+				start: wordObj.start,
+				end: wordObj.end,
+				dur: wordObj.end - wordObj.start,
+				phone: word,
+				prev: matchPunctuation && isPunctuation(char) ? prev.char : prev.word && prev.word.phone,
 				phones: [],
 				file: file
-			});
-			prev.word = aligned;
+			};
+			transcript.words[word].push(wordData);
+			prev.word = wordData;
 			prev.char = char;
 			if (!ignoreWordGaps) {
 				prev.phone = undefined;
 			}
-			let start = word.start;
-			for (let j = 0; j < word.phones.length; j++) {
-				const phone = word.phones[j];
-				let match = matchExact ? phone.phone : lookup.json[phone.phone];
-				if (!match) {
-					console.log("USING OOV FOR: " + phone.phone);
-					match = "OOV";
+			let start = wordObj.start;
+			for (let j = 0; j < wordObj.phones.length; j++) {
+				const phoneObj = wordObj.phones[j];
+				let phone = matchExact ? phoneObj.phone : lookup.json[phoneObj.phone];
+				if (phone === undefined) {
+					console.log("USING OOV FOR: " + phoneObj.phone);
+					phone = "OOV";
 				}
 				if (prev.phone) {
-					transcript.phones[prev.phone][transcript.phones[prev.phone].length - 1].next = match;
+					prev.phone.next = phone;
 				}
-				transcript.phones[match] = transcript.phones[match] || [];
-				const data = {
+				transcript.phones[phone] = transcript.phones[phone] || [];
+				const phoneData = {
 					start: start,
-					end: start + phone.duration,
-					dur: phone.duration,
-					phone: match,
-					prev: prev.phone,
+					end: start + phoneObj.duration,
+					dur: phoneObj.duration,
+					phone: phone,
+					prev: prev.phone && prev.phone.phone,
 					file: file
 				};
-				transcript.words[aligned][transcript.words[aligned].length - 1].phones.push(data);
-				transcript.phones[match].push(data);
-				start += phone.duration;
-				prev.phone = match;
+				wordData.phones.push(phoneData);
+				transcript.phones[phone].push(phoneData);
+				start += phoneObj.duration;
+				prev.phone = phoneData;
 			}
 		}
 		return transcript;
@@ -186,17 +262,20 @@ const convert = (function() {
 			words: {},
 			phones: {}
 		};
-		const lower = type.toLowerCase();
-		if (lower === "textgrid") {
+		switch (type.toLowerCase()) {
+		case "textgrid":
 			return convertTextGrid(transcript, data, file, matchExact);
-		} else if (lower === "json") {
+		case "vdat":
+			return convertVdat(transcript, data, file, matchExact, ignoreWordGaps);
+		case "json": {
 			const json = JSON.parse(data);
 			if (Array.isArray(json)) {
 				return convertMultiple(transcript, json, matchPunctuation, matchExact, ignoreWordGaps);
 			} else {
 				return convertJson(transcript, json, file, matchPunctuation, matchExact, ignoreWordGaps);
 			}
-		} else {
+		}
+		default:
 			return convertSentence(data, matchPunctuation);
 		}
 	};

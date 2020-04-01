@@ -43,6 +43,10 @@ input[type="file"] {
 	width: 0;
 }
 
+.activecontext {
+	box-shadow: 0 0 6px 3px #00FF0080 inset;
+}
+
 #boxselect {
 	-moz-user-select: none;
 	background-color: #00FF001A;
@@ -130,7 +134,7 @@ input[type="file"] {
 	padding: 16px;
 }
 
-.filefolder > a:after {
+.filegroup > a:after {
 	color: #808080;
 	content: "+";
 	float: right;
@@ -138,28 +142,28 @@ input[type="file"] {
 	font-weight: bold;
 }
 
-.filefolder.open > a {
+.filegroup.open > a {
 	background-color: #004000;
 }
 
-.filefolder.open > a:after {
+.filegroup.open > a:after {
 	content: "-";
 }
 
-.filefolder.error > .presetprogress {
+.filegroup.error > .presetprogress {
 	background-color: #FF0000;
 }
 
-.filefolder.error.open > a {
+.filegroup.error.open > a {
 	background-color: #500000;
 }
 
-.filegroup {
+.filegrouplist {
 	background-color: #001C00;
 	margin-left: 16px;
 }
 
-.filegroup a.error .filedetails {
+.filegrouplist a.error .filedetails {
 	background-color: #500000;
 }
 
@@ -393,19 +397,19 @@ input[type="file"] {
 	padding: 8px;
 }
 
-#sidenav .filefolder > a:hover {
+#sidenav .filegroup > a:hover {
 	background-color: #003000;
 }
 
-#sidenav .filefolder.error > a {
+#sidenav .filegroup.error > a {
 	border-bottom: 1px solid #400000;
 }
 
-#sidenav .filefolder.error > a:hover {
+#sidenav .filegroup.error > a:hover {
 	background-color: #400000;
 }
 
-#sidenav .filegroup a.error {
+#sidenav .filegrouplist a.error {
 	background-color: #290000;
 	border-bottom: 1px solid #180000;
 }

@@ -1,7 +1,7 @@
 "use strict";
 
 const fs = require("fs");
-const convert = require("./convert.js");
+/*const convert = require("./convert.js");
 
 function crossLookup() {
 	const lookup = {};
@@ -47,24 +47,20 @@ function crossLookup() {
 		result[data] = { phone: final, accuracy: Math.floor(largest / total * 100) + "%", alternatives: lookup[data] };
 	}
 	return result;
-}
+}*/
 
 function generateLookup() {
-	const result = {
-		json: {},
-		textgrid: {}
-	};
-	const lookup1 = fs.readFileSync("lookupjson.txt", "utf8");
-	const lines1 = lookup1.split("\n");
-	for (let i = 0; i < lines1.length; i++) {
-		const delimit = lines1[i].split(" ");
-		result.json[delimit[0]] = delimit[1];
-	}
-	const lookup2 = fs.readFileSync("lookuptextgrid.txt", "utf8");
-	const lines2 = lookup2.split("\n");
-	for (let j = 0; j < lines2.length; j++) {
-		const delimit = lines2[j].split(" ");
-		result.textgrid[delimit[0]] = delimit[1];
+	const result = {};
+	const categories = ["json", "textgrid", "vdat"];
+	for (let i = 0; i < categories.length; i++) {
+		const name = categories[i];
+		result[name] = {};
+		const lookup = fs.readFileSync("lookup" + name + ".txt", "utf8");
+		const lines = lookup.split("\n");
+		for (let j = 0; j < lines.length; j++) {
+			const delimit = lines[j].split(" ");
+			result[name][delimit[0]] = delimit[1];
+		}
 	}
 	return JSON.stringify(result, undefined, "\t");
 }

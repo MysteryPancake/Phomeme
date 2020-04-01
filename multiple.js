@@ -9,7 +9,7 @@ function multiple(path) {
 		if (files[i].split(".").pop() === "json") {
 			const name = files[i].replace(/\.[^/.]+$/, "");
 			transcripts.push({
-				script: fs.readFileSync(path + "/" + name + ".json", "utf8"),
+				transcript: fs.readFileSync(path + "/" + name + ".json", "utf8"),
 				file: name + ".wav",
 				type: "json"
 			});

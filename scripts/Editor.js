@@ -7,6 +7,7 @@ let editor;
 let tracks;
 let topNav;
 let sideNav;
+let mainNav;
 let zoomDrag;
 let playhead;
 let playback;
@@ -23,11 +24,11 @@ let activeDrag;
 let zoomCanvas;
 let zoomContext;
 let recognition;
-let draggedFile;
 let playlistArea;
 let popupOverlay;
 let navigationArea;
 let activeSession;
+let activeContext;
 let waveDetailElem;
 let zoomAmountElem;
 let transcriptMenu;
@@ -39,7 +40,7 @@ let interimTranscript;
 let finalTranscript;
 let lastTopScroll = 0;
 let lastLeftScroll = 0;
-let selectedFiles = [];
+let selectedFiles = new Set();
 let recordIndex = 1;
 let mixdownIndex = 1;
 let waveDetail = 16;
@@ -78,21 +79,17 @@ function isDecodable(file) {
 }
 
 function deselectFiles() {
-	for (let i = 0; i < fileList.length; i++) {
-		fileList[i].elem.classList.remove("active");
+	for (let file of selectedFiles) {
+		file.elem.classList.remove("active");
+		selectedFiles.delete(file);
 	}
-	selectedFiles = [];
 }
 
 function deselectNonDraggableFiles() {
-	for (let i = 0; i < fileList.length; i++) {
-		const file = fileList[i];
+	for (let file of selectedFiles) {
 		if (!file.elem.draggable) {
-			const index = selectedFiles.indexOf(file);
-			if (index !== -1) {
-				file.elem.classList.remove("active");
-				selectedFiles.splice(index, 1);
-			}
+			file.elem.classList.remove("active");
+			selectedFiles.delete(file);
 		}
 	}
 }
@@ -108,37 +105,47 @@ function ListedFile(file) {
 	this.file = file;
 	this.elem = document.createElement("a");
 	this.elem.innerHTML = file.name;
+	this.checkForTranscript = function() {
+		if (this.file.type !== "audio/wav") return;
+		readFile(this.file, function(content) {
+			const vdat = content.indexOf("PLAINTEXT");
+			if (vdat !== -1) {
+				const convertMe = content.slice(vdat);
+				alert(convertMe); // TODO
+			}
+		});
+	};
 	this.dragStart = function(e) {
 		deselectNonDraggableFiles();
-		draggedFile = this;
-		e.dataTransfer.setData("text/plain", "Firefox");
+		this.select();
+		e.dataTransfer.setData("text/plain", "side");
 	};
 	if (isDecodable(file)) {
 		this.elem.draggable = true;
 		this.elem.addEventListener("dragstart", this.dragStart.bind(this));
-	} else {
-		this.elem.className = "boxselectable";
+		this.checkForTranscript();
 	}
 	this.select = function() {
-		selectedFiles.push(this);
+		selectedFiles.add(this);
 		this.elem.classList.add("active");
 	};
-	this.clicked = function() {
-		deselectFiles();
-		if (activeSession) {
-			activeSession.deselectClips();
+	this.clicked = function(e) {
+		if (!e.shiftKey) {
+			deselectFiles();
 		}
 		this.select();
 	};
 	this.elem.addEventListener("click", this.clicked.bind(this));
-	this.doubleClick = function() {
+	this.doubleClick = function(e) {
 		if (this.file.type === "session") {
 			setMenu("editor");
 			if (activeSession !== this.file) {
 				this.file.open();
 			}
 		} else if (isDecodable(this.file) && activeSession) {
-			activeSession.deselectClips();
+			if (!e.shiftKey) {
+				activeSession.deselectClips();
+			}
 			activeSession.addTrack().addClip(activeSession.playheadTime, this.file);
 		}
 	};
@@ -331,7 +338,7 @@ function SessionPlayer() {
 		renderer.startRendering().then(function(buffer) {
 			listFile(bufferToFile("Mixdown" + mixdownIndex, buffer, true));
 			mixdownIndex++;
-		}.bind(this)).catch(function(err) {
+		}).catch(function(err) {
 			alert("Rendering failed! " + err);
 		});
 	};
@@ -817,28 +824,25 @@ function Clip(session) {
 		}
 	};
 	this.select = function() {
-		this.session.selectedClips.push(this);
+		this.session.selectedClips.add(this);
 		this.parent.classList.add("active");
 	};
 	this.updateDrag = function(newPosition) {
 		player.pauseIfPlaying();
-		for (let i = 0; i < this.session.selectedClips.length; i++) {
-			this.session.selectedClips[i].setStart((newPosition - this.session.selectedClips[i].drag) / this.session.zoom);
+		for (let clip of this.session.selectedClips) {
+			clip.setStart((newPosition - clip.drag) / this.session.zoom);
 		}
 	};
 	this.clicked = function(e) {
 		if (!isLeftClick(e)) return;
 		e.preventDefault();
 		activeDrag = this;
-		if (this.session.selectedClips.indexOf(this) === -1) {
-			if (!e.shiftKey) {
-				this.session.deselectClips();
-			}
-			deselectFiles();
-			this.select();
+		if (!e.shiftKey) {
+			this.session.deselectClips();
 		}
-		for (let i = 0; i < this.session.selectedClips.length; i++) {
-			this.session.selectedClips[i].drag = e.pageX - (this.session.selectedClips[i].startTime * this.session.zoom);
+		this.select();
+		for (let clip of this.session.selectedClips) {
+			clip.drag = e.pageX - (clip.startTime * this.session.zoom);
 		}
 	};
 	this.elem.addEventListener("mousedown", this.clicked.bind(this));
@@ -1030,37 +1034,23 @@ function Track(trackSession) {
 		}
 	};
 	this.elem.addEventListener("mousemove", this.moved.bind(this));
-	this.dragover = function(e) {
-		if (draggedFile) {
-			e.preventDefault();
-			e.stopPropagation();
-			e.dataTransfer.dropEffect = "copy";
-		}
-	};
-	this.elem.addEventListener("dragover", this.dragover.bind(this));
 	this.drop = function(e) {
-		if (draggedFile) {
-			e.preventDefault();
-			e.stopPropagation();
+		if (!e.dataTransfer) return;
+		e.preventDefault();
+		e.stopPropagation();
+		if (!e.shiftKey) {
 			this.session.deselectClips();
-			const start = (e.clientX - this.elem.getBoundingClientRect().left) / this.session.zoom;
-			this.addClip(start, draggedFile.file);
-			if (draggedFile.elem.classList.contains("active") && selectedFiles.length) {
-				let offset = 0;
-				for (let i = 0; i < selectedFiles.length; i++) {
-					const active = selectedFiles[i];
-					if (active !== draggedFile && isDecodable(active.file)) {
-						this.session.nextTrack(this, offset + 1).addClip(start, active.file);
-						offset++;
-					}
+		}
+		let offset = 0;
+		const start = (e.clientX - this.elem.getBoundingClientRect().left) / this.session.zoom;
+		if (e.dataTransfer.getData("text") === "side") {
+			for (let file of selectedFiles) {
+				if (isDecodable(file.file)) {
+					this.session.nextTrack(this, offset).addClip(start, file.file);
+					offset++;
 				}
 			}
-			draggedFile = undefined;
-		} else if (e.dataTransfer && e.dataTransfer.files) {
-			e.preventDefault();
-			e.stopPropagation();
-			let offset = 0;
-			const start = (e.clientX - this.elem.getBoundingClientRect().left) / this.session.zoom;
+		} else if (e.dataTransfer.files) {
 			for (let i = 0; i < e.dataTransfer.files.length; i++) {
 				const file = e.dataTransfer.files[i];
 				listFile(file);
@@ -1144,30 +1134,30 @@ function Session(name, duration) {
 	this.duration = duration;
 	this.playheadTime = 0;
 	this.realName = name;
-	this.selectedClips = [];
+	this.selectedClips = new Set();
 	this.name = name + ".phomeme";
 	this.type = "session";
 	this.trackList = [];
 	this.clipboard = [];
 	this.deselectClips = function() {
-		for (let i = 0; i < this.selectedClips.length; i++) {
-			this.selectedClips[i].parent.classList.remove("active");
+		for (let clip of this.selectedClips) {
+			clip.parent.classList.remove("active");
+			this.selectedClips.delete(clip);
 		}
-		this.selectedClips = [];
 	};
 	this.removeClips = function() {
-		for (let i = 0; i < this.selectedClips.length; i++) {
-			this.selectedClips[i].remove();
+		for (let clip of this.selectedClips) {
+			clip.remove();
+			this.selectedClips.delete(clip);
 		}
-		this.selectedClips = [];
 		updateZoomCanvas();
 	};
 	this.cutClips = function() {
-		this.clipboard = this.selectedClips.slice();
+		this.clipboard = Array.from(this.selectedClips);
 		this.removeClips();
 	};
 	this.copyClips = function() {
-		this.clipboard = this.selectedClips.slice();
+		this.clipboard = Array.from(this.selectedClips);
 	};
 	this.minStartTime = function(clips) {
 		let pasteTime;
@@ -1225,7 +1215,6 @@ function Session(name, duration) {
 		updatePlaylistDuration();
 	};
 	this.selectClips = function() {
-		this.selectedClips = [];
 		for (let i = 0; i < this.trackList.length; i++) {
 			const track = this.trackList[i];
 			for (let j = 0; j < track.clips.length; j++) {
@@ -1234,7 +1223,7 @@ function Session(name, duration) {
 		}
 	};
 	this.duplicateClips = function() {
-		const lastClips = this.selectedClips.slice();
+		const lastClips = Array.from(this.selectedClips);
 		this.deselectClips();
 		const pasteTime = this.minStartTime(lastClips);
 		for (let i = 0; i < lastClips.length; i++) {
@@ -1433,21 +1422,8 @@ function moved(e) {
 		boxSelect.style.top = y + "px";
 		boxSelect.style.width = width + "px";
 		boxSelect.style.height = height + "px";
-		if (activeDrag.side) {
-			selectedFiles = [];
-			for (let i = 0; i < fileList.length; i++) {
-				const file = fileList[i];
-				const elem = file.elem;
-				const rect = elem.getBoundingClientRect();
-				if (isOverlapping(rect, x, y, width, height)) {
-					elem.classList.add("active");
-					selectedFiles.push(file);
-				} else {
-					elem.classList.remove("active");
-				}
-			}
-		} else if (activeSession) {
-			activeSession.selectedClips = [];
+		if (activeSession) {
+			activeSession.selectedClips.clear();
 			for (let i = 0; i < activeSession.trackList.length; i++) {
 				const track = activeSession.trackList[i];
 				for (let j = 0; j < track.clips.length; j++) {
@@ -1501,6 +1477,11 @@ function annoy(e) {
 	e.returnValue = "Unsaved changes";
 }
 
+function rightClickMenu(e) {
+	// todo: custom right click menus
+	// e.preventDefault();
+}
+
 function preventTimeInput(e) {
 	if (e.keyCode === 32 || e.keyCode === 13) {
 		e.preventDefault();
@@ -1520,43 +1501,43 @@ function keyDown(e) {
 		togglePlayback();
 	} else if (e.keyCode === 8 || e.keyCode === 46) {
 		e.preventDefault();
-		if (activeSession && activeSession.selectedClips.length) {
+		if (activeContext === sideNav && selectedFiles.size) {
+			for (let file of selectedFiles) {
+				file.remove();
+				selectedFiles.delete(file);
+			}
+		} else if (activeSession && activeSession.selectedClips.size) {
 			player.pauseIfPlaying();
 			activeSession.removeClips();
-		} else if (selectedFiles.length) {
-			for (let i = 0; i < selectedFiles.length; i++) {
-				selectedFiles[i].remove();
-			}
-			selectedFiles = [];
 		}
 	} else if (e.keyCode === 75) {
 		e.preventDefault();
-		if (activeSession && activeSession.selectedClips.length) {
-			for (let i = 0; i < activeSession.selectedClips.length; i++) {
-				activeSession.selectedClips[i].splitClip(activeSession.playheadTime);
+		if (activeSession && activeSession.selectedClips.size) {
+			for (let clip of activeSession.selectedClips) {
+				clip.splitClip(activeSession.playheadTime);
 			}
 		}
 	} else if (e.keyCode === 219) {
 		e.preventDefault();
-		if (activeSession && activeSession.selectedClips.length) {
+		if (activeSession && activeSession.selectedClips.size) {
 			player.pauseIfPlaying();
-			for (let i = 0; i < activeSession.selectedClips.length; i++) {
+			for (let clip of activeSession.selectedClips) {
 				if (holdingCtrl(e)) {
-					activeSession.selectedClips[i].setPlayheadInTime(activeSession.playheadTime);
+					clip.setPlayheadInTime(activeSession.playheadTime);
 				} else {
-					activeSession.selectedClips[i].setStart(activeSession.playheadTime);
+					clip.setStart(activeSession.playheadTime);
 				}
 			}
 		}
 	} else if (e.keyCode === 221) {
 		e.preventDefault();
-		if (activeSession && activeSession.selectedClips.length) {
+		if (activeSession && activeSession.selectedClips.size) {
 			player.pauseIfPlaying();
-			for (let i = 0; i < activeSession.selectedClips.length; i++) {
+			for (let clip of activeSession.selectedClips) {
 				if (holdingCtrl(e)) {
-					activeSession.selectedClips[i].setPlayheadOutTime(activeSession.playheadTime);
+					clip.setPlayheadOutTime(activeSession.playheadTime);
 				} else {
-					activeSession.selectedClips[i].setEnd(activeSession.playheadTime);
+					clip.setEnd(activeSession.playheadTime);
 				}
 			}
 		}
@@ -1567,19 +1548,19 @@ function keyDown(e) {
 		}
 	} else if (holdingCtrl(e) && e.keyCode === 68) {
 		e.preventDefault();
-		if (activeSession && activeSession.selectedClips.length) {
+		if (activeSession && activeSession.selectedClips.size) {
 			player.pauseIfPlaying();
 			activeSession.duplicateClips();
 		}
 	} else if (holdingCtrl(e) && e.keyCode === 88) {
 		e.preventDefault();
-		if (activeSession && activeSession.selectedClips.length) {
+		if (activeSession && activeSession.selectedClips.size) {
 			player.pauseIfPlaying();
 			activeSession.cutClips();
 		}
 	} else if (holdingCtrl(e) && e.keyCode === 67) {
 		e.preventDefault();
-		if (activeSession && activeSession.selectedClips.length) {
+		if (activeSession && activeSession.selectedClips.size) {
 			activeSession.copyClips();
 		}
 	} else if (holdingCtrl(e) && e.keyCode === 86) {
@@ -1593,16 +1574,14 @@ function keyDown(e) {
 
 function startBoxSelect(e) {
 	if (!isLeftClick(e)) return;
-	const side = e.target.id === "sidenav" || e.target.classList.contains("boxselectable");
-	if (e.target.id === "playlist" || e.target.id === "playlistarea" || e.target.classList.contains("track") || side) {
+	if (e.target.id === "playlist" || e.target.id === "playlistarea" || e.target.classList.contains("track")) {
 		e.preventDefault();
-		activeDrag = { type: "boxselect", dragX: e.pageX, dragY: e.pageY, side: side };
+		activeDrag = { type: "boxselect", dragX: e.pageX, dragY: e.pageY };
 		boxSelect.style.display = "block";
 		boxSelect.style.left = e.pageX + "px";
 		boxSelect.style.top = e.pageY + "px";
 		boxSelect.style.width = "1px";
 		boxSelect.style.height = "1px";
-		deselectFiles();
 		if (activeSession) {
 			activeSession.deselectClips();
 		}
@@ -1640,7 +1619,7 @@ function fakeNavEvents(e) {
 }
 
 function dragFile(e) {
-	if (e.dataTransfer && e.dataTransfer.files) {
+	if (e.dataTransfer) {
 		e.preventDefault();
 		e.dataTransfer.dropEffect = "copy";
 	}
@@ -1654,6 +1633,15 @@ function dropFile(e) {
 			listFile(file);
 		}
 	}
+}
+
+function activateContext(e) {
+	e.preventDefault();
+	if (activeContext) {
+		activeContext.classList.remove("activecontext");
+	}
+	activeContext = sideNav.contains(e.target) ? sideNav : mainNav;
+	activeContext.classList.add("activecontext");
 }
 
 function setup() {
@@ -1679,6 +1667,7 @@ function setup() {
 	playhead = document.getElementById("playhead");
 	zoomDrag = document.getElementById("zoomer");
 	zoomCanvas = document.getElementById("zoom");
+	mainNav = document.getElementById("mainnav");
 	sideNav = document.getElementById("sidenav");
 	timeLabel = document.getElementById("time");
 	topNav = document.getElementById("topnav");
@@ -1694,13 +1683,13 @@ function setup() {
 	window.addEventListener("mouseup", ended);
 	window.addEventListener("resize", resize);
 	window.addEventListener("orientationchange", resize);
+	playlistArea.addEventListener("mousedown", startBoxSelect);
 	playlistArea.addEventListener("scroll", navScroll);
 	playlistArea.addEventListener("wheel", navWheel);
 	playback.addEventListener("wheel", fakeNavEvents);
 	navigationArea.addEventListener("wheel", fakeNavEvents);
 	timeLabel.addEventListener("keydown", preventTimeInput);
 	timeLabel.addEventListener("blur", forceTime);
-	window.addEventListener("mousedown", startBoxSelect);
 	timelineCanvas.addEventListener("mousedown", function(e) {
 		if (!isLeftClick(e)) return;
 		e.preventDefault();
@@ -1708,10 +1697,20 @@ function setup() {
 	});
 	timelineCanvas.addEventListener("click", movePlayhead);
 	window.addEventListener("beforeunload", annoy);
+	window.addEventListener("contextmenu", rightClickMenu);
 	window.addEventListener("keydown", keyDown);
 	window.addEventListener("click", function(e) {
 		if (!e.target.matches(".autoclosebutton")) {
 			closeMenus();
+		}
+	});
+	mainNav.addEventListener("click", activateContext);
+	sideNav.addEventListener("click", activateContext);
+	mainNav.addEventListener("dragover", activateContext);
+	sideNav.addEventListener("dragover", activateContext);
+	sideNav.addEventListener("click", function(e) {
+		if (e.target === this) {
+			deselectFiles();
 		}
 	});
 	playlistArea.addEventListener("dragover", function(e) {
@@ -1733,6 +1732,8 @@ function setup() {
 			activeSession.addTrack();
 		}
 	});
+	mainNav.classList.add("activecontext");
+	activeContext = mainNav;
 	requestFrame(draw);
 }
 
@@ -1750,16 +1751,16 @@ function toggle(elem) {
 
 function listPreset(name) {
 	const parent = document.createElement("div");
-	parent.className = "filefolder open";
+	parent.className = "filegroup open";
 	sideNav.appendChild(parent);
 	const loader = document.createElement("div");
 	loader.className = "presetprogress";
 	parent.appendChild(loader);
 	const preset = document.createElement("a");
-	preset.innerHTML = name + " Preset";
+	preset.innerHTML = name;
 	parent.appendChild(preset);
 	const files = document.createElement("div");
-	files.className = "filegroup";
+	files.className = "filegrouplist";
 	parent.appendChild(files);
 	preset.addEventListener("click", function() {
 		const previous = files.style.display;
