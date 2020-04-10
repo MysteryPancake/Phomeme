@@ -22,8 +22,10 @@ let playButton;
 let presetList;
 let activeDrag;
 let zoomCanvas;
+let sessionMenu;
 let zoomContext;
 let recognition;
+let sessionName;
 let playlistArea;
 let popupOverlay;
 let navigationArea;
@@ -661,6 +663,7 @@ function setupPlaylist() {
 
 function openPopup(name) {
 	transcriptMenu.style.display = name === "transcript" ? "block" : "none";
+	sessionMenu.style.display = name === "session" ? "block" : "none";
 	presetMenu.style.display = name === "preset" ? "block" : "none";
 	prefsMenu.style.display = name === "prefs" ? "block" : "none";
 	popupOverlay.style.display = "block";
@@ -1473,8 +1476,8 @@ function zoomOut() {
 }
 
 function annoy(e) {
-	e.preventDefault();
-	e.returnValue = "Unsaved changes";
+	//e.preventDefault();
+	//e.returnValue = "Unsaved changes";
 }
 
 function rightClickMenu(e) {
@@ -1656,6 +1659,8 @@ function setup() {
 	popupOverlay = document.getElementById("popupoverlay");
 	playlistArea = document.getElementById("playlistarea");
 	timelineCanvas = document.getElementById("timeline");
+	sessionName = document.getElementById("sessionname");
+	sessionMenu = document.getElementById("sessionmenu");
 	presetMenu = document.getElementById("presetmenu");
 	playButton = document.getElementById("playbutton");
 	prefsMenu = document.getElementById("prefsmenu");
@@ -1694,6 +1699,11 @@ function setup() {
 		if (!isLeftClick(e)) return;
 		e.preventDefault();
 		activeDrag = "playhead";
+	});
+	sessionName.addEventListener("keyup", function(e) {
+		if (e.keyCode === 13) {
+			createSession();
+		}
 	});
 	timelineCanvas.addEventListener("click", movePlayhead);
 	window.addEventListener("beforeunload", annoy);
@@ -1853,15 +1863,23 @@ function toggleShake(elem) {
 }
 
 function newSession() {
-	const sessionName = window.prompt("Please enter a session name", "Untitled Session");
-	if (sessionName) {
+	openPopup("session");
+	sessionName.value = "Untitled Session";
+	sessionName.select();
+}
+
+function createSession() {
+	if (sessionName.value) {
+		closePopup();
 		setMenu("editor");
 		if (!playlistSetup) {
 			setupPlaylist();
 		}
-		const session = new Session(sessionName, 10);
+		const session = new Session(sessionName.value, 10);
 		listFile(session);
 		session.open();
+	} else {
+		window.alert("Please enter a session name!");
 	}
 }
 
@@ -2001,8 +2019,12 @@ function recordTranscript(elem) {
 }
 
 function submitTranscript() {
-	closePopup();
-	setMenu("step2");
+	if (transcriptElem.value) {
+		closePopup();
+		setMenu("step2");
+	} else {
+		window.alert("Please enter a transcript!");
+	}
 }
 
 /*function drawBoxes(json, audio) {

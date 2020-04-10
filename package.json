@@ -1,0 +1,33 @@
+{
+  "name": "Phomeme",
+  "version": "1.0.0",
+  "description": "Simple sentence mixing tool.",
+  "main": "main.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "start": "electron .",
+    "pack": "electron-builder --dir",
+    "dist": "electron-builder",
+    "dist-mac": "electron-builder --macos",
+    "dist-win": "electron-builder --win --x64"
+  },
+  "build": {
+    "appId": "phomeme",
+    "mac": {
+      "category": "public.app-category.music"
+    },
+    "win": {
+      "target": "NSIS"
+    }
+  },
+  "keywords": [],
+  "author": "MysteryPancake",
+  "license": "MIT",
+  "devDependencies": {
+    "electron": "^8.2.1",
+    "electron-builder": "^22.4.1"
+  },
+  "dependencies": {
+    "python-shell": "^1.0.8"
+  }
+}

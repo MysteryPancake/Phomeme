@@ -18,7 +18,7 @@
 	</head>
 	<body onload="setup();">
 		<div id="topnav">
-			<h1 id="title" onclick="openPrefs();">Phomeme</h1>
+			<h1 id="title" class="button" onclick="openPrefs();">Phomeme</h1>
 			<div class="dropdown">
 				<a class="topbutton autoclosebutton" onclick="toggle(this);">File</a>
 				<div class="dropcontent autoclose">
@@ -72,41 +72,39 @@
 				</div>
 				<div id="playback">
 					<span id="time" contenteditable="true" oninput="parseTime(this);">0:00:00.000</span>
-					<a id="playbutton" class="playbackbutton" onclick="togglePlayback();">&#9658;</a>
-					<a id="zoomin" class="playbackbutton" onclick="zoomIn();">Zoom In</a>
-					<a id="zoomout" class="playbackbutton" onclick="zoomOut();">Zoom Out</a>
-					<a id="recordbutton" class="playbackbutton" onclick="record(this);">Record</a>
+					<a id="playbutton" class="playbackbutton blackbutton" onclick="togglePlayback();">&#9658;</a>
+					<a id="zoomin" class="playbackbutton blackbutton" onclick="zoomIn();">Zoom In</a>
+					<a id="zoomout" class="playbackbutton blackbutton" onclick="zoomOut();">Zoom Out</a>
+					<a id="recordbutton" class="playbackbutton blackbutton" onclick="record(this);">Record</a>
 				</div>
 			</div>
 			<div id="step1" class="step">
 				<span class="steplabel">Step 1: Source</span>
-				<a class="largebutton" onclick="transcribe();">Upload Vocals</a>
+				<a class="largebutton blackbutton" onclick="transcribe();">Upload Vocals</a>
 				<span>OR</span>
-				<a class="largebutton" onclick="loadPresets();">Load Preset</a>
+				<a class="largebutton blackbutton" onclick="loadPresets();">Load Preset</a>
 			</div>
 			<div id="step2" class="step">
 				<span class="steplabel">Step 2: Destination</span>
-				<a class="largebutton" onclick="transcribe();">Upload Vocals</a>
+				<a class="largebutton blackbutton" onclick="transcribe();">Upload Vocals</a>
 			</div>
 		</div>
 		<div id="popupoverlay" onclick="closePopup();"></div>
 		<div id="popup">
-			<a id="closebutton" onclick="closePopup();">x</a>
+			<a id="closebutton" class="button" onclick="closePopup();">x</a>
 			<div id="transcriptmenu">
-				<div id="transcriptarea">
-					<div id="transcriptbuttons">
-						<label for="transcriptupload" id="uploadbutton">Upload</label>
-						<input multiple type="file" accept="audio/*,application/json,.json,.TextGrid" id="transcriptupload" onchange="checkJson(this);">
-						<input type="image" alt="Microphone" src="microphone.png" id="transcriptmicrophone" width="32" height="32" onclick="recordTranscript(this);">
-						<audio controls id="transcriptplayer"></audio>
-					</div>
-					<div class="padded">
-						<span id="finaltranscript"></span>
-						<span id="interimtranscript"></span>
-					</div>
-					<textarea id="transcript" class="padded" rows="24" placeholder="Type the transcript here"></textarea>
-					<a id="submitbutton" onclick="submitTranscript();">Submit</a>
+				<div id="transcriptbuttons">
+					<label for="transcriptupload" id="uploadbutton" class="blackbutton">Upload</label>
+					<input multiple type="file" accept="audio/*,application/json,.json,.TextGrid" id="transcriptupload" onchange="checkJson(this);">
+					<input type="image" alt="Microphone" src="microphone.png" id="transcriptmicrophone" width="32" height="32" onclick="recordTranscript(this);">
+					<audio controls id="transcriptplayer"></audio>
 				</div>
+				<div class="padded">
+					<span id="finaltranscript"></span>
+					<span id="interimtranscript"></span>
+				</div>
+				<textarea id="transcript" class="padded" rows="24" placeholder="Type the transcript here"></textarea>
+				<a id="submitbutton" class="blackbutton" onclick="submitTranscript();">Submit</a>
 			</div>
 			<div id="presetmenu">
 				<div id="presets"></div>
@@ -133,6 +131,12 @@
 					<label for="shake">Shake</label>
 					<input type="checkbox" id="shake" onchange="toggleShake(this);">
 				</div>
+			</div>
+			<div id="sessionmenu">
+				<h3>New Session</h3>
+				<label for="sessionname">Session name</label>
+				<input type="text" id="sessionname" class="padded">
+				<a id="createbutton" class="blackbutton" onclick="createSession();">Create</a>
 			</div>
 		</div>
 		<div id="boxselect"></div>

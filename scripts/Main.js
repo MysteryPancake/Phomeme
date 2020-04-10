@@ -98,7 +98,8 @@ function updateDownloads() {
 	const ignoreWordGaps = document.getElementById("ignoreWordGaps").checked;
 	const overlapStart = parseFloat(document.getElementById("overlapStart").value);
 	const overlapEnd = parseFloat(document.getElementById("overlapEnd").value);
-	const final = (dictionary ? speak : sing)(inputData, outputData, chooseMethod, matchWords, matchDiphones, matchTriphones, matchPunctuation, matchExact, ignoreWordGaps, overlapStart, overlapEnd);
+	const sampleRate = parseInt(document.getElementById("sampleRate").value);
+	const final = (dictionary ? speak : sing)(inputData, outputData, chooseMethod, matchWords, matchDiphones, matchTriphones, matchPunctuation, matchExact, ignoreWordGaps, overlapStart, overlapEnd, sampleRate);
 	addLink("session", final, "application/xml", "sesx");
 }
 

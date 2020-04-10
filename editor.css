@@ -110,6 +110,13 @@ input[type="file"] {
 	top: 0;
 }
 
+#createbutton {
+	border: 1px solid #00FF00;
+	display: inline-block;
+	font-size: large;
+	padding: 8px 64px;
+}
+
 .dropcontent {
 	background-color: #061306;
 	border-bottom: 1px solid #00FF00;
@@ -229,7 +236,6 @@ input[type="file"] {
 }
 
 .largebutton {
-	background-color: black;
 	border: 1px solid #00FF00;
 	display: inline-block;
 	font-size: x-large;
@@ -434,11 +440,36 @@ input[type="file"] {
 }
 
 #submitbutton {
-	background-color: black;
 	border: 1px solid #00FF00;
 	display: inline-block;
 	font-size: large;
 	padding: 8px 128px;
+}
+
+#sessionname {
+	background-color: black;
+	border: 1px solid #00FF00;
+	box-sizing: border-box;
+	display: block;
+	font-family: Arial, Helvetica, sans-serif;
+	font-size: 0.9em;
+	padding: 12px;
+	width: 100%;
+}
+
+#sessionname:focus {
+	background-color: #001000;
+	border: 1px solid white;
+}
+
+#sessionmenu {
+	padding: 16px;
+}
+
+#sessionmenu > h3 {
+	border-bottom: 1px solid gray;
+	margin: 0 0 12px 0;
+	padding-bottom: 8px;
 }
 
 #time {
@@ -516,7 +547,7 @@ input[type="file"] {
 	background-color: #002000;
 }
 
-#transcriptarea {
+#transcriptmenu {
 	padding: 12px;
 }
 
@@ -531,7 +562,6 @@ input[type="file"] {
 }
 
 #uploadbutton {
-	background-color: black;
 	border: 1px solid #00FF00;
 	display: inline-block;
 	font-size: large;
@@ -580,15 +610,19 @@ input[type="file"] {
 	display: none;
 }
 
-#closebutton:hover, .dropoption:hover, .dropdown:hover .topbutton, .largebutton:hover, .preset:hover, .playbackbutton:hover, #sidenav a:hover, #submitbutton:hover, #title:hover, .topbutton:hover, #uploadbutton:hover {
+.blackbutton {
+	background-color: black;
+}
+
+.blackbutton:hover, .button:hover, .dropoption:hover, .dropdown:hover .topbutton, .preset:hover, #sidenav a:hover, .topbutton:hover {
 	background-color: #002000;
 }
 
-#closebutton:active, .dropoption:active, .dropdown .topbutton:active, .largebutton:active, .preset:active, .playbackbutton:active, #sidenav a:active, #submitbutton:active, #title:active, .topbutton:active, #uploadbutton:active {
+.blackbutton:active, .button:active, .dropoption:active, .dropdown .topbutton:active, .preset:active, #sidenav a:active, .topbutton:active {
 	background-color: #004000;
 }
 
-#closebutton, .dropoption, #filetabs a, #transcriptmicrophone, .largebutton, .preset, .playbackbutton, #sidenav a, #submitbutton, .topbutton, #title, #uploadbutton {
+.blackbutton, .button, .dropoption, #filetabs a, #transcriptmicrophone, .preset, #sidenav a, .topbutton {
 	-moz-user-select: none;
 	cursor: pointer;
 	outline: none;

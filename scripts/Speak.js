@@ -17,10 +17,10 @@ const speak = (function() {
 		return length;
 	}
 
-	return function(source, destination, chooseMethod, matchWords, matchDiphones, matchTriphones, matchPunctuation, matchExact, ignoreWordGaps, overlapStart, overlapEnd) {
+	return function(source, destination, chooseMethod, matchWords, matchDiphones, matchTriphones, matchPunctuation, matchExact, ignoreWordGaps, overlapStart, overlapEnd, sampleRate) {
 		const input = convert(source.data, source.type, "input.wav", matchPunctuation, matchExact, ignoreWordGaps);
 		const output = convert(destination.data, destination.type, "input.wav", matchPunctuation, matchExact, ignoreWordGaps);
-		const mix = new AuditionSession("session", 32, 48000);
+		const mix = new AuditionSession("session", 32, sampleRate);
 		mix.overlapStart = overlapStart;
 		mix.overlapEnd = overlapEnd;
 		if (matchWords && input.words && output.words) {
