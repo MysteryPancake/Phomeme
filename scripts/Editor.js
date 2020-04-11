@@ -180,7 +180,7 @@ function SessionPlayer() {
 	this.chunks = [];
 	this.ensureContext = function() {
 		if (!this.context) {
-			this.context = new (window.AudioContext || window.webkitAudioContext)({ sampleRate: this.sampleRate });
+			this.context = new (window.AudioContext || window.webkitAudioContext)({ latencyHint: "playback", sampleRate: this.sampleRate });
 		}
 	};
 	this.unshake = function() {
