@@ -51,7 +51,7 @@ function crossLookup() {
 
 function generateLookup() {
 	const result = {};
-	const categories = ["json", "textgrid", "vdat"];
+	const categories = ["gentle", "vdat", "webmaus"];
 	for (let i = 0; i < categories.length; i++) {
 		const name = categories[i];
 		result[name] = {};

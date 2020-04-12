@@ -70,7 +70,7 @@ const convert = (function() {
 						if (text === "") continue;
 						text = text.toLowerCase();
 					} else {
-						const match = matchExact ? text : lookup.textgrid[text];
+						const match = matchExact ? text : lookup.webmaus[text];
 						if (match === undefined) {
 							console.log("USING OOV FOR: " + text);
 							text = "OOV";
@@ -78,8 +78,8 @@ const convert = (function() {
 							text = match;
 						}
 					}
-					if (prev !== undefined) {
-						transcript[mode][prev][transcript[mode][prev].length - 1].next = text;
+					if (prev) {
+						prev.next = text;
 					}
 					transcript[mode][text] = transcript[mode][text] || [];
 					const data = {
@@ -87,7 +87,7 @@ const convert = (function() {
 						end: xmax,
 						dur: xmax - xmin,
 						phone: text,
-						prev: prev,
+						prev: prev && prev.phone,
 						file: file
 					};
 					transcript[mode][text].push(data);
@@ -102,7 +102,7 @@ const convert = (function() {
 							}
 						}
 					}
-					prev = text;
+					prev = data;
 				}
 				if (intervals + 1 === size) {
 					mode = "phones";
@@ -182,6 +182,48 @@ const convert = (function() {
 		return transcript;
 	}
 
+	function convertCues(transcript, wav, file) {
+		const points = wav.listCuePoints();
+		let prev;
+		for (let i = 0; i < points.length; i++) {
+			const pos = points[i].position;
+			if (pos === undefined) continue;
+			const start = pos / 1000;
+			let phone = points[i].label;
+			if (phone === undefined) {
+				console.log("USING OOV FOR: " + i);
+				phone = "OOV";
+			}
+			if (prev) {
+				prev.next = phone;
+				if (!prev.end) {
+					prev.end = start;
+					prev.dur = prev.end - prev.start;
+				}
+			}
+			transcript.phones[phone] = transcript.phones[phone] || [];
+			const phoneData = {
+				start: start,
+				phone: phone,
+				prev: prev && prev.phone,
+				file: file
+			};
+			const end = points[i].end;
+			if (end) {
+				phoneData.end = end / 1000;
+				phoneData.dur = phoneData.end - phoneData.start;
+			}
+			transcript.phones[phone].push(phoneData);
+			prev = phoneData;
+		}
+		if (!prev.end) {
+			const fileDuration = wav.data.chunkSize / wav.fmt.byteRate;
+			prev.end = fileDuration;
+			prev.dur = prev.end - prev.start;
+		}
+		return transcript;
+	}
+
 	function convertJson(transcript, json, file, matchPunctuation, matchExact, ignoreWordGaps) {
 		const prev = {};
 		transcript.transcript = json.transcript;
@@ -212,7 +254,7 @@ const convert = (function() {
 			let start = wordObj.start;
 			for (let j = 0; j < wordObj.phones.length; j++) {
 				const phoneObj = wordObj.phones[j];
-				let phone = matchExact ? phoneObj.phone : lookup.json[phoneObj.phone];
+				let phone = matchExact ? phoneObj.phone : lookup.gentle[phoneObj.phone];
 				if (phone === undefined) {
 					console.log("USING OOV FOR: " + phoneObj.phone);
 					phone = "OOV";
@@ -267,6 +309,8 @@ const convert = (function() {
 			return convertTextGrid(transcript, data, file, matchExact);
 		case "vdat":
 			return convertVdat(transcript, data, file, matchExact, ignoreWordGaps);
+		case "cues":
+			return convertCues(transcript, data, file);
 		case "json": {
 			const json = JSON.parse(data);
 			if (Array.isArray(json)) {
