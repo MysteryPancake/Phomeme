@@ -456,14 +456,14 @@ function updateTimeCanvas() {
 	timelineContext.textAlign = "left";
 	timelineContext.textBaseline = "top";
 	timelineContext.font = "bold 12px Arial";
-	const notchCount = Math.min(512, Math.ceil(timelineCanvas.width / activeSession.zoom) + 1);
+	const notchCount = Math.min(512, Math.ceil(timelineCanvas.width / activeSession.pxPerSec) + 1);
 	const notchWidth = timelineCanvas.width / notchCount;
 	for (let i = 0; i < notchCount; i++) {
 		let seconds = i;
 		while (seconds - activeSession.scroll < -0.5) {
 			seconds += notchCount;
 		}
-		const position = activeSession.zoom * (seconds - activeSession.scroll);
+		const position = activeSession.pxPerSec * (seconds - activeSession.scroll);
 		drawLine(timelineContext, position, 4, position, timelineCanvas.height);
 		if (notchWidth > 20) {
 			timelineContext.fillText(niceTime(seconds, false), position + 4, 4);
@@ -472,7 +472,7 @@ function updateTimeCanvas() {
 		}
 	}
 	timelineContext.fillStyle = "white";
-	timelineContext.fillRect(activeSession.zoom * (activeSession.playheadTime - activeSession.scroll), 0, 1, timelineCanvas.height);
+	timelineContext.fillRect(activeSession.pxPerSec * (activeSession.playheadTime - activeSession.scroll), 0, 1, timelineCanvas.height);
 }
 
 function parseTime(elem) {
@@ -565,7 +565,7 @@ function updatePlaylistDuration() {
 			}
 		}
 	}
-	activeSession.setDuration(Math.max(playlist.clientWidth / activeSession.zoom, maxEndTime));
+	activeSession.setDuration(Math.max(playlist.clientWidth / activeSession.pxPerSec, maxEndTime));
 	updateZoomDragger();
 	updateZoomCanvas();
 }
@@ -604,7 +604,7 @@ function navScroll() {
 			lastTopScroll = playlistArea.scrollTop;
 		}
 		if (activeSession && playlistArea.scrollLeft !== lastLeftScroll) {
-			activeSession.setScroll(playlistArea.scrollLeft / activeSession.zoom, false);
+			activeSession.setScroll(playlistArea.scrollLeft / activeSession.pxPerSec, false);
 			updateTimeCanvas();
 			lastLeftScroll = playlistArea.scrollLeft;
 		}
@@ -641,7 +641,7 @@ function draw() {
 			activeSession.setPlayhead(time, true);
 		}
 		if (autoScroll) {
-			const visibleWidth = activeSession.visibleWidth(activeSession.zoom);
+			const visibleWidth = activeSession.visibleWidth(activeSession.pxPerSec);
 			const scroll = time - visibleWidth * 0.5;
 			if (scroll > 0 && scroll + visibleWidth < activeSession.duration) {
 				activeSession.setScroll(scroll, true);
@@ -684,33 +684,33 @@ function ClipDragger(clip, left) {
 		activeDrag = this;
 		if (this.left) {
 			this.drag = {
-				in: e.pageX - (this.clip.inTime * this.clip.session.zoom),
-				start: e.pageX - (this.clip.startTime * this.clip.session.zoom),
+				in: e.pageX - (this.clip.inTime * this.clip.session.pxPerSec),
+				start: e.pageX - (this.clip.startTime * this.clip.session.pxPerSec),
 				lastStart: this.clip.startTime - this.clip.inTime
 			};
 		} else {
-			this.drag = e.pageX - (this.clip.outTime * this.clip.session.zoom);
+			this.drag = e.pageX - (this.clip.outTime * this.clip.session.pxPerSec);
 		}
 	};
 	this.updateDrag = function(newPosition) {
 		player.pauseIfPlaying();
 		if (this.left) {
 			//this.clip.setScale(this.drag - newPosition);
-			const inTime = (newPosition - this.drag.in) / this.clip.session.zoom;
-			const minimum = ((this.clip.outTime * this.clip.session.zoom) - minCanvasWidth) / this.clip.session.zoom;
+			const inTime = (newPosition - this.drag.in) / this.clip.session.pxPerSec;
+			const minimum = ((this.clip.outTime * this.clip.session.pxPerSec) - minCanvasWidth) / this.clip.session.pxPerSec;
 			if (inTime > minimum) {
 				this.clip.setStart(this.drag.lastStart + minimum);
 				this.clip.setInTime(minimum);
 			} else if (inTime > 0) {
-				this.clip.setStart((newPosition - this.drag.start) / this.clip.session.zoom);
+				this.clip.setStart((newPosition - this.drag.start) / this.clip.session.pxPerSec);
 				this.clip.setInTime(inTime);
 			} else {
 				this.clip.setStart(this.drag.lastStart);
 				this.clip.setInTime(0);
 			}
 		} else {
-			const outTime = (newPosition - this.drag) / this.clip.session.zoom;
-			const maximum = ((this.clip.inTime * this.clip.session.zoom) + minCanvasWidth) / this.clip.session.zoom;
+			const outTime = (newPosition - this.drag) / this.clip.session.pxPerSec;
+			const maximum = ((this.clip.inTime * this.clip.session.pxPerSec) + minCanvasWidth) / this.clip.session.pxPerSec;
 			if (outTime < maximum) {
 				this.clip.setOutTime(maximum);
 			} else if (outTime > this.clip.duration) {
@@ -758,7 +758,7 @@ function Clip(session) {
 		this.context.lineWidth = 0.5;
 		this.context.strokeStyle = "white";
 		this.context.beginPath();
-		const scale = waveDetail * this.session.zoom;
+		const scale = waveDetail * this.session.pxPerSec;
 		const offset = this.inTime * player.sampleRate - this.fakeOffset;
 		for (let k = 0; k < lines; k++) {
 			const x = k / lines * this.elem.width;
@@ -781,13 +781,13 @@ function Clip(session) {
 		this.context.fillText("TESTING", this.elem.width * 0.5, 4);
 	};*/
 	this.pixelWidth = function() {
-		return (this.outTime - this.inTime) * this.session.zoom;
+		return (this.outTime - this.inTime) * this.session.pxPerSec;
 	};
 	this.updateCanvas = function() {
 		if (this.displayWave) {
 			let width = this.pixelWidth();
 			const startTime = this.startTime - this.session.scroll;
-			const startPosition = startTime * this.session.zoom;
+			const startPosition = startTime * this.session.pxPerSec;
 			const amountOver = startPosition + width - zoomCanvas.width;
 			if (amountOver > 0) {
 				width -= amountOver;
@@ -796,12 +796,12 @@ function Clip(session) {
 				this.rightDragger.allow();
 			}
 			if (startPosition < 0) {
-				this.parent.style.left = this.session.scroll * this.session.zoom + "px";
+				this.parent.style.left = this.session.scroll * this.session.pxPerSec + "px";
 				this.fakeOffset = startTime * player.sampleRate;
 				this.leftDragger.deny();
 				width += startPosition;
 			} else {
-				this.parent.style.left = this.startTime * this.session.zoom + "px";
+				this.parent.style.left = this.startTime * this.session.pxPerSec + "px";
 				this.fakeOffset = 0;
 				this.leftDragger.allow();
 			}
@@ -823,7 +823,7 @@ function Clip(session) {
 			}
 			//this.drawLabel();
 		} else {
-			this.parent.style.left = this.startTime * this.session.zoom + "px";
+			this.parent.style.left = this.startTime * this.session.pxPerSec + "px";
 		}
 	};
 	this.select = function() {
@@ -833,7 +833,7 @@ function Clip(session) {
 	this.updateDrag = function(newPosition) {
 		player.pauseIfPlaying();
 		for (let clip of this.session.selectedClips) {
-			clip.setStart((newPosition - clip.drag) / this.session.zoom);
+			clip.setStart((newPosition - clip.drag) / this.session.pxPerSec);
 		}
 	};
 	this.clicked = function(e) {
@@ -845,7 +845,7 @@ function Clip(session) {
 		}
 		this.select();
 		for (let clip of this.session.selectedClips) {
-			clip.drag = e.pageX - (clip.startTime * this.session.zoom);
+			clip.drag = e.pageX - (clip.startTime * this.session.pxPerSec);
 		}
 	};
 	this.elem.addEventListener("mousedown", this.clicked.bind(this));
@@ -869,7 +869,7 @@ function Clip(session) {
 	};
 	this.setPlayheadInTime = function(time) {
 		const inTime = this.inTime + time - this.startTime;
-		if ((this.outTime - inTime) * this.session.zoom < minCanvasWidth) return;
+		if ((this.outTime - inTime) * this.session.pxPerSec < minCanvasWidth) return;
 		if (inTime > 0) {
 			this.setStart(time);
 		} else {
@@ -879,7 +879,7 @@ function Clip(session) {
 	};
 	this.setPlayheadOutTime = function(time) {
 		const outTime = time - this.startTime + this.inTime;
-		if ((outTime - this.inTime) * this.session.zoom < minCanvasWidth) return;
+		if ((outTime - this.inTime) * this.session.pxPerSec < minCanvasWidth) return;
 		this.setOutTime(outTime);
 	};
 	this.duplicate = function() {
@@ -896,8 +896,8 @@ function Clip(session) {
 	this.splitClip = function(time) {
 		const inTime = this.inTime + time - this.startTime;
 		const outTime = time - this.startTime + this.inTime;
-		if ((this.outTime - inTime) * this.session.zoom < minCanvasWidth) return;
-		if ((outTime - this.inTime) * this.session.zoom < minCanvasWidth) return;
+		if ((this.outTime - inTime) * this.session.pxPerSec < minCanvasWidth) return;
+		if ((outTime - this.inTime) * this.session.pxPerSec < minCanvasWidth) return;
 		const dupe = this.duplicate();
 		dupe.outTime = outTime;
 		this.track.insertClip(dupe);
@@ -937,7 +937,7 @@ function Clip(session) {
 		this.displayWave = buffer.getChannelData(0).slice();
 		this.duration = buffer.duration;
 		this.outTime = this.duration;
-		this.elem.width = this.duration * this.session.zoom;
+		this.elem.width = this.duration * this.session.pxPerSec;
 		this.updateCanvas();
 		updatePlaylistDuration();
 	};
@@ -954,7 +954,7 @@ function Clip(session) {
 		}
 		this.duration = this.displayWave.length / player.sampleRate;
 		this.outTime = this.duration;
-		this.elem.width = this.duration * this.session.zoom;
+		this.elem.width = this.duration * this.session.pxPerSec;
 		this.updateCanvas();
 		updatePlaylistDuration();
 		this.session.setPlayhead(this.endTime(), true);
@@ -1017,7 +1017,7 @@ function Track(trackSession) {
 		const clip = new Clip(this.session);
 		this.insertClip(clip);
 		clip.startTime = start;
-		clip.parent.style.left = start * this.session.zoom + "px";
+		clip.parent.style.left = start * this.session.pxPerSec + "px";
 		if (file) {
 			clip.loadFile(file);
 		}
@@ -1045,7 +1045,7 @@ function Track(trackSession) {
 			this.session.deselectClips();
 		}
 		let offset = 0;
-		const start = (e.clientX - this.elem.getBoundingClientRect().left) / this.session.zoom;
+		const start = (e.clientX - this.elem.getBoundingClientRect().left) / this.session.pxPerSec;
 		if (e.dataTransfer.getData("text") === "side") {
 			for (let file of selectedFiles) {
 				if (isDecodable(file.file)) {
@@ -1133,7 +1133,7 @@ function FileTab(session) {
 
 function Session(name, duration) {
 	this.scroll = 0;
-	this.zoom = timelineCanvas.width / duration;
+	this.pxPerSec = timelineCanvas.width / duration;
 	this.duration = duration;
 	this.playheadTime = 0;
 	this.realName = name;
@@ -1256,7 +1256,7 @@ function Session(name, duration) {
 		return this.selectedTrack ? this.selectedTrack : this.addTrack();
 	};
 	this.pixelWidth = function() {
-		return this.duration * this.zoom;
+		return this.duration * this.pxPerSec;
 	};
 	this.zoomPosition = function() {
 		return this.scroll * zoomCanvas.width / this.duration;
@@ -1272,7 +1272,7 @@ function Session(name, duration) {
 	};
 	this.setPlayhead = function(seconds, updateLabel) {
 		this.playheadTime = seconds;
-		playhead.style.left = this.playheadTime * this.zoom + "px";
+		playhead.style.left = this.playheadTime * this.pxPerSec + "px";
 		updateTimeCanvas();
 		if (updateLabel) {
 			timeLabel.innerHTML = niceTime(seconds, true);
@@ -1286,9 +1286,9 @@ function Session(name, duration) {
 			this.trackList[i].elem.style.display = "flex";
 		}
 		playlist.style.width = this.pixelWidth() + "px";
-		playhead.style.left = this.playheadTime * this.zoom + "px";
+		playhead.style.left = this.playheadTime * this.pxPerSec + "px";
 		timeLabel.innerHTML = niceTime(this.playheadTime, true);
-		playlistArea.scrollLeft = this.scroll * this.zoom;
+		playlistArea.scrollLeft = this.scroll * this.pxPerSec;
 		activeSession = this;
 		updateZoomDragger();
 		updateZoomCanvas();
@@ -1323,19 +1323,19 @@ function Session(name, duration) {
 	};
 	this.setDuration = function(time) {
 		this.duration = time;
-		playlist.style.width = time * this.zoom + "px";
+		playlist.style.width = time * this.pxPerSec + "px";
 	};
 	this.setZoom = function(zoom) {
 		const maxZoom = this.maxZoom();
 		if (maxZoom > zoom) {
-			this.zoom = maxZoom;
+			this.pxPerSec = maxZoom;
 		} else {
-			this.zoom = zoom;
+			this.pxPerSec = zoom;
 		}
 		playlist.style.width = this.pixelWidth() + "px";
 	};
 	this.setScroll = function(time, updateNav) {
-		const visibleWidth = this.visibleWidth(this.zoom);
+		const visibleWidth = this.visibleWidth(this.pxPerSec);
 		if (time < 0) {
 			this.scroll = 0;
 		} else if (time + visibleWidth > this.duration) {
@@ -1347,7 +1347,7 @@ function Session(name, duration) {
 		updatePlaylistZoom();
 		if (updateNav) {
 			ignoreScroll = true;
-			playlistArea.scrollLeft = this.scroll * this.zoom;
+			playlistArea.scrollLeft = this.scroll * this.pxPerSec;
 		}
 	};
 	this.remove = function() {
@@ -1367,7 +1367,7 @@ function closeMenus() {
 function movePlayhead(e) {
 	if (player.recordingClip) return;
 	player.pauseIfPlaying();
-	activeSession.setPlayhead(Math.max(0, (e.clientX - playlist.getBoundingClientRect().left) / activeSession.zoom), true);
+	activeSession.setPlayhead(Math.max(0, (e.clientX - playlist.getBoundingClientRect().left) / activeSession.pxPerSec), true);
 }
 
 function isOverlapping(rect, x, y, width, height) {
@@ -1461,7 +1461,7 @@ function centerZoom(newZoom) {
 }
 
 function zoomIn() {
-	const newZoom = activeSession.zoom * zoomAmount;
+	const newZoom = activeSession.pxPerSec * zoomAmount;
 	const visibleWidth = activeSession.visibleWidth(newZoom);
 	if (activeSession.playheadTime >= activeSession.scroll && activeSession.playheadTime <= activeSession.scroll + visibleWidth) {
 		activeSession.setZoom(newZoom);
@@ -1472,7 +1472,7 @@ function zoomIn() {
 }
 
 function zoomOut() {
-	centerZoom(activeSession.zoom / zoomAmount);
+	centerZoom(activeSession.pxPerSec / zoomAmount);
 }
 
 function annoy(e) {
@@ -1601,11 +1601,11 @@ function navWheel(e) {
 		wheelZoom.timer = window.setTimeout(function() {
 			wheelZoom.distance = undefined;
 		}, 250);
-		const newZoom = activeSession.zoom - (e.deltaY * activeSession.zoom * 0.01);
+		const newZoom = activeSession.pxPerSec - (e.deltaY * activeSession.pxPerSec * 0.01);
 		if (!wheelZoom.distance) {
-			wheelZoom.distance = (e.clientX - playlist.getBoundingClientRect().left) - (activeSession.scroll * activeSession.zoom);
+			wheelZoom.distance = (e.clientX - playlist.getBoundingClientRect().left) - (activeSession.scroll * activeSession.pxPerSec);
 		}
-		const newScroll = activeSession.scroll + (wheelZoom.distance / activeSession.zoom) - (wheelZoom.distance / newZoom);
+		const newScroll = activeSession.scroll + (wheelZoom.distance / activeSession.pxPerSec) - (wheelZoom.distance / newZoom);
 		activeSession.setZoom(newZoom);
 		activeSession.setScroll(newScroll, true);
 	}

@@ -70,11 +70,8 @@ const convert = (function() {
 						if (text === "") continue;
 						text = text.toLowerCase();
 					} else {
-						const match = matchExact ? text : lookup.webmaus[text];
-						if (match === undefined) {
-							console.log("USING OOV FOR: " + text);
-							text = "OOV";
-						} else {
+						const match = lookup.webmaus && lookup.webmaus[text];
+						if (!matchExact && match !== undefined) {
 							text = match;
 						}
 					}
@@ -149,11 +146,8 @@ const convert = (function() {
 						const phoneParts = nextLine.split(" ");
 						if (phoneParts.length >= 4) {
 							let phone = phoneParts[1].trim();
-							const match = matchExact ? phone : lookup.vdat[phone];
-							if (match === undefined) {
-								console.log("USING OOV FOR: " + phone);
-								phone = "OOV";
-							} else {
+							const match = lookup.vdat && lookup.vdat[phone];
+							if (!matchExact && match !== undefined) {
 								phone = match;
 							}
 							if (prev.phone) {
@@ -191,8 +185,7 @@ const convert = (function() {
 			const start = pos / 1000;
 			let phone = points[i].label;
 			if (phone === undefined) {
-				console.log("USING OOV FOR: " + i);
-				phone = "OOV";
+				phone = "";
 			}
 			if (prev) {
 				prev.next = phone;
@@ -254,10 +247,10 @@ const convert = (function() {
 			let start = wordObj.start;
 			for (let j = 0; j < wordObj.phones.length; j++) {
 				const phoneObj = wordObj.phones[j];
-				let phone = matchExact ? phoneObj.phone : lookup.gentle[phoneObj.phone];
-				if (phone === undefined) {
-					console.log("USING OOV FOR: " + phoneObj.phone);
-					phone = "OOV";
+				let phone = phoneObj.phone;
+				const match = lookup.gentle && lookup.gentle[phone];
+				if (!matchExact && match !== undefined) {
+					phone = match;
 				}
 				if (prev.phone) {
 					prev.phone.next = phone;

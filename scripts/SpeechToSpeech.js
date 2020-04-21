@@ -1,6 +1,6 @@
 "use strict";
 
-const sing = (function() {
+const speechToSpeech = (function() {
 
 	function addClip(target, phones, mix, method, diphones, triphones, func) {
 		if (phones) {

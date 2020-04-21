@@ -99,7 +99,7 @@ function updateDownloads() {
 	const overlapStart = parseFloat(document.getElementById("overlapStart").value);
 	const overlapEnd = parseFloat(document.getElementById("overlapEnd").value);
 	const sampleRate = parseInt(document.getElementById("sampleRate").value);
-	const final = (dictionary ? speak : sing)(inputData, outputData, chooseMethod, matchWords, matchDiphones, matchTriphones, matchPunctuation, matchExact, ignoreWordGaps, overlapStart, overlapEnd, sampleRate);
+	const final = (dictionary ? textToSpeech : speechToSpeech)(inputData, outputData, chooseMethod, matchWords, matchDiphones, matchTriphones, matchPunctuation, matchExact, ignoreWordGaps, overlapStart, overlapEnd, sampleRate);
 	addLink("session", final, "application/xml", "sesx");
 }
 

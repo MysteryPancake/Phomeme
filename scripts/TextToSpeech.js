@@ -1,6 +1,6 @@
 "use strict";
 
-const speak = (function() {
+const textToSpeech = (function() {
 
 	function addClips(targets, phones, mix, method, diphones, triphones, length, func) {
 		for (let i = 0; i < targets.length; i++) {
