@@ -6,7 +6,7 @@ const speechToSpeech = (function() {
 		if (phones) {
 			const match = triphone(target, phones, method, diphones, triphones);
 			const stretch = Math.min(8, target.dur / match.dur);
-			mix.addClip(match.file, target.phone, target.start, target.end, match.start * stretch, match.end * stretch, stretch);
+			mix.addClip(match.file, target.label, target.start, target.end, match.start * stretch, match.end * stretch, stretch);
 		} else {
 			func(target);
 		}
@@ -22,11 +22,11 @@ const speechToSpeech = (function() {
 			for (let word in output.words) {
 				for (let i = 0; i < output.words[word].length; i++) {
 					addClip(output.words[word][i], input.words[word], mix, chooseMethod, matchDiphones, matchTriphones, function(target) {
-						console.log("USING PHONES FOR: " + target.phone);
+						console.log("USING PHONES FOR: " + target.label);
 						for (let j = 0; j < target.phones.length; j++) {
 							const data = target.phones[j];
-							addClip(data, input.phones[data.phone], mix, chooseMethod, matchDiphones, matchTriphones, function(phone) {
-								console.log("MISSING PHONE: " + phone.phone);
+							addClip(data, input.phones[data.label], mix, chooseMethod, matchDiphones, matchTriphones, function(phone) {
+								console.log("MISSING PHONE: " + phone.label);
 							});
 						}
 					});
@@ -36,7 +36,7 @@ const speechToSpeech = (function() {
 			for (let phone in output.phones) {
 				for (let j = 0; j < output.phones[phone].length; j++) {
 					addClip(output.phones[phone][j], input.phones[phone], mix, chooseMethod, matchDiphones, matchTriphones, function(target) {
-						console.log("MISSING PHONE: " + target.phone);
+						console.log("MISSING PHONE: " + target.label);
 					});
 				}
 			}

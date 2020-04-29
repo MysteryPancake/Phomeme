@@ -61,13 +61,13 @@ const triphone = (function() {
 			const matchNext = phones[i].next === target.next;
 			if (matchTriphones && matchPrev && matchNext) {
 				triphones.push(phones[i]);
-				//console.log("MATCHED TRIPHONE: " + target.prev + " " + target.phone + " " + target.next);
+				//console.log("MATCHED TRIPHONE: " + target.prev + " " + target.label + " " + target.next);
 			} else if (matchDiphones && matchPrev) {
 				diphones.push(phones[i]);
-				//console.log("MATCHED DIPHONE: " + target.prev + " " + target.phone);
+				//console.log("MATCHED DIPHONE: " + target.prev + " " + target.label);
 			} else if (matchDiphones && matchNext) {
 				diphones.push(phones[i]);
-				//console.log("MATCHED DIPHONE: " + target.phone + " " + target.next);
+				//console.log("MATCHED DIPHONE: " + target.label + " " + target.next);
 			}
 		}
 		if (triphones.length) {

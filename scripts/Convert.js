@@ -19,7 +19,7 @@ const convert = (function() {
 			const wordData = {
 				prev: words[i - 1],
 				next: words[i + 1],
-				phone: word
+				label: word
 			};
 			transcript.words.push(wordData);
 			const phones = dictionary[word];
@@ -29,7 +29,7 @@ const convert = (function() {
 					const phoneData = {
 						prev: phones[j - 1],
 						next: phones[j + 1],
-						phone: phones[j]
+						label: phones[j]
 					};
 					wordData.phones.push(phoneData);
 					transcript.phones.push(phoneData);
@@ -83,8 +83,8 @@ const convert = (function() {
 						start: xmin,
 						end: xmax,
 						dur: xmax - xmin,
-						phone: text,
-						prev: prev && prev.phone,
+						label: text,
+						prev: prev && prev.label,
 						file: file
 					};
 					transcript[mode][text].push(data);
@@ -131,8 +131,8 @@ const convert = (function() {
 						start: wordStart,
 						end: wordEnd,
 						dur: wordEnd - wordStart,
-						phone: word,
-						prev: prev.word && prev.word.phone,
+						label: word,
+						prev: prev.word && prev.word.label,
 						phones: [],
 						file: file
 					};
@@ -160,8 +160,8 @@ const convert = (function() {
 								start: phoneStart,
 								end: phoneEnd,
 								dur: phoneEnd - phoneStart,
-								phone: phone,
-								prev: prev.phone && prev.phone.phone,
+								label: phone,
+								prev: prev.phone && prev.phone.label,
 								file: file
 							};
 							wordData.phones.push(phoneData);
@@ -197,8 +197,8 @@ const convert = (function() {
 			transcript.phones[phone] = transcript.phones[phone] || [];
 			const phoneData = {
 				start: start,
-				phone: phone,
-				prev: prev && prev.phone,
+				label: phone,
+				prev: prev && prev.label,
 				file: file
 			};
 			const end = points[i].end;
@@ -233,8 +233,8 @@ const convert = (function() {
 				start: wordObj.start,
 				end: wordObj.end,
 				dur: wordObj.end - wordObj.start,
-				phone: word,
-				prev: matchPunctuation && isPunctuation(char) ? prev.char : prev.word && prev.word.phone,
+				label: word,
+				prev: matchPunctuation && isPunctuation(char) ? prev.char : prev.word && prev.word.label,
 				phones: [],
 				file: file
 			};
@@ -260,8 +260,8 @@ const convert = (function() {
 					start: start,
 					end: start + phoneObj.duration,
 					dur: phoneObj.duration,
-					phone: phone,
-					prev: prev.phone && prev.phone.phone,
+					label: phone,
+					prev: prev.phone && prev.phone.label,
 					file: file
 				};
 				wordData.phones.push(phoneData);

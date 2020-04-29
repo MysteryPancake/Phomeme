@@ -20,9 +20,9 @@ function crossLookup() {
 							const data1 = phone1.phones[j];
 							const data2 = phone2.phones[j];
 							if (data1 && data2) {
-								lookup[data2.phone] = lookup[data2.phone] || {};
-								lookup[data2.phone][data1.phone] = lookup[data2.phone][data1.phone] || 1;
-								lookup[data2.phone][data1.phone]++;
+								lookup[data2.label] = lookup[data2.label] || {};
+								lookup[data2.label][data1.label] = lookup[data2.label][data1.label] || 1;
+								lookup[data2.label][data1.label]++;
 							}
 						}
 					}

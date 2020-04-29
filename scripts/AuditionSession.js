@@ -23,7 +23,7 @@ const AuditionSession = (function() {
 			});
 		};
 		this.clips = [];
-		this.addClip = function(path, phone, start, end, sourceStart, sourceEnd, stretch) {
+		this.addClip = function(path, label, start, end, sourceStart, sourceEnd, stretch) {
 			let id;
 			for (let i = 0; i < this.files.length; i++) {
 				if (this.files[i].path === path) {
@@ -33,7 +33,7 @@ const AuditionSession = (function() {
 			if (id === undefined) {
 				id = this.addFile(path) - 1;
 			}
-			this.clips.push("\t\t\t\t<audioClip clipAutoCrossfade=\"true\" crossFadeHeadClipID=\"-1\" crossFadeTailClipID=\"-1\" endPoint=\"" + (end + this.overlapEnd) * this.rate + "\" fileID=\"" + id + "\" hue=\"-1\" id=\"" + this.clips.length + "\" lockedInTime=\"false\" looped=\"false\" name=\"" + xmlSafe(phone) + "\" offline=\"false\" select=\"false\" sourceInPoint=\"" + (sourceStart - this.overlapStart) * this.rate + "\" sourceOutPoint=\"" + (sourceEnd + this.overlapEnd) * this.rate + "\" startPoint=\"" + (start - this.overlapStart) * this.rate + "\" zOrder=\"" + this.clips.length + "\">\n\t\t\t\t\t<clipStretch pitchAdjustment=\"0\" preserveFormants=\"true\" stretchMode=\"rendered\" stretchQuality=\"high\" stretchRatio=\"" + stretch + "\" stretchType=\"solo\"/>\n\t\t\t\t</audioClip>\n");
+			this.clips.push("\t\t\t\t<audioClip clipAutoCrossfade=\"true\" crossFadeHeadClipID=\"-1\" crossFadeTailClipID=\"-1\" endPoint=\"" + (end + this.overlapEnd) * this.rate + "\" fileID=\"" + id + "\" hue=\"-1\" id=\"" + this.clips.length + "\" lockedInTime=\"false\" looped=\"false\" name=\"" + xmlSafe(label) + "\" offline=\"false\" select=\"false\" sourceInPoint=\"" + (sourceStart - this.overlapStart) * this.rate + "\" sourceOutPoint=\"" + (sourceEnd + this.overlapEnd) * this.rate + "\" startPoint=\"" + (start - this.overlapStart) * this.rate + "\" zOrder=\"" + this.clips.length + "\">\n\t\t\t\t\t<clipStretch pitchAdjustment=\"0\" preserveFormants=\"true\" stretchMode=\"rendered\" stretchQuality=\"high\" stretchRatio=\"" + stretch + "\" stretchType=\"solo\"/>\n\t\t\t\t</audioClip>\n");
 		};
 		this.compile = function() {
 			let result = this.before;

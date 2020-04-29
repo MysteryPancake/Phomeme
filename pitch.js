@@ -78,12 +78,12 @@ function pitch(file) {
 	wav.decode(fs.readFileSync(file + ".wav")).then(function(wave) {
 		const buffer = wave.channelData[0];
 		const sampleRate = wave.sampleRate;
-		let previous;
+		let prev;
 		for (let i = 0; i < buffer.length / sampleSize; i++) {
 			const section = buffer.slice(i * sampleSize, (i + 1) * sampleSize);
-			const result = noteFromPitch(autoCorrelate(section, sampleRate)).toString();
+			const result = noteFromPitch(autoCorrelate(section, sampleRate));
 			const note = noteStrings[result % 12];
-			if (result < previous + 1 && result > previous - 1) {
+			if (result < prev + 1 && result > prev - 1) {
 				const word = transcript.words[transcript.words.length - 1];
 				const last = word.phones[word.phones.length - 1];
 				if (last.phone === note) {
@@ -97,15 +97,15 @@ function pitch(file) {
 				word.end += sampleSize / sampleRate;
 			} else {
 				transcript.words.push({
-					case: result === "NaN" ? "not-found-in-audio" : "success",
+					case: isNaN(result) ? "not-found-in-audio" : "success",
 					end: ((i + 1) * sampleSize) / sampleRate,
 					phones: [{ duration: sampleSize / sampleRate, phone: note }],
 					start: (i * sampleSize) / sampleRate,
-					alignedWord: result,
-					word: result
+					alignedWord: result.toString(),
+					word: result.toString()
 				});
 			}
-			previous = result;
+			prev = result;
 		}
 		fs.writeFileSync(file + ".json", JSON.stringify(transcript, undefined, "\t"));
 	});

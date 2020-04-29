@@ -1,6 +1,6 @@
 * {
 	color: white;
-	font-family: "Courier New", Courier, monospace;
+	font-family: "Trebuchet MS", Helvetica, sans-serif;
 }
 
 html, body {
@@ -376,7 +376,7 @@ input[type="file"] {
 #prefsmenu > h3 {
 	border-bottom: 1px solid gray;
 	margin: 16px 0;
-	padding: 8px 0;
+	padding-bottom: 8px;
 }
 
 #prefsmenu > div {
@@ -451,8 +451,7 @@ input[type="file"] {
 	border: 1px solid #00FF00;
 	box-sizing: border-box;
 	display: block;
-	font-family: Arial, Helvetica, sans-serif;
-	font-size: 0.9em;
+	font-size: medium;
 	padding: 12px;
 	width: 100%;
 }
@@ -517,8 +516,7 @@ input[type="file"] {
 	border: 1px solid #00FF00;
 	box-sizing: border-box;
 	display: block;
-	font-family: Arial, Helvetica, sans-serif;
-	font-size: 0.9em;
+	font-size: medium;
 	padding: 12px;
 	resize: vertical;
 	width: 100%;
