@@ -2,7 +2,7 @@
 
 const fs = require("fs");
 
-function multiple(path) {
+function createIndex(path) {
 	const transcripts = [];
 	const files = fs.readdirSync(path);
 	for (let i = 0; i < files.length; i++) {
@@ -19,4 +19,4 @@ function multiple(path) {
 	fs.writeFileSync("index.json", JSON.stringify(transcripts, undefined, "\t"));
 }
 
-multiple("./PRESETS/rosen/series1");
+createIndex("./PRESETS/rosen/series1");

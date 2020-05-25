@@ -2,35 +2,44 @@
 
 const convert = (function() {
 
-	function isPunctuation(char) {
+	/*function isPunctuation(char) {
 		return "!?.".indexOf(char) !== -1;
-	}
+	}*/
 
-	function convertSentence(sentence, matchPunctuation) {
-		const words = sentence.toLowerCase().match(matchPunctuation ? /\w+(?:'\w+)*|[!?.](?![!?.])/g : /\w+(?:'\w+)*/g);
+	function convertSentence(dataParts, params) {
+		//const words = dataParts.data.toLowerCase().match(params.matchPunctuation ? /\w+(?:'\w+)*|[!?.](?![!?.])/g : /\w+(?:'\w+)*/g);
+		const words = dataParts.data.toLowerCase().match(/\w+(?:'\w+)*/g);
+		const prev = {};
 		const transcript = {
-			transcript: sentence,
+			transcript: dataParts.data,
 			words: [],
 			phones: []
 		};
 		for (let i = 0; i < words.length; i++) {
 			const word = words[i];
-			if (isPunctuation(word)) continue;
+			//if (isPunctuation(word)) continue;
 			const wordData = {
-				prev: words[i - 1],
-				next: words[i + 1],
+				prev: prev.word,
 				label: word
 			};
+			if (prev.word) {
+				prev.word.next = wordData;
+			}
 			transcript.words.push(wordData);
+			if (!params.ignoreWordGaps) {
+				prev.phone = undefined;
+			}
 			const phones = dictionary[word];
 			if (phones) {
 				wordData.phones = [];
 				for (let j = 0; j < phones.length; j++) {
 					const phoneData = {
-						prev: phones[j - 1],
-						next: phones[j + 1],
+						prev: prev.phone,
 						label: phones[j]
 					};
+					if (prev.phone) {
+						prev.phone.next = phoneData;
+					}
 					wordData.phones.push(phoneData);
 					transcript.phones.push(phoneData);
 				}
@@ -41,8 +50,8 @@ const convert = (function() {
 		return transcript;
 	}
 
-	function convertTextGrid(transcript, str, file, matchExact) {
-		const lines = str.split("\n");
+	function convertTextGrid(transcript, dataParts, params) {
+		const lines = dataParts.data.split("\n");
 		let mode = "words";
 		let intervals = 0;
 		let size = 2;
@@ -69,14 +78,11 @@ const convert = (function() {
 					if (mode === "words") {
 						if (text === "") continue;
 						text = text.toLowerCase();
-					} else {
-						const match = lookup.webmaus && lookup.webmaus[text];
-						if (!matchExact && match !== undefined) {
-							text = match;
+					} else if (params.matchGeneral) {
+						const generalization = lookup.webmaus && lookup.webmaus[text];
+						if (generalization !== undefined) {
+							text = generalization;
 						}
-					}
-					if (prev) {
-						prev.next = text;
 					}
 					transcript[mode][text] = transcript[mode][text] || [];
 					const data = {
@@ -84,9 +90,12 @@ const convert = (function() {
 						end: xmax,
 						dur: xmax - xmin,
 						label: text,
-						prev: prev && prev.label,
-						file: file
+						prev: prev,
+						file: dataParts.file
 					};
+					if (prev) {
+						prev.next = data;
+					}
 					transcript[mode][text].push(data);
 					if (mode === "phones") {
 						for (let word in transcript.words) {
@@ -109,8 +118,8 @@ const convert = (function() {
 		return transcript;
 	}
 
-	function convertVdat(transcript, str, file, matchExact, ignoreWordGaps) {
-		const lines = str.split("\n");
+	function convertVdat(transcript, dataParts, params) {
+		const lines = dataParts.data.split("\n");
 		const prev = {};
 		while (lines.length > 0) {
 			const line = lines.shift().trim();
@@ -121,9 +130,6 @@ const convert = (function() {
 				const wordParts = line.split(" ");
 				if (wordParts.length >= 4) {
 					const word = wordParts[1].trim().toLowerCase();
-					if (prev.word) {
-						prev.word.next = word;
-					}
 					transcript.words[word] = transcript.words[word] || [];
 					const wordStart = parseFloat(wordParts[2]);
 					const wordEnd = parseFloat(wordParts[3]);
@@ -132,13 +138,16 @@ const convert = (function() {
 						end: wordEnd,
 						dur: wordEnd - wordStart,
 						label: word,
-						prev: prev.word && prev.word.label,
+						prev: prev.word,
 						phones: [],
-						file: file
+						file: dataParts.file
 					};
+					if (prev.word) {
+						prev.word.next = wordData;
+					}
 					transcript.words[word].push(wordData);
 					prev.word = wordData;
-					if (!ignoreWordGaps) {
+					if (!params.ignoreWordGaps) {
 						prev.phone = undefined;
 					}
 					let nextLine = lines.shift();
@@ -146,12 +155,11 @@ const convert = (function() {
 						const phoneParts = nextLine.split(" ");
 						if (phoneParts.length >= 4) {
 							let phone = phoneParts[1].trim();
-							const match = lookup.vdat && lookup.vdat[phone];
-							if (!matchExact && match !== undefined) {
-								phone = match;
-							}
-							if (prev.phone) {
-								prev.phone.next = phone;
+							if (params.matchGeneral) {
+								const generalization = lookup.vdat && lookup.vdat[phone];
+								if (generalization !== undefined) {
+									phone = generalization;
+								}
 							}
 							transcript.phones[phone] = transcript.phones[phone] || [];
 							const phoneStart = parseFloat(phoneParts[2]);
@@ -161,9 +169,12 @@ const convert = (function() {
 								end: phoneEnd,
 								dur: phoneEnd - phoneStart,
 								label: phone,
-								prev: prev.phone && prev.phone.label,
-								file: file
+								prev: prev.phone,
+								file: dataParts.file
 							};
+							if (prev.phone) {
+								prev.phone.next = phoneData;
+							}
 							wordData.phones.push(phoneData);
 							transcript.phones[phone].push(phoneData);
 							prev.phone = phoneData;
@@ -176,8 +187,8 @@ const convert = (function() {
 		return transcript;
 	}
 
-	function convertCues(transcript, wav, file) {
-		const points = wav.listCuePoints();
+	function convertCues(transcript, dataParts) {
+		const points = dataParts.data.listCuePoints();
 		let prev;
 		for (let i = 0; i < points.length; i++) {
 			const pos = points[i].position;
@@ -187,20 +198,20 @@ const convert = (function() {
 			if (phone === undefined) {
 				phone = "";
 			}
+			transcript.phones[phone] = transcript.phones[phone] || [];
+			const phoneData = {
+				start: start,
+				label: phone,
+				prev: prev,
+				file: dataParts.file
+			};
 			if (prev) {
-				prev.next = phone;
+				prev.next = phoneData;
 				if (!prev.end) {
 					prev.end = start;
 					prev.dur = prev.end - prev.start;
 				}
 			}
-			transcript.phones[phone] = transcript.phones[phone] || [];
-			const phoneData = {
-				start: start,
-				label: phone,
-				prev: prev && prev.label,
-				file: file
-			};
 			const end = points[i].end;
 			if (end) {
 				phoneData.end = end / 1000;
@@ -210,50 +221,51 @@ const convert = (function() {
 			prev = phoneData;
 		}
 		if (!prev.end) {
-			const fileDuration = wav.data.chunkSize / wav.fmt.byteRate;
+			const fileDuration = dataParts.data.data.chunkSize / dataParts.data.fmt.byteRate;
 			prev.end = fileDuration;
 			prev.dur = prev.end - prev.start;
 		}
 		return transcript;
 	}
 
-	function convertJson(transcript, json, file, matchPunctuation, matchExact, ignoreWordGaps) {
+	function convertJson(transcript, dataParts, params) {
 		const prev = {};
-		transcript.transcript = json.transcript;
-		for (let i = 0; i < json.words.length; i++) {
-			const wordObj = json.words[i];
+		transcript.transcript = dataParts.data.transcript;
+		for (let i = 0; i < dataParts.data.words.length; i++) {
+			const wordObj = dataParts.data.words[i];
 			if (wordObj.case === "not-found-in-audio") continue;
 			const word = wordObj.word.toLowerCase();
-			const char = json.transcript.charAt(wordObj.endOffset);
-			if (prev.word) {
-				prev.word.next = matchPunctuation && isPunctuation(char) ? char : word;
-			}
+			//const char = dataParts.data.transcript.charAt(wordObj.endOffset);
 			transcript.words[word] = transcript.words[word] || [];
 			const wordData = {
 				start: wordObj.start,
 				end: wordObj.end,
 				dur: wordObj.end - wordObj.start,
 				label: word,
-				prev: matchPunctuation && isPunctuation(char) ? prev.char : prev.word && prev.word.label,
+				//prev: params.matchPunctuation && isPunctuation(prev.char) ? prev.char : prev.word,
+				prev: prev.word,
 				phones: [],
-				file: file
+				file: dataParts.file
 			};
+			if (prev.word) {
+				//prev.word.next = params.matchPunctuation && isPunctuation(char) ? char : word;
+				prev.word.next = wordData;
+			}
 			transcript.words[word].push(wordData);
 			prev.word = wordData;
-			prev.char = char;
-			if (!ignoreWordGaps) {
+			//prev.char = char;
+			if (!params.ignoreWordGaps) {
 				prev.phone = undefined;
 			}
 			let start = wordObj.start;
 			for (let j = 0; j < wordObj.phones.length; j++) {
 				const phoneObj = wordObj.phones[j];
 				let phone = phoneObj.phone;
-				const match = lookup.gentle && lookup.gentle[phone];
-				if (!matchExact && match !== undefined) {
-					phone = match;
-				}
-				if (prev.phone) {
-					prev.phone.next = phone;
+				if (params.matchGeneral) {
+					const generalization = lookup.gentle && lookup.gentle[phone];
+					if (generalization !== undefined) {
+						phone = generalization;
+					}
 				}
 				transcript.phones[phone] = transcript.phones[phone] || [];
 				const phoneData = {
@@ -261,9 +273,12 @@ const convert = (function() {
 					end: start + phoneObj.duration,
 					dur: phoneObj.duration,
 					label: phone,
-					prev: prev.phone && prev.phone.label,
-					file: file
+					prev: prev.phone,
+					file: dataParts.file
 				};
+				if (prev.phone) {
+					prev.phone.next = phoneData;
+				}
 				wordData.phones.push(phoneData);
 				transcript.phones[phone].push(phoneData);
 				start += phoneObj.duration;
@@ -273,47 +288,23 @@ const convert = (function() {
 		return transcript;
 	}
 
-	function convertMultiple(transcript, json, matchPunctuation, matchExact, ignoreWordGaps) {
-		for (let i = 0; i < json.length; i++) {
-			const script = convert(json[i].script, json[i].type, json[i].file, matchPunctuation, matchExact, ignoreWordGaps);
-			for (let word in script.words) {
-				transcript.words[word] = transcript.words[word] || [];
-				for (let j = 0; j < script.words[word].length; j++) {
-					transcript.words[word].push(script.words[word][j]);
-				}
-			}
-			for (let phone in script.phones) {
-				transcript.phones[phone] = transcript.phones[phone] || [];
-				for (let k = 0; k < script.phones[phone].length; k++) {
-					transcript.phones[phone].push(script.phones[phone][k]);
-				}
-			}
-		}
-		return transcript;
-	}
-
-	return function(data, type, file, matchPunctuation, matchExact, ignoreWordGaps) {
+	return function(dataParts, params) {
 		const transcript = {
 			words: {},
 			phones: {}
 		};
-		switch (type.toLowerCase()) {
+		switch (dataParts.type.toLowerCase()) {
 		case "textgrid":
-			return convertTextGrid(transcript, data, file, matchExact);
+			return convertTextGrid(transcript, dataParts, params);
 		case "vdat":
-			return convertVdat(transcript, data, file, matchExact, ignoreWordGaps);
+			return convertVdat(transcript, dataParts, params);
 		case "cues":
-			return convertCues(transcript, data, file);
+			return convertCues(transcript, dataParts);
 		case "json": {
-			const json = JSON.parse(data);
-			if (Array.isArray(json)) {
-				return convertMultiple(transcript, json, matchPunctuation, matchExact, ignoreWordGaps);
-			} else {
-				return convertJson(transcript, json, file, matchPunctuation, matchExact, ignoreWordGaps);
-			}
+			return convertJson(transcript, dataParts, params);
 		}
 		default:
-			return convertSentence(data, matchPunctuation);
+			return convertSentence(dataParts, params);
 		}
 	};
 

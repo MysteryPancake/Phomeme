@@ -14,8 +14,8 @@ function requestFile(method, file, error, func, data) {
 		}
 	};
 	request.onerror = function() {
-		document.getElementById("title").innerHTML = "Error";
-		document.getElementById("waiting").innerHTML = error + " Try installing a cross-origin extension.";
+		document.getElementById("title").textContent = "Error";
+		document.getElementById("waiting").textContent = error + " Try installing a cross-origin extension.";
 		document.getElementById("spinner").style.display = "none";
 	};
 	request.send(data);
@@ -57,7 +57,7 @@ function checkJson(element) {
 	if (lower.endsWith("json") || lower.endsWith("txt")) {
 		readFile(file, function(content) {
 			const transcript = document.getElementById(isInput ? "inputScript" : "outputScript");
-			transcript.innerHTML = lower.endsWith("txt") ? content : JSON.parse(content).transcript;
+			transcript.textContent = lower.endsWith("txt") ? content : JSON.parse(content).transcript;
 		});
 	} else if (file.type.startsWith("audio")) {
 		addBlob(file, file.name.split(".").pop(), isInput);
@@ -88,18 +88,27 @@ function getText(node) {
 	}
 }
 
+function setWeight(elem) {
+	document.getElementById(elem.id + "Label").textContent = (elem.value * 100) + "%";
+	updateDownloads();
+}
+
 function updateDownloads() {
-	const chooseMethod = document.getElementById("chooseMethod").value;
-	const matchWords = document.getElementById("matchWords").checked;
-	const matchDiphones = document.getElementById("matchDiphones").checked;
-	const matchTriphones = document.getElementById("matchTriphones").checked;
-	const matchPunctuation = document.getElementById("matchPunctuation").checked;
-	const matchExact = document.getElementById("matchExact").checked;
-	const ignoreWordGaps = document.getElementById("ignoreWordGaps").checked;
-	const overlapStart = parseFloat(document.getElementById("overlapStart").value);
-	const overlapEnd = parseFloat(document.getElementById("overlapEnd").value);
-	const sampleRate = parseInt(document.getElementById("sampleRate").value);
-	const final = (dictionary ? textToSpeech : speechToSpeech)(inputData, outputData, chooseMethod, matchWords, matchDiphones, matchTriphones, matchPunctuation, matchExact, ignoreWordGaps, overlapStart, overlapEnd, sampleRate);
+	const final = (dictionary ? textToSpeech : speechToSpeech)(inputData, outputData, {
+		method: document.getElementById("chooseMethod").value,
+		matchWords: document.getElementById("matchWords").checked,
+		matchOneForward: document.getElementById("matchOneForward").checked,
+		matchOneBackward: document.getElementById("matchOneBackward").checked,
+		matchPunctuation: document.getElementById("matchPunctuation").checked,
+		matchGeneral: document.getElementById("matchGeneral").checked,
+		ignoreWordGaps: document.getElementById("ignoreWordGaps").checked,
+		overlapStart: parseFloat(document.getElementById("overlapStart").value),
+		overlapEnd: parseFloat(document.getElementById("overlapEnd").value),
+		sampleRate: parseInt(document.getElementById("sampleRate").value),
+		methodWeight: parseFloat(document.getElementById("methodWeight").value),
+		forwardWeight: parseFloat(document.getElementById("forwardWeight").value),
+		backwardWeight: parseFloat(document.getElementById("backwardWeight").value)
+	});
 	addLink("session", final, "application/xml", "sesx");
 }
 
@@ -177,12 +186,15 @@ function complete() {
 function addOutput(data, name, type) {
 	const extension = name ? name.split(".").pop() : "json";
 	addLink("output", data, type || "application/json", extension);
-	outputData = { data: data, type: extension };
+	if (extension === "json") {
+		data = JSON.parse(data);
+	}
+	outputData = { data: data, type: extension, file: "output.wav" };
 	complete();
 }
 
 function finalResponse() {
-	document.getElementById("waiting").innerHTML = "Response received! Waiting for the final response...";
+	document.getElementById("waiting").textContent = "Response received! Waiting for the final response...";
 	const file = document.getElementById("outputAudio").files[0];
 	if (file) {
 		if (file.type.startsWith("audio")) {
@@ -194,7 +206,7 @@ function finalResponse() {
 			readFile(file, addOutput);
 		}
 	} else {
-		document.getElementById("waiting").innerHTML = "Loading phone dictionary...";
+		document.getElementById("waiting").textContent = "Loading phone dictionary...";
 		document.getElementById("chooseMethod").value = "longest";
 		requestFile("GET", "phonedictionary.txt", "Couldn't load phone dictionary!", function(response) {
 			dictionary = {};
@@ -205,7 +217,7 @@ function finalResponse() {
 			}
 			const data = getText(document.getElementById("outputScript"));
 			addLink("output", data, "text/plain", "txt");
-			outputData = { data: data, type: "txt" };
+			outputData = { data: data, type: "txt", file: "output.wav" };
 			complete();
 		});
 	}
@@ -214,7 +226,10 @@ function finalResponse() {
 function addInput(data, name, type) {
 	const extension = name ? name.split(".").pop() : "json";
 	addLink("input", data, type || "application/json", extension);
-	inputData = { data: data, type: extension };
+	if (extension === "json") {
+		data = JSON.parse(data);
+	}
+	inputData = { data: data, type: extension, file: "input.wav" };
 	finalResponse();
 }
 
@@ -252,7 +267,7 @@ function phomeme() {
 				readFile(file, addInput);
 			}
 		} else {
-			document.getElementById("waiting").innerHTML = "Loading " + preset + "...";
+			document.getElementById("waiting").textContent = "Loading " + preset + "...";
 			requestFile("GET", preset + "/complete.json", "Couldn't load " + preset + "!", addInput);
 		}
 		document.getElementById("form").style.display = "none";

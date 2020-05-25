@@ -32,7 +32,6 @@ let navigationArea;
 let activeSession;
 let activeContext;
 let waveDetailElem;
-let zoomAmountElem;
 let transcriptMenu;
 let transcriptElem;
 let timelineCanvas;
@@ -46,7 +45,10 @@ let selectedFiles = new Set();
 let recordIndex = 1;
 let mixdownIndex = 1;
 let waveDetail = 16;
-let zoomAmount = 1.25;
+let buttonZoomFactorElem;
+let buttonZoomFactor = 1.25;
+let pinchZoomFactorElem;
+let pinchZoomFactor = 1;
 let autoScroll = false;
 let presetsLoaded = false;
 let playlistSetup = false;
@@ -106,7 +108,7 @@ function setMenu(name) {
 function ListedFile(file) {
 	this.file = file;
 	this.elem = document.createElement("a");
-	this.elem.innerHTML = file.name;
+	this.elem.textContent = file.name;
 	this.checkForTranscript = function() {
 		if (this.file.type !== "audio/wav") return;
 		readFile(this.file, function(content) {
@@ -213,7 +215,7 @@ function SessionPlayer() {
 		if (this.shakeAnalyser) {
 			this.unshake();
 		}
-		playButton.innerHTML = "►";
+		playButton.textContent = "►";
 		this.running = false;
 	};
 	this.startRecording = function(stream, createClip) {
@@ -350,7 +352,7 @@ function SessionPlayer() {
 		this.lastTime = this.context.currentTime;
 		this.lastPlayhead = activeSession.playheadTime;
 		this.schedule(this.context, this.shakeAnalyser);
-		playButton.innerHTML = "❚❚";
+		playButton.textContent = "❚❚";
 		this.running = true;
 	};
 	this.pauseIfPlaying = function() {
@@ -477,12 +479,12 @@ function updateTimeCanvas() {
 
 function parseTime(elem) {
 	player.pauseIfPlaying();
-	activeSession.setPlayhead(Math.min(timeStringToSeconds(elem.innerHTML), activeSession.duration), false);
+	activeSession.setPlayhead(Math.min(timeStringToSeconds(elem.textContent), activeSession.duration), false);
 }
 
 function forceTime() {
 	player.pauseIfPlaying();
-	activeSession.setPlayhead(Math.min(timeStringToSeconds(timeLabel.innerHTML), activeSession.duration), true);
+	activeSession.setPlayhead(Math.min(timeStringToSeconds(timeLabel.textContent), activeSession.duration), true);
 }
 
 function togglePlayback() {
@@ -1073,11 +1075,11 @@ function FileTab(session) {
 	this.elem = document.createElement("a");
 	this.label = document.createElement("span");
 	this.label.className = "filetabname";
-	this.label.innerHTML = this.name;
+	this.label.textContent = this.name;
 	this.elem.appendChild(this.label);
 	this.closeButton = document.createElement("span");
 	this.closeButton.className = "filetabclose";
-	this.closeButton.innerHTML = "x";
+	this.closeButton.textContent = "x";
 	this.elem.appendChild(this.closeButton);
 	this.activate = function() {
 		if (activeTab === this) return;
@@ -1275,7 +1277,7 @@ function Session(name, duration) {
 		playhead.style.left = this.playheadTime * this.pxPerSec + "px";
 		updateTimeCanvas();
 		if (updateLabel) {
-			timeLabel.innerHTML = niceTime(seconds, true);
+			timeLabel.textContent = niceTime(seconds, true);
 		}
 	};
 	this.activate = function() {
@@ -1287,7 +1289,7 @@ function Session(name, duration) {
 		}
 		playlist.style.width = this.pixelWidth() + "px";
 		playhead.style.left = this.playheadTime * this.pxPerSec + "px";
-		timeLabel.innerHTML = niceTime(this.playheadTime, true);
+		timeLabel.textContent = niceTime(this.playheadTime, true);
 		playlistArea.scrollLeft = this.scroll * this.pxPerSec;
 		activeSession = this;
 		updateZoomDragger();
@@ -1461,7 +1463,7 @@ function centerZoom(newZoom) {
 }
 
 function zoomIn() {
-	const newZoom = activeSession.pxPerSec * zoomAmount;
+	const newZoom = activeSession.pxPerSec * buttonZoomFactor;
 	const visibleWidth = activeSession.visibleWidth(newZoom);
 	if (activeSession.playheadTime >= activeSession.scroll && activeSession.playheadTime <= activeSession.scroll + visibleWidth) {
 		activeSession.setZoom(newZoom);
@@ -1472,7 +1474,7 @@ function zoomIn() {
 }
 
 function zoomOut() {
-	centerZoom(activeSession.pxPerSec / zoomAmount);
+	centerZoom(activeSession.pxPerSec / buttonZoomFactor);
 }
 
 function annoy(e) {
@@ -1601,7 +1603,7 @@ function navWheel(e) {
 		wheelZoom.timer = window.setTimeout(function() {
 			wheelZoom.distance = undefined;
 		}, 250);
-		const newZoom = activeSession.pxPerSec - (e.deltaY * activeSession.pxPerSec * 0.01);
+		const newZoom = activeSession.pxPerSec - (e.deltaY * activeSession.pxPerSec * pinchZoomFactor * 0.01);
 		if (!wheelZoom.distance) {
 			wheelZoom.distance = (e.clientX - playlist.getBoundingClientRect().left) - (activeSession.scroll * activeSession.pxPerSec);
 		}
@@ -1648,11 +1650,12 @@ function activateContext(e) {
 }
 
 function setup() {
+	buttonZoomFactorElem = document.getElementById("buttonzoomfactorlabel");
+	pinchZoomFactorElem = document.getElementById("pinchzoomfactorlabel");
 	interimTranscript = document.getElementById("interimtranscript");
 	transcriptPlayer = document.getElementById("transcriptplayer");
 	finalTranscript = document.getElementById("finaltranscript");
 	waveDetailElem = document.getElementById("wavedetaillabel");
-	zoomAmountElem = document.getElementById("zoomamountlabel");
 	transcriptMenu = document.getElementById("transcriptmenu");
 	navigationArea = document.getElementById("navigationarea");
 	transcriptElem = document.getElementById("transcript");
@@ -1700,8 +1703,9 @@ function setup() {
 		e.preventDefault();
 		activeDrag = "playhead";
 	});
-	sessionName.addEventListener("keyup", function(e) {
+	sessionName.addEventListener("keydown", function(e) {
 		if (e.keyCode === 13) {
+			e.preventDefault();
 			createSession();
 		}
 	});
@@ -1767,7 +1771,7 @@ function listPreset(name) {
 	loader.className = "presetprogress";
 	parent.appendChild(loader);
 	const preset = document.createElement("a");
-	preset.innerHTML = name;
+	preset.textContent = name;
 	parent.appendChild(preset);
 	const files = document.createElement("div");
 	files.className = "filegrouplist";
@@ -1793,15 +1797,15 @@ function loadPresets() {
 				panel.className = "preset";
 				const title = document.createElement("span");
 				title.className = "presettitle";
-				title.innerHTML = presets[i].name;
+				title.textContent = presets[i].name;
 				panel.appendChild(title);
 				const author = document.createElement("span");
 				author.className = "presetauthor";
-				author.innerHTML = "By " + presets[i].author;
+				author.textContent = "By " + presets[i].author;
 				panel.appendChild(author);
 				const desc = document.createElement("span");
 				desc.className = "presetdesc";
-				desc.innerHTML = presets[i].description;
+				desc.textContent = presets[i].description;
 				panel.appendChild(desc);
 				panel.addEventListener("click", function() {
 					urlJson(presets[i].url, function(response) {
@@ -1843,9 +1847,14 @@ function openPrefs() {
 	openPopup("prefs");
 }
 
-function setZoomAmount(elem) {
-	zoomAmountElem.innerHTML = elem.value + "x";
-	zoomAmount = elem.value;
+function setButtonZoomFactor(elem) {
+	buttonZoomFactorElem.textContent = elem.value + "x";
+	buttonZoomFactor = elem.value;
+}
+
+function setPinchZoomFactor(elem) {
+	pinchZoomFactorElem.textContent = elem.value + "x";
+	pinchZoomFactor = elem.value;
 }
 
 function toggleAutoScroll(elem) {
@@ -1853,7 +1862,7 @@ function toggleAutoScroll(elem) {
 }
 
 function setWaveDetail(elem) {
-	waveDetailElem.innerHTML = elem.value;
+	waveDetailElem.textContent = elem.value;
 	waveDetail = elem.value;
 	updateClipCanvases();
 }
@@ -1904,7 +1913,7 @@ function importFile(elem) {
 
 function addDetail(details, name) {
 	const detail = document.createElement("span");
-	detail.innerHTML = name;
+	detail.textContent = name;
 	details.appendChild(detail);
 }
 
@@ -1967,19 +1976,19 @@ function setupRecognition() {
 	recognition.continuous = true;
 	recognition.interimResults = true;
 	recognition.onresult = function(e) {
-		interimTranscript.innerHTML = "";
+		interimTranscript.textContent = "";
 		for (let i = e.resultIndex; i < e.results.length; i++) {
 			if (event.results[i].isFinal) {
-				finalTranscript.innerHTML += event.results[i][0].transcript;
+				finalTranscript.textContent += event.results[i][0].transcript;
 			} else {
-				interimTranscript.innerHTML += event.results[i][0].transcript;
+				interimTranscript.textContent += event.results[i][0].transcript;
 			}
 		}
 	};
 	recognition.onend = function() {
-		transcriptElem.value += (transcriptElem.value ? " " : "") + finalTranscript.innerHTML;
-		interimTranscript.innerHTML = "";
-		finalTranscript.innerHTML = "";
+		transcriptElem.value += (transcriptElem.value ? " " : "") + finalTranscript.textContent;
+		interimTranscript.textContent = "";
+		finalTranscript.textContent = "";
 	};
 }
 

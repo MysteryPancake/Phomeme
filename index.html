@@ -84,12 +84,10 @@
 					<label for="chooseMethod">Choose Method</label>
 					<select id="chooseMethod" onchange="updateDownloads();">
 						<option selected value="duration">Duration</option>
-						<option value="average">Average</option>
 						<option value="longest">Longest</option>
 						<option value="shortest">Shortest</option>
 						<option value="first">First</option>
 						<option value="last">Last</option>
-						<option value="random">Random</option>
 					</select>
 				</div>
 				<div>
@@ -97,20 +95,20 @@
 					<label for="matchWords">Match Words</label>
 				</div>
 				<div>
-					<input checked type="checkbox" id="matchDiphones" onchange="updateDownloads();">
-					<label for="matchDiphones">Match Diphones</label>
+					<input checked type="checkbox" id="matchOneForward" onchange="updateDownloads();">
+					<label for="matchOneForward">Match At Least One Forward</label>
 				</div>
 				<div>
-					<input checked type="checkbox" id="matchTriphones" onchange="updateDownloads();">
-					<label for="matchTriphones">Match Triphones</label>
+					<input checked type="checkbox" id="matchOneBackward" onchange="updateDownloads();">
+					<label for="matchOneBackward">Match At Least One Backward</label>
+				</div>
+				<div>
+					<input checked type="checkbox" id="matchGeneral" onchange="updateDownloads();">
+					<label for="matchGeneral">Generalize Matches</label>
 				</div>
 				<div>
 					<input type="checkbox" id="matchPunctuation" onchange="updateDownloads();">
 					<label for="matchPunctuation">Match Punctuation</label>
-				</div>
-				<div>
-					<input type="checkbox" id="matchExact" onchange="updateDownloads();">
-					<label for="matchExact">Match Exact Phones</label>
 				</div>
 				<div>
 					<input type="checkbox" id="ignoreWordGaps" onchange="updateDownloads();">
@@ -127,6 +125,22 @@
 				<div>
 					<label for="sampleRate">Sample Rate</label>
 					<input type="number" id="sampleRate" value="44100" step="1000" onchange="updateDownloads();">
+				</div>
+				<h3>Influence</h3>
+				<div>
+					<label for="methodWeight">Method Weight</label>
+					<input type="range" id="methodWeight" min="0" step="0.1" max="1" value="0.5" oninput="setWeight(this);">
+					<span id="methodWeightLabel">50%</span>
+				</div>
+				<div>
+					<label for="forwardWeight">Forward Weight</label>
+					<input type="range" id="forwardWeight" min="0" step="0.1" max="1" value="0.5" oninput="setWeight(this);">
+					<span id="forwardWeightLabel">50%</span>
+				</div>
+				<div>
+					<label for="backwardWeight">Backward Weight</label>
+					<input type="range" id="backwardWeight" min="0" step="0.1" max="1" value="0.5" oninput="setWeight(this);">
+					<span id="backwardWeightLabel">50%</span>
 				</div>
 				<h3>Downloads</h3>
 				<div>

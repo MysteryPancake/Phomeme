@@ -2,81 +2,106 @@
 
 const triphone = (function() {
 
-	function choosePhone(method, target, phones) {
-		switch (method) {
-		case "first":
-			return phones[0];
-		case "last":
-			return phones[phones.length - 1];
-		case "random":
-			return phones[Math.floor(Math.random() * phones.length)];
-		case "duration": {
-			let match;
-			let difference;
-			for (let i = 0; i < phones.length; i++) {
-				const diff = Math.abs(target - phones[i].dur);
-				if (difference === undefined || diff < difference) {
-					difference = diff;
-					match = phones[i];
+	const normalizedSortMethod = {
+		first: function(a, b, max) {
+			return (a.start - b.start) / max.start;
+		},
+		last: function(a, b, max) {
+			return (b.start - a.start) / max.start;
+		},
+		duration: function(a, b, max, target) {
+			return (Math.abs(target.dur - a.dur) / max.diff) - (Math.abs(target.dur - b.dur) / max.diff);
+		},
+		shortest: function(a, b, max) {
+			return (a.dur - b.dur) / max.dur;
+		},
+		longest: function(a, b, max) {
+			return (b.dur - a.dur) / max.dur;
+		}
+	};
+
+	function normalizedSequenceWeight(a, b, prop, max) {
+		return max[prop] === 0 ? 0 : (b[prop] / max[prop]) - (a[prop] / max[prop]);
+	}
+
+	function sequenceTotal(direction, phone, target) {
+		let seqTotal = 0;
+		let sourcePhone = phone[direction];
+		let targetPhone = target[direction];
+		while (sourcePhone && targetPhone) {
+			if (sourcePhone.label === targetPhone.label) {
+				sourcePhone = sourcePhone[direction];
+				targetPhone = targetPhone[direction];
+				seqTotal++;
+				if (sourcePhone === undefined && targetPhone === undefined) {
+					seqTotal++;
+					break;
 				}
+			} else {
+				break;
 			}
-			return match;
 		}
-		case "longest": {
-			let match = phones[0];
-			for (let i = 0; i < phones.length; i++) {
-				if (phones[i].dur > match.dur) {
-					match = phones[i];
-				}
-			}
-			return match;
-		}
-		case "shortest": {
-			let match = phones[0];
-			for (let i = 0; i < phones.length; i++) {
-				if (phones[i].dur < match.dur) {
-					match = phones[i];
-				}
-			}
-			return match;
-		}
-		case "average": {
-			let sum = 0;
-			for (let i = 0; i < phones.length; i++) {
-				sum += phones[i].dur;
-			}
-			const average = sum / phones.length;
-			return choosePhone("duration", average, phones);
-		}
-		default:
-			return phones[0];
+		return seqTotal;
+	}
+
+	function updateMax(prop, phone, max) {
+		if (max[prop] === undefined || phone[prop] > max[prop]) {
+			max[prop] = phone[prop];
 		}
 	}
 
-	return function(target, phones, method, matchDiphones, matchTriphones) {
+	function maxesForNormalizing(phone, target, params, max) {
+		phone.prevTotal = sequenceTotal("prev", phone, target);
+		updateMax("prevTotal", phone, max);
+		phone.nextTotal = sequenceTotal("next", phone, target);
+		updateMax("nextTotal", phone, max);
+		switch (params.method) {
+		case "first":
+		case "last":
+			updateMax("start", phone, max);
+			break;
+		case "duration": {
+			const diff = Math.abs(target.dur - phone.dur);
+			if (max.diff === undefined || diff > max.diff) {
+				max.diff = diff;
+			}
+			break;
+		}
+		case "shortest":
+		case "longest":
+			updateMax("dur", phone, max);
+			break;
+		}
+	}
+
+	return function(phones, target, params) {
 		const diphones = [];
 		const triphones = [];
+		const max = { prevTotal: 0, nextTotal: 0 };
 		for (let i = 0; i < phones.length; i++) {
-			const matchPrev = phones[i].prev === target.prev;
-			const matchNext = phones[i].next === target.next;
-			if (matchTriphones && matchPrev && matchNext) {
-				triphones.push(phones[i]);
-				//console.log("MATCHED TRIPHONE: " + target.prev + " " + target.label + " " + target.next);
-			} else if (matchDiphones && matchPrev) {
-				diphones.push(phones[i]);
-				//console.log("MATCHED DIPHONE: " + target.prev + " " + target.label);
-			} else if (matchDiphones && matchNext) {
-				diphones.push(phones[i]);
-				//console.log("MATCHED DIPHONE: " + target.label + " " + target.next);
+			const phone = phones[i];
+			maxesForNormalizing(phone, target, params, max);
+			if (params.matchOneBackward && phone.prevTotal > 0 && params.matchOneForward && phone.nextTotal > 0) {
+				triphones.push(phone);
+			} else if (params.matchOneBackward && phone.prevTotal > 0) {
+				diphones.push(phone);
+			} else if (params.matchOneForward && phone.nextTotal > 0) {
+				diphones.push(phone);
 			}
 		}
+		let finalPhones = phones;
 		if (triphones.length) {
-			return choosePhone(method, target.dur, triphones);
+			finalPhones = triphones;
 		} else if (diphones.length) {
-			return choosePhone(method, target.dur, diphones);
-		} else {
-			return choosePhone(method, target.dur, phones);
+			finalPhones = diphones;
 		}
+		finalPhones.sort(function(a, b) {
+			const method = normalizedSortMethod[params.method](a, b, max, target);
+			const prev = normalizedSequenceWeight(a, b, "prevTotal", max);
+			const next = normalizedSequenceWeight(a, b, "nextTotal", max);
+			return (method * params.methodWeight) + (prev * params.backwardWeight) + (next * params.forwardWeight);
+		});
+		return finalPhones[0];
 	};
 
 }());

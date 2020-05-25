@@ -72,7 +72,7 @@ const sampleSize = 1024;
 
 function pitch(file) {
 	const transcript = {
-		transcript: "&lt;Music&gt;",
+		transcript: "<Music>",
 		words: []
 	};
 	wav.decode(fs.readFileSync(file + ".wav")).then(function(wave) {

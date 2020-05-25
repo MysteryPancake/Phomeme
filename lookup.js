@@ -1,12 +1,12 @@
 "use strict";
 
 const fs = require("fs");
-/*const convert = require("./convert.js");
+const convert = require("./convert.js");
 
-function crossLookup() {
+/*function crossLookup() {
 	const lookup = {};
-	const converted1 = convert(fs.readFileSync("SOURCE/TextGridExamples/input.json", "utf8"), "json", "input.wav", false);
-	const converted2 = convert(fs.readFileSync("SOURCE/TextGridExamples/input.TextGrid", "utf8"), "TextGrid", "input.wav", false);
+	const converted1 = convert({ data: JSON.parse(fs.readFileSync("SOURCE/TextGridExamples/input.json", "utf8")), type: "json", file: "input.wav" }, { matchGeneral: true });
+	const converted2 = convert({ data: JSON.parse(fs.readFileSync("SOURCE/TextGridExamples/input.TextGrid", "utf8")), type: "TextGrid", file: "input.wav" }, { matchGeneral: true });
 	for (let word in converted1.words) {
 		const word1 = converted1.words[word];
 		const word2 = converted2.words[word];

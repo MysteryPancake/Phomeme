@@ -80,14 +80,14 @@
 				</div>
 			</div>
 			<div id="step1" class="step">
-				<span class="steplabel">Step 1: Source</span>
-				<a class="largebutton blackbutton" onclick="transcribe();">Upload Vocals</a>
+				<span class="steplabel">Add a Voice Bank</span>
+				<a class="largebutton blackbutton" onclick="transcribe();">Create Vocals</a>
 				<span>OR</span>
 				<a class="largebutton blackbutton" onclick="loadPresets();">Load Preset</a>
 			</div>
 			<div id="step2" class="step">
 				<span class="steplabel">Step 2: Destination</span>
-				<a class="largebutton blackbutton" onclick="transcribe();">Upload Vocals</a>
+				<a class="largebutton blackbutton" onclick="transcribe();">Create Vocals</a>
 			</div>
 		</div>
 		<div id="popupoverlay" onclick="closePopup();"></div>
@@ -119,9 +119,14 @@
 					<span id="wavedetaillabel">16</span>
 				</div>
 				<div>
-					<label for="zoomamount">Zoom button amount</label>
-					<input type="range" id="zoomamount" min="1.01" max="3" value="1.25" step="0.01" oninput="setZoomAmount(this);">
-					<span id="zoomamountlabel">1.25x</span>
+					<label for="buttonzoomfactor">Zoom button scale factor</label>
+					<input type="range" id="buttonzoomfactor" min="1.01" max="3" value="1.25" step="0.01" oninput="setButtonZoomFactor(this);">
+					<span id="buttonzoomfactorlabel">1.25x</span>
+				</div>
+				<div>
+					<label for="pinchzoomfactor">Pinch zoom scale factor</label>
+					<input type="range" id="pinchzoomfactor" min="0.5" max="5" value="1" step="0.01" oninput="setPinchZoomFactor(this);">
+					<span id="pinchzoomfactorlabel">1x</span>
 				</div>
 				<div>
 					<label for="autoscroll">Scroll with playhead</label>

@@ -51,7 +51,6 @@ input[type="file"] {
 	-moz-user-select: none;
 	background-color: #00FF001A;
 	outline: 1px solid #00FF00;
-	pointer-events: none;
 	position: fixed;
 	user-select: none;
 	z-index: 9999;
@@ -183,7 +182,6 @@ input[type="file"] {
 	font-size: small;
 	font-weight: bold;
 	padding: 2px 6px;
-	pointer-events: none;
 	user-select: none;
 }
 
@@ -285,6 +283,7 @@ input[type="file"] {
 }
 
 #playhead {
+	-moz-user-select: none;
 	background-color: white;
 	height: calc(100vh - 188px);
 	mix-blend-mode: difference;
@@ -334,23 +333,23 @@ input[type="file"] {
 	border-top: 1px solid #00FF00;
 }
 
-.preset > span {
+.preset span {
 	display: block;
 	padding: 2px;
 }
 
-.preset > .presettitle {
+.preset .presettitle {
 	font-size: x-large;
 	font-weight: bold;
 }
 
-.preset > .presetauthor {
+.preset .presetauthor {
 	color: darkgray;
 	font-size: small;
 	font-style: italic;
 }
 
-.preset > .presetdesc {
+.preset .presetdesc {
 	font-style: italic;
 	margin-top: 8px;
 }
@@ -365,7 +364,7 @@ input[type="file"] {
 	padding: 16px;
 }
 
-#prefsmenu > h2 {
+#prefsmenu h2 {
 	border-bottom: 1px solid #00FF00;
 	display: inline-block;
 	font-weight: normal;
@@ -373,13 +372,13 @@ input[type="file"] {
 	padding-bottom: 8px;
 }
 
-#prefsmenu > h3 {
+#prefsmenu h3 {
 	border-bottom: 1px solid gray;
 	margin: 16px 0;
 	padding-bottom: 8px;
 }
 
-#prefsmenu > div {
+#prefsmenu div {
 	margin: 8px 0;
 }
 
@@ -629,4 +628,9 @@ input[type="file"] {
 
 #sidenav a.active {
 	background-color: #004000;
+}
+
+#popup h2, #popup h3, #popup div, .step span {
+	-moz-user-select: none;
+	user-select: none;
 }
