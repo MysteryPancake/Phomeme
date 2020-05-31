@@ -81,8 +81,8 @@
 			<p id="waiting">Waiting for the first response. Please be patient, this can take ages...</p>
 			<div id="options">
 				<div>
-					<label for="chooseMethod">Choose Method</label>
-					<select id="chooseMethod" onchange="updateDownloads();">
+					<label for="sortMethod">Sort Method</label>
+					<select id="sortMethod" onchange="updateDownloads();">
 						<option selected value="duration">Duration</option>
 						<option value="longest">Longest</option>
 						<option value="shortest">Shortest</option>
@@ -95,6 +95,10 @@
 					<label for="matchWords">Match Words</label>
 				</div>
 				<div>
+					<input checked type="checkbox" id="matchGeneral" onchange="updateDownloads();">
+					<label for="matchGeneral">Generalize Phoneme Symbols</label>
+				</div>
+				<div>
 					<input checked type="checkbox" id="matchOneForward" onchange="updateDownloads();">
 					<label for="matchOneForward">Match At Least One Forward</label>
 				</div>
@@ -103,16 +107,12 @@
 					<label for="matchOneBackward">Match At Least One Backward</label>
 				</div>
 				<div>
-					<input checked type="checkbox" id="matchGeneral" onchange="updateDownloads();">
-					<label for="matchGeneral">Generalize Matches</label>
+					<input type="checkbox" id="ignoreWordGaps" onchange="updateDownloads();">
+					<label for="ignoreWordGaps">Ignore Word Gaps While Matching Phonemes</label>
 				</div>
 				<div>
 					<input type="checkbox" id="matchPunctuation" onchange="updateDownloads();">
-					<label for="matchPunctuation">Match Punctuation</label>
-				</div>
-				<div>
-					<input type="checkbox" id="ignoreWordGaps" onchange="updateDownloads();">
-					<label for="ignoreWordGaps">Ignore Word Gaps While Matching Phones</label>
+					<label for="matchPunctuation">Match Punctuation (THIS IS BROKEN)</label>
 				</div>
 				<div>
 					<label for="overlapStart">Start Overlap</label>
@@ -128,9 +128,9 @@
 				</div>
 				<h3>Influence</h3>
 				<div>
-					<label for="methodWeight">Method Weight</label>
-					<input type="range" id="methodWeight" min="0" step="0.1" max="1" value="0.5" oninput="setWeight(this);">
-					<span id="methodWeightLabel">50%</span>
+					<label for="methodWeight">Sort Method Weight</label>
+					<input type="range" id="methodWeight" min="0" step="0.1" max="1" value="1" oninput="setWeight(this);">
+					<span id="methodWeightLabel">100%</span>
 				</div>
 				<div>
 					<label for="forwardWeight">Forward Weight</label>
@@ -152,7 +152,7 @@
 				<div>
 					<a download href="convertaudition.jsx">
 						<img src="aftereffects.png" alt="Adobe After Effects Icon" height="64" width="64">
-						<span>Convert to Adobe After Effects</span>
+						<span>Convert for Adobe After Effects</span>
 					</a>
 				</div>
 				<h3>Extras</h3>

@@ -10,7 +10,7 @@ const triphone = (function() {
 			return (b.start - a.start) / max.start;
 		},
 		duration: function(a, b, max, target) {
-			return (Math.abs(target.dur - a.dur) / max.diff) - (Math.abs(target.dur - b.dur) / max.diff);
+			return (Math.abs(target.dur - a.dur) - Math.abs(target.dur - b.dur)) / max.diff;
 		},
 		shortest: function(a, b, max) {
 			return (a.dur - b.dur) / max.dur;
@@ -20,25 +20,25 @@ const triphone = (function() {
 		}
 	};
 
-	function normalizedSequenceWeight(a, b, prop, max) {
-		return max[prop] === 0 ? 0 : (b[prop] / max[prop]) - (a[prop] / max[prop]);
+	function normalizedSequenceTotal(a, b, prop, max) {
+		return max[prop] === 0 ? 0 : (b[prop] - a[prop]) / max[prop];
 	}
 
 	function sequenceTotal(direction, phone, target) {
 		let seqTotal = 0;
 		let sourcePhone = phone[direction];
 		let targetPhone = target[direction];
-		while (sourcePhone && targetPhone) {
-			if (sourcePhone.label === targetPhone.label) {
+		if (sourcePhone === undefined && targetPhone === undefined) {
+			seqTotal++;
+		} else {
+			while (sourcePhone && targetPhone && sourcePhone.label === targetPhone.label) {
+				seqTotal++;
 				sourcePhone = sourcePhone[direction];
 				targetPhone = targetPhone[direction];
-				seqTotal++;
 				if (sourcePhone === undefined && targetPhone === undefined) {
 					seqTotal++;
 					break;
 				}
-			} else {
-				break;
 			}
 		}
 		return seqTotal;
@@ -50,7 +50,7 @@ const triphone = (function() {
 		}
 	}
 
-	function maxesForNormalizing(phone, target, params, max) {
+	function calculateMaxes(phone, target, params, max) {
 		phone.prevTotal = sequenceTotal("prev", phone, target);
 		updateMax("prevTotal", phone, max);
 		phone.nextTotal = sequenceTotal("next", phone, target);
@@ -80,25 +80,25 @@ const triphone = (function() {
 		const max = { prevTotal: 0, nextTotal: 0 };
 		for (let i = 0; i < phones.length; i++) {
 			const phone = phones[i];
-			maxesForNormalizing(phone, target, params, max);
-			if (params.matchOneBackward && phone.prevTotal > 0 && params.matchOneForward && phone.nextTotal > 0) {
+			calculateMaxes(phone, target, params, max);
+			const backwardMatch = params.matchOneBackward && phone.prevTotal > 0;
+			const forwardMatch = params.matchOneForward && phone.nextTotal > 0;
+			if (backwardMatch && forwardMatch) {
 				triphones.push(phone);
-			} else if (params.matchOneBackward && phone.prevTotal > 0) {
-				diphones.push(phone);
-			} else if (params.matchOneForward && phone.nextTotal > 0) {
+			} else if (backwardMatch || forwardMatch) {
 				diphones.push(phone);
 			}
 		}
 		let finalPhones = phones;
-		if (triphones.length) {
+		if (triphones.length > 0) {
 			finalPhones = triphones;
-		} else if (diphones.length) {
+		} else if (diphones.length > 0) {
 			finalPhones = diphones;
 		}
 		finalPhones.sort(function(a, b) {
 			const method = normalizedSortMethod[params.method](a, b, max, target);
-			const prev = normalizedSequenceWeight(a, b, "prevTotal", max);
-			const next = normalizedSequenceWeight(a, b, "nextTotal", max);
+			const prev = normalizedSequenceTotal(a, b, "prevTotal", max);
+			const next = normalizedSequenceTotal(a, b, "nextTotal", max);
 			return (method * params.methodWeight) + (prev * params.backwardWeight) + (next * params.forwardWeight);
 		});
 		return finalPhones[0];

@@ -6,7 +6,13 @@ const speechToSpeech = (function() {
 		if (phones) {
 			const match = triphone(phones, target, params);
 			const stretch = Math.min(8, target.dur / match.dur);
-			mix.addClip(match.file, target.label, target.start - params.overlapStart, target.end + params.overlapEnd, (match.start * stretch) - params.overlapStart, (match.end * stretch) + params.overlapEnd, stretch);
+			let startOverlap = params.overlapStart;
+			let endOverlap = params.overlapEnd;
+			if (startOverlap + endOverlap > match.dur * stretch) {
+				startOverlap = 0;
+				endOverlap = 0;
+			}
+			mix.addClip(match.file, target.label, target.start - startOverlap, target.end + endOverlap, (match.start * stretch) - startOverlap, (match.end * stretch) + endOverlap, stretch);
 		} else {
 			func(target);
 		}
@@ -18,6 +24,7 @@ const speechToSpeech = (function() {
 		const mix = new AuditionSession("session", 32, params.sampleRate);
 		if (params.matchWords && input.words && output.words) {
 			for (let word in output.words) {
+				if (!output.words.hasOwnProperty(word)) continue;
 				for (let i = 0; i < output.words[word].length; i++) {
 					addClip(output.words[word][i], input.words[word], mix, params, function(target) {
 						console.log("USING PHONES FOR: " + target.label);
@@ -32,6 +39,7 @@ const speechToSpeech = (function() {
 			}
 		} else {
 			for (let phone in output.phones) {
+				if (!output.phones.hasOwnProperty(phone)) continue;
 				for (let j = 0; j < output.phones[phone].length; j++) {
 					addClip(output.phones[phone][j], input.phones[phone], mix, params, function(target) {
 						console.log("MISSING PHONE: " + target.label);

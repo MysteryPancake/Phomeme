@@ -8,6 +8,7 @@ const convert = require("./convert.js");
 	const converted1 = convert({ data: JSON.parse(fs.readFileSync("SOURCE/TextGridExamples/input.json", "utf8")), type: "json", file: "input.wav" }, { matchGeneral: true });
 	const converted2 = convert({ data: JSON.parse(fs.readFileSync("SOURCE/TextGridExamples/input.TextGrid", "utf8")), type: "TextGrid", file: "input.wav" }, { matchGeneral: true });
 	for (let word in converted1.words) {
+		if (!converted1.words.hasOwnProperty(word)) continue;
 		const word1 = converted1.words[word];
 		const word2 = converted2.words[word];
 		if (word1 && word2) {
@@ -32,10 +33,12 @@ const convert = require("./convert.js");
 	}
 	const result = {};
 	for (let data in lookup) {
+		if (!lookup.hasOwnProperty(data)) continue;
 		let final;
 		let total = 0;
 		let largest = 0;
 		for (let symbol in lookup[data]) {
+			if (!lookup[data].hasOwnProperty(symbol)) continue;
 			const count = lookup[data][symbol];
 			largest = Math.max(largest, count);
 			if (count >= largest) {

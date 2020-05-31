@@ -99,6 +99,7 @@ const convert = (function() {
 					transcript[mode][text].push(data);
 					if (mode === "phones") {
 						for (let word in transcript.words) {
+							if (!transcript.words.hasOwnProperty(word)) continue;
 							for (let k = 0; k < transcript.words[word].length; k++) {
 								const phone = transcript.words[word][k];
 								if (xmin >= phone.start && xmax <= phone.end) {

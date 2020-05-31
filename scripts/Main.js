@@ -95,7 +95,7 @@ function setWeight(elem) {
 
 function updateDownloads() {
 	const final = (dictionary ? textToSpeech : speechToSpeech)(inputData, outputData, {
-		method: document.getElementById("chooseMethod").value,
+		method: document.getElementById("sortMethod").value,
 		matchWords: document.getElementById("matchWords").checked,
 		matchOneForward: document.getElementById("matchOneForward").checked,
 		matchOneBackward: document.getElementById("matchOneBackward").checked,
@@ -207,7 +207,7 @@ function finalResponse() {
 		}
 	} else {
 		document.getElementById("waiting").textContent = "Loading phone dictionary...";
-		document.getElementById("chooseMethod").value = "longest";
+		document.getElementById("sortMethod").value = "longest";
 		requestFile("GET", "phonedictionary.txt", "Couldn't load phone dictionary!", function(response) {
 			dictionary = {};
 			const lines = response.split("\n");
