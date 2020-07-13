@@ -2,7 +2,7 @@
 
 const triphone = (function() {
 
-	const normalizedSortMethod = {
+	const normalizedMethods = {
 		first: function(a, b, max) {
 			return (a.start - b.start) / max.start;
 		},
@@ -20,8 +20,13 @@ const triphone = (function() {
 		}
 	};
 
-	function normalizedSequenceTotal(a, b, prop, max) {
-		return max[prop] === 0 ? 0 : (b[prop] - a[prop]) / max[prop];
+	function normalizedContext(a, b, max) {
+		let normal = 0;
+		const maxTotal = max.prevTotal + max.nextTotal;
+		if (maxTotal > 0) {
+			normal = ((b.prevTotal + b.nextTotal) - (a.prevTotal + a.nextTotal)) / maxTotal;
+		}
+		return normal;
 	}
 
 	function sequenceTotal(direction, phone, target) {
@@ -96,10 +101,9 @@ const triphone = (function() {
 			finalPhones = diphones;
 		}
 		finalPhones.sort(function(a, b) {
-			const method = normalizedSortMethod[params.method](a, b, max, target);
-			const prev = normalizedSequenceTotal(a, b, "prevTotal", max);
-			const next = normalizedSequenceTotal(a, b, "nextTotal", max);
-			return (method * params.methodWeight) + (prev * params.backwardWeight) + (next * params.forwardWeight);
+			const method = normalizedMethods[params.method](a, b, max, target);
+			const context = normalizedContext(a, b, max);
+			return (method * params.methodWeight) + (context * params.contextWeight);
 		});
 		return finalPhones[0];
 	};

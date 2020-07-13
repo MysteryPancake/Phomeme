@@ -734,7 +734,6 @@ function ClipDragger(clip, left) {
 
 function Clip(session) {
 	this.session = session;
-	this.drag = 0;
 	this.scale = 1;
 	this.displayWave;
 	this.type = "clip";
@@ -832,12 +831,6 @@ function Clip(session) {
 		this.session.selectedClips.add(this);
 		this.parent.classList.add("active");
 	};
-	this.updateDrag = function(newPosition) {
-		player.pauseIfPlaying();
-		for (let clip of this.session.selectedClips) {
-			clip.setStart((newPosition - clip.drag) / this.session.pxPerSec);
-		}
-	};
 	this.clicked = function(e) {
 		if (!isLeftClick(e)) return;
 		e.preventDefault();
@@ -846,9 +839,6 @@ function Clip(session) {
 			this.session.deselectClips();
 		}
 		this.select();
-		for (let clip of this.session.selectedClips) {
-			clip.drag = e.pageX - (clip.startTime * this.session.pxPerSec);
-		}
 	};
 	this.elem.addEventListener("mousedown", this.clicked.bind(this));
 	this.setOutTime = function(time) {
@@ -1382,7 +1372,13 @@ function getZoomDraggerOffset(width) {
 
 function moved(e) {
 	if (!activeDrag) return;
-	if (activeDrag.type === "clip" || activeDrag.type === "clipdragger") {
+	if (activeDrag.type === "clip") {
+		e.preventDefault();
+		player.pauseIfPlaying();
+		for (let clip of activeSession.selectedClips) {
+			clip.setStart(clip.startTime + e.movementX / activeSession.pxPerSec);
+		}
+	} else if (activeDrag.type === "clipdragger") {
 		e.preventDefault();
 		activeDrag.updateDrag(e.pageX);
 	} else if (activeDrag.type === "zoomdrag") {

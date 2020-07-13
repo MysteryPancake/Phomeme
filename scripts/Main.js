@@ -106,8 +106,7 @@ function updateDownloads() {
 		overlapEnd: parseFloat(document.getElementById("overlapEnd").value),
 		sampleRate: parseInt(document.getElementById("sampleRate").value),
 		methodWeight: parseFloat(document.getElementById("methodWeight").value),
-		forwardWeight: parseFloat(document.getElementById("forwardWeight").value),
-		backwardWeight: parseFloat(document.getElementById("backwardWeight").value)
+		contextWeight: parseFloat(document.getElementById("contextWeight").value)
 	});
 	addLink("session", final, "application/xml", "sesx");
 }
