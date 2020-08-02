@@ -32,7 +32,7 @@
 			</select>
 			<div id="custom" class="preset">
 				<input multiple required type="file" id="inputAudio" accept="audio/*,application/json,.json,.TextGrid" onchange="checkJson(this);">
-				<input type="image" alt="Microphone" id="inputMic" src="microphone.png" width="24" height="24" onclick="return microphone(this);">
+				<input type="image" alt="Microphone" id="inputMic" src="icons/microphone.png" width="24" height="24" onclick="return microphone(this);">
 				<audio controls id="inputPlayer"></audio>
 				<code contenteditable="true" id="inputScript" data-placeholder="Type the transcript of the input here"></code>
 			</div>
@@ -70,7 +70,7 @@
 			</div>
 			<h3>Destination</h3>
 			<input multiple type="file" id="outputAudio" accept="audio/*,application/json,.json,.TextGrid,text/plain,.txt" onchange="checkJson(this);">
-			<input type="image" alt="Microphone" id="outputMic" src="microphone.png" width="24" height="24" onclick="return microphone(this);">
+			<input type="image" alt="Microphone" id="outputMic" src="icons/microphone.png" width="24" height="24" onclick="return microphone(this);">
 			<audio controls id="outputPlayer"></audio>
 			<code contenteditable="true" id="outputScript" data-placeholder="Type the transcript of the output here"></code>
 			<input type="submit" value="Submit">
@@ -81,108 +81,122 @@
 			<p id="waiting">Waiting for the first response. Please be patient, this can take ages...</p>
 			<div id="options">
 				<div>
-					<label for="sortMethod">Sort Method</label>
-					<select id="sortMethod" onchange="updateDownloads();">
-						<option selected value="duration">Duration</option>
-						<option value="longest">Longest</option>
-						<option value="shortest">Shortest</option>
-						<option value="first">First</option>
-						<option value="last">Last</option>
-					</select>
-				</div>
-				<div>
 					<input checked type="checkbox" id="matchWords" onchange="updateDownloads();">
-					<label for="matchWords">Match Words</label>
+					<label for="matchWords">Match words</label>
 				</div>
 				<div>
 					<input checked type="checkbox" id="matchGeneral" onchange="updateDownloads();">
-					<label for="matchGeneral">Generalize Phoneme Symbols</label>
+					<label for="matchGeneral">Generalize phoneme symbols</label>
 				</div>
 				<div>
 					<input checked type="checkbox" id="matchOneForward" onchange="updateDownloads();">
-					<label for="matchOneForward">Match At Least One Forward</label>
+					<label for="matchOneForward">Match at least one forward</label>
 				</div>
 				<div>
 					<input checked type="checkbox" id="matchOneBackward" onchange="updateDownloads();">
-					<label for="matchOneBackward">Match At Least One Backward</label>
+					<label for="matchOneBackward">Match at least one backward</label>
 				</div>
 				<div>
 					<input type="checkbox" id="ignoreWordGaps" onchange="updateDownloads();">
-					<label for="ignoreWordGaps">Ignore Word Gaps While Matching Phonemes</label>
+					<label for="ignoreWordGaps">Ignore word gaps while matching phonemes</label>
 				</div>
 				<div>
 					<input type="checkbox" id="matchPunctuation" onchange="updateDownloads();">
-					<label for="matchPunctuation">Match Punctuation (THIS IS BROKEN)</label>
-				</div>
-				<div>
-					<label for="overlapStart">Start Overlap</label>
-					<input type="number" id="overlapStart" value="0" step="0.01" onchange="updateDownloads();">
-				</div>
-				<div>
-					<label for="overlapEnd">End Overlap</label>
-					<input type="number" id="overlapEnd" value="0.025" step="0.01" onchange="updateDownloads();">
-				</div>
-				<div>
-					<label for="sampleRate">Sample Rate</label>
-					<input type="number" id="sampleRate" value="44100" step="1000" onchange="updateDownloads();">
+					<label for="matchPunctuation">Match punctuation (todo)</label>
 				</div>
 				<h3>Influence</h3>
 				<div>
-					<label for="methodWeight">Sort Method Weight</label>
+					<label for="sortMethod">Sort method</label>
+					<select id="sortMethod" onchange="updateMethodLabel(this);">
+						<option selected value="duration">Closest duration</option>
+						<option value="longest">Longest duration</option>
+						<option value="shortest">Shortest duration</option>
+						<option value="first">Earliest start time</option>
+						<option value="last">Latest start time</option>
+					</select>
+				</div>
+				<div>
+					<label for="methodWeight" id="methodLabel">Sort by closest duration</label>
 					<input type="range" id="methodWeight" min="0" step="0.1" max="1" value="1" oninput="setWeight(this);">
 					<span id="methodWeightLabel">100%</span>
 				</div>
 				<div>
-					<label for="contextWeight">Context Weight</label>
+					<label for="contextWeight">Sort by closest context</label>
 					<input type="range" id="contextWeight" min="0" step="0.1" max="1" value="1" oninput="setWeight(this);">
 					<span id="contextWeightLabel">100%</span>
 				</div>
 				<div>
-					<label for="pitchWeight">Pitch Weight (TODO)</label>
+					<label for="pitchWeight">Sort by closest pitch (todo)</label>
 					<input type="range" id="pitchWeight" min="0" step="0.1" max="1" value="0" oninput="setWeight(this);">
 					<span id="pitchWeightLabel">0%</span>
 				</div>
 				<div>
-					<label for="volumeWeight">Volume Weight (TODO)</label>
+					<label for="volumeWeight">Sort by closest volume (todo)</label>
 					<input type="range" id="volumeWeight" min="0" step="0.1" max="1" value="0" oninput="setWeight(this);">
 					<span id="volumeWeightLabel">0%</span>
+				</div>
+				<h3>Correction</h3>
+				<div>
+					<input checked type="checkbox" id="transferPitch" onchange="updateDownloads();">
+					<label for="transferPitch">Transfer pitch</label>
+				</div>
+				<div>
+					<input checked type="checkbox" id="transferVolume" onchange="updateDownloads();">
+					<label for="transferVolume">Transfer volume</label>
+				</div>
+				<div>
+					<input checked type="checkbox" id="transferDuration" onchange="updateDownloads();">
+					<label for="transferDuration">Transfer duration</label>
+				</div>
+				<h3>Session</h3>
+				<div>
+					<label for="sampleRate">Sample rate</label>
+					<input type="number" id="sampleRate" value="44100" step="1000" onchange="updateDownloads();">
+				</div>
+				<div>
+					<label for="overlapStart">Start overlap</label>
+					<input type="number" id="overlapStart" value="0" step="0.01" onchange="updateDownloads();">
+				</div>
+				<div>
+					<label for="overlapEnd">End overlap</label>
+					<input type="number" id="overlapEnd" value="0.025" step="0.01" onchange="updateDownloads();">
 				</div>
 				<h3>Downloads</h3>
 				<div>
 					<a id="session">
-						<img src="audition.png" alt="Adobe Audition Icon" height="64" width="64">
+						<img src="icons/audition.png" alt="Adobe Audition Icon" height="64" width="64">
 						<span>Download for Adobe Audition</span>
 					</a>
 				</div>
 				<div>
 					<a download href="convertaudition.jsx">
-						<img src="aftereffects.png" alt="Adobe After Effects Icon" height="64" width="64">
+						<img src="icons/aftereffects.png" alt="Adobe After Effects Icon" height="64" width="64">
 						<span>Convert for Adobe After Effects</span>
 					</a>
 				</div>
 				<h3>Extras</h3>
 				<div>
 					<a id="input">
-						<img src="json.png" alt="JSON Icon" height="64" width="64">
+						<img src="icons/json.png" alt="JSON Icon" height="64" width="64">
 						<span>Source JSON</span>
 					</a>
 				</div>
 				<div>
 					<a id="output">
-						<img src="json.png" alt="JSON Icon" height="64" width="64">
+						<img src="icons/json.png" alt="JSON Icon" height="64" width="64">
 						<span>Destination JSON</span>
 					</a>
 				</div>
 				<div>
 					<a id="source">
-						<img src="audio.png" alt="Audio Icon" height="64" width="64">
-						<span>Source Audio</span>
+						<img src="icons/audio.png" alt="Audio Icon" height="64" width="64">
+						<span>Source audio</span>
 					</a>
 				</div>
 				<div>
 					<a id="destination">
-						<img src="audio.png" alt="Audio Icon" height="64" width="64">
-						<span>Destination Audio</span>
+						<img src="icons/audio.png" alt="Audio Icon" height="64" width="64">
+						<span>Destination audio</span>
 					</a>
 				</div>
 			</div>

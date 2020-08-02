@@ -6,45 +6,61 @@ const convert = (function() {
 		return "!?.".indexOf(char) !== -1;
 	}*/
 
-	function convertSentence(dataParts, params) {
-		//const words = dataParts.data.toLowerCase().match(params.matchPunctuation ? /\w+(?:'\w+)*|[!?.](?![!?.])/g : /\w+(?:'\w+)*/g);
-		const words = dataParts.data.toLowerCase().match(/\w+(?:'\w+)*/g);
+	function convertJson(transcript, dataParts, params) {
 		const prev = {};
-		const transcript = {
-			transcript: dataParts.data,
-			words: [],
-			phones: []
-		};
-		for (let i = 0; i < words.length; i++) {
-			const word = words[i];
-			//if (isPunctuation(word)) continue;
+		transcript.transcript = dataParts.data.transcript;
+		for (let i = 0; i < dataParts.data.words.length; i++) {
+			const wordObj = dataParts.data.words[i];
+			if (wordObj.case === "not-found-in-audio") continue;
+			const word = wordObj.word.toLowerCase();
+			//const char = dataParts.data.transcript.charAt(wordObj.endOffset);
+			transcript.words[word] = transcript.words[word] || [];
 			const wordData = {
+				start: wordObj.start,
+				end: wordObj.end,
+				dur: wordObj.end - wordObj.start,
+				label: word,
+				//prev: params.matchPunctuation && isPunctuation(prev.char) ? prev.char : prev.word,
 				prev: prev.word,
-				label: word
+				phones: [],
+				file: dataParts.file
 			};
 			if (prev.word) {
+				//prev.word.next = params.matchPunctuation && isPunctuation(char) ? char : word;
 				prev.word.next = wordData;
 			}
-			transcript.words.push(wordData);
+			transcript.words[word].push(wordData);
+			prev.word = wordData;
+			//prev.char = char;
 			if (!params.ignoreWordGaps) {
 				prev.phone = undefined;
 			}
-			const phones = dictionary[word];
-			if (phones) {
-				wordData.phones = [];
-				for (let j = 0; j < phones.length; j++) {
-					const phoneData = {
-						prev: prev.phone,
-						label: phones[j]
-					};
-					if (prev.phone) {
-						prev.phone.next = phoneData;
+			let start = wordObj.start;
+			for (let j = 0; j < wordObj.phones.length; j++) {
+				const phoneObj = wordObj.phones[j];
+				let phone = phoneObj.phone;
+				if (params.matchGeneral) {
+					const generalization = lookup.gentle && lookup.gentle[phone];
+					if (generalization !== undefined) {
+						phone = generalization;
 					}
-					wordData.phones.push(phoneData);
-					transcript.phones.push(phoneData);
 				}
-			} else {
-				console.log("MISSING DEFINITION: " + word);
+				transcript.phones[phone] = transcript.phones[phone] || [];
+				const phoneData = {
+					start: start,
+					end: start + phoneObj.duration,
+					dur: phoneObj.duration,
+					label: phone,
+					prev: prev.phone,
+					file: dataParts.file
+				};
+				if (prev.phone) {
+					prev.phone.next = phoneData;
+				}
+				wordData.phones.push(phoneData);
+				transcript.phones[phone].push(phoneData);
+				start += phoneObj.duration;
+				prev.phone = phoneData;
 			}
 		}
 		return transcript;
@@ -171,6 +187,7 @@ const convert = (function() {
 								dur: phoneEnd - phoneStart,
 								label: phone,
 								prev: prev.phone,
+								volume: parseFloat(phoneParts[4]),
 								file: dataParts.file
 							};
 							if (prev.phone) {
@@ -229,61 +246,72 @@ const convert = (function() {
 		return transcript;
 	}
 
-	function convertJson(transcript, dataParts, params) {
+	function convertMidi(transcript, dataParts) {
+		for (let i = 0; i < dataParts.data.tracks.length; i++) {
+			const track = dataParts.data.tracks[i];
+			let prev;
+			for (let j = 0; j < track.notes.length; j++) {
+				const note = track.notes[j];
+				transcript.phones[note.midi] = transcript.phones[note.midi] || [];
+				const phoneData = {
+					start: note.time,
+					end: note.time + note.duration,
+					dur: note.duration,
+					label: note.midi.toString(), // Probably should use note.name but might cause issues with object indexing
+					pitch: note.midi,
+					volume: note.velocity,
+					file: dataParts.file,
+					prev: prev
+				};
+				if (prev) {
+					prev.next = phoneData;
+				}
+				transcript.phones[note.midi].push(phoneData);
+				prev = phoneData;
+			}
+		}
+		return transcript;
+	}
+
+	function convertSentence(dataParts, params) {
+		//const words = dataParts.data.toLowerCase().match(params.matchPunctuation ? /\w+(?:'\w+)*|[!?.](?![!?.])/g : /\w+(?:'\w+)*/g);
+		const words = dataParts.data.toLowerCase().match(/\w+(?:'\w+)*/g);
 		const prev = {};
-		transcript.transcript = dataParts.data.transcript;
-		for (let i = 0; i < dataParts.data.words.length; i++) {
-			const wordObj = dataParts.data.words[i];
-			if (wordObj.case === "not-found-in-audio") continue;
-			const word = wordObj.word.toLowerCase();
-			//const char = dataParts.data.transcript.charAt(wordObj.endOffset);
-			transcript.words[word] = transcript.words[word] || [];
+		const transcript = {
+			transcript: dataParts.data,
+			words: [],
+			phones: []
+		};
+		for (let i = 0; i < words.length; i++) {
+			const word = words[i];
+			//if (isPunctuation(word)) continue;
 			const wordData = {
-				start: wordObj.start,
-				end: wordObj.end,
-				dur: wordObj.end - wordObj.start,
-				label: word,
-				//prev: params.matchPunctuation && isPunctuation(prev.char) ? prev.char : prev.word,
 				prev: prev.word,
-				phones: [],
-				file: dataParts.file
+				label: word
 			};
 			if (prev.word) {
-				//prev.word.next = params.matchPunctuation && isPunctuation(char) ? char : word;
 				prev.word.next = wordData;
 			}
-			transcript.words[word].push(wordData);
-			prev.word = wordData;
-			//prev.char = char;
+			transcript.words.push(wordData);
 			if (!params.ignoreWordGaps) {
 				prev.phone = undefined;
 			}
-			let start = wordObj.start;
-			for (let j = 0; j < wordObj.phones.length; j++) {
-				const phoneObj = wordObj.phones[j];
-				let phone = phoneObj.phone;
-				if (params.matchGeneral) {
-					const generalization = lookup.gentle && lookup.gentle[phone];
-					if (generalization !== undefined) {
-						phone = generalization;
+			const phones = dictionary[word];
+			if (phones) {
+				wordData.phones = [];
+				for (let j = 0; j < phones.length; j++) {
+					const phoneData = {
+						prev: prev.phone,
+						label: phones[j]
+					};
+					if (prev.phone) {
+						prev.phone.next = phoneData;
 					}
+					wordData.phones.push(phoneData);
+					transcript.phones.push(phoneData);
 				}
-				transcript.phones[phone] = transcript.phones[phone] || [];
-				const phoneData = {
-					start: start,
-					end: start + phoneObj.duration,
-					dur: phoneObj.duration,
-					label: phone,
-					prev: prev.phone,
-					file: dataParts.file
-				};
-				if (prev.phone) {
-					prev.phone.next = phoneData;
-				}
-				wordData.phones.push(phoneData);
-				transcript.phones[phone].push(phoneData);
-				start += phoneObj.duration;
-				prev.phone = phoneData;
+			} else {
+				console.log("MISSING DEFINITION: " + word);
 			}
 		}
 		return transcript;
@@ -295,15 +323,16 @@ const convert = (function() {
 			phones: {}
 		};
 		switch (dataParts.type.toLowerCase()) {
+		case "json":
+			return convertJson(transcript, dataParts, params);
 		case "textgrid":
 			return convertTextGrid(transcript, dataParts, params);
 		case "vdat":
 			return convertVdat(transcript, dataParts, params);
 		case "cues":
 			return convertCues(transcript, dataParts);
-		case "json": {
-			return convertJson(transcript, dataParts, params);
-		}
+		case "midi":
+			return convertMidi(transcript, dataParts);
 		default:
 			return convertSentence(dataParts, params);
 		}

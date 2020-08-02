@@ -93,6 +93,11 @@ function setWeight(elem) {
 	updateDownloads();
 }
 
+function updateMethodLabel(elem) {
+	document.getElementById("methodLabel").textContent = "Sort by " + elem.options[elem.selectedIndex].text.toLowerCase();
+	updateDownloads();
+}
+
 function updateDownloads() {
 	const final = (dictionary ? textToSpeech : speechToSpeech)(inputData, outputData, {
 		method: document.getElementById("sortMethod").value,
@@ -106,7 +111,12 @@ function updateDownloads() {
 		overlapEnd: parseFloat(document.getElementById("overlapEnd").value),
 		sampleRate: parseInt(document.getElementById("sampleRate").value),
 		methodWeight: parseFloat(document.getElementById("methodWeight").value),
-		contextWeight: parseFloat(document.getElementById("contextWeight").value)
+		contextWeight: parseFloat(document.getElementById("contextWeight").value),
+		pitchWeight: parseFloat(document.getElementById("pitchWeight").value),
+		volumeWeight: parseFloat(document.getElementById("volumeWeight").value),
+		transferPitch: document.getElementById("transferPitch").checked,
+		transferVolume: document.getElementById("transferVolume").checked,
+		transferDuration: document.getElementById("transferDuration").checked
 	});
 	addLink("session", final, "application/xml", "sesx");
 }

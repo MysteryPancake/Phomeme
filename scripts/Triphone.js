@@ -105,7 +105,7 @@ const triphone = (function() {
 			const context = normalizedContext(a, b, max);
 			return (method * params.methodWeight) + (context * params.contextWeight);
 		});
-		return finalPhones[0];
+		return finalPhones;
 	};
 
 }());
