@@ -31,33 +31,39 @@ const speechToSpeech = (function() {
 	}
 
 	return function(source, destination, params) {
+		// Convert input and output to intermediate format
 		const input = convert(source, params);
 		const output = convert(destination, params);
 		const mix = new AuditionSession("session", 32, params.sampleRate);
 		if (params.matchWords && input.words && output.words) {
-			for (let word in output.words) {
-				if (!output.words.hasOwnProperty(word)) continue;
-				for (let i = 0; i < output.words[word].length; i++) {
-					addClip(output.words[word][i], input.words[word], mix, params, function(target) {
+			// Attempt word level alignment
+			output.words.forEach((word, label) => {
+				for (let i = 0; i < word.length; i++) {
+					addClip(word[i], input.words.get(label), mix, params, function(target) {
+						// Fallback to phoneme level alignment if word is absent from input
 						console.log(`USING PHONES FOR: ${target.label}`);
 						for (let j = 0; j < target.phones.length; j++) {
 							const data = target.phones[j];
 							addClip(data, input.phones[data.label], mix, params, function(phone) {
+								// Move on if no words or phonemes match
 								console.log(`MISSING PHONE: ${phone.label}`);
 							});
 						}
 					});
 				}
-			}
+			});
 		} else {
-			for (let phone in output.phones) {
-				if (!output.phones.hasOwnProperty(phone)) continue;
-				for (let j = 0; j < output.phones[phone].length; j++) {
-					addClip(output.phones[phone][j], input.phones[phone], mix, params, function(target) {
-						if (target.pitch === undefined) {
+			// Attempt phoneme level alignment
+			output.phones.forEach((phone, label) => {
+				for (let j = 0; j < phone.length; j++) {
+					addClip(phone[j], input.phones.get(label), mix, params, function(target) {
+						// Temporary code for testing pitch matching mode
+						//if (target.pitch === undefined) {
+							// Move on if no phonemes match
 							console.log(`MISSING PHONE: ${target.label}`);
-						} else {
+						/*} else {
 							// For now, assume MIDI pitch matching mode (temporary)
+							// This code is garbage, make a better solution
 							const availablePitches = Object.keys(input.phones);
 							let smallestDiff;
 							let closestPitch;
@@ -79,13 +85,13 @@ const speechToSpeech = (function() {
 								joinedArray = joinedArray.concat(input.phones[closestPitch2]);
 							}
 							console.log(`USING ALTERNATIVE FOR: ${target.label} (${smallestDiff} SEMITONE DIFFERENCE)`);
-							addClip(output.phones[phone][j], joinedArray, mix, params, function(target) {
+							addClip(phone[j], joinedArray, mix, params, function(target) {
 								console.log("MISSING ALTERNATIVES!");
 							});
-						}
+						}*/
 					});
 				}
-			}
+			});
 		}
 		return mix.compile();
 	};

@@ -19,11 +19,11 @@
 	</head>
 	<body onload="setup();">
 		<div id="topnav">
-			<h1 id="title" class="button" onclick="openPrefs();">Phomeme</h1>
+			<h1 id="title" class="button" onmousedown="openPrefs();">Phomeme</h1>
 			<div class="dropdown">
-				<a class="topbutton autoclosebutton" onclick="toggle(this);">File</a>
+				<a class="topbutton autoclosebutton" onmousedown="toggle(this);">File</a>
 				<div class="dropcontent autoclose">
-					<a class="dropoption" onclick="newSession();">New</a>
+					<a class="dropoption" onmousedown="newSession(event);">New</a>
 					<div>
 						<label for="openfile" class="dropoption">Open</label>
 						<input multiple type="file" accept=".phomeme" id="openfile" onchange="loadSession(this);">
@@ -33,20 +33,20 @@
 						<label for="importfile" class="dropoption">Import</label>
 						<input multiple type="file" accept="audio/*,video/*,application/json,.json,.TextGrid,.txt" id="importfile" onchange="importFile(this);">
 					</div>
-					<a class="dropoption" onclick="exportSession();">Export</a>
+					<a class="dropoption" onmousedown="exportSession();">Export</a>
 				</div>
 			</div>
 			<div class="dropdown">
-				<a class="topbutton autoclosebutton" onclick="toggle(this);">Edit</a>
+				<a class="topbutton autoclosebutton" onmousedown="toggle(this);">Edit</a>
 				<div class="dropcontent autoclose">
 					<a class="dropoption">Undo</a>
 					<a class="dropoption">Redo</a>
 				</div>
 			</div>
 			<div class="dropdown">
-				<a class="topbutton autoclosebutton" onclick="toggle(this);">Align</a>
+				<a class="topbutton autoclosebutton" onmousedown="toggle(this);">Align</a>
 				<div class="dropcontent autoclose">
-					<a class="dropoption" onclick="transcribe();">Gentle</a>
+					<a class="dropoption" onmousedown="transcribe();">Gentle</a>
 					<a class="dropoption">WebMAUS</a>
 				</div>
 			</div>
@@ -73,21 +73,21 @@
 				</div>
 				<div id="playback">
 					<span id="time" contenteditable="true" oninput="parseTime(this);">0:00:00.000</span>
-					<a id="playbutton" class="playbackbutton blackbutton" onclick="togglePlayback();">&#9658;</a>
-					<a id="zoomin" class="playbackbutton blackbutton" onclick="zoomIn();">Zoom In</a>
-					<a id="zoomout" class="playbackbutton blackbutton" onclick="zoomOut();">Zoom Out</a>
-					<a id="recordbutton" class="playbackbutton blackbutton" onclick="record(this);">Record</a>
+					<a id="playbutton" class="playbackbutton blackbutton" onmousedown="togglePlayback();">&#9658;</a>
+					<a id="zoomin" class="playbackbutton blackbutton" onmousedown="zoomIn();">Zoom In</a>
+					<a id="zoomout" class="playbackbutton blackbutton" onmousedown="zoomOut();">Zoom Out</a>
+					<a id="recordbutton" class="playbackbutton blackbutton" onmousedown="record(this);">Record</a>
 				</div>
 			</div>
 			<div id="step1" class="step">
 				<span class="steplabel">Add a Voice Bank</span>
-				<a class="largebutton blackbutton" onclick="transcribe();">Create Vocals</a>
+				<a class="largebutton blackbutton" onmousedown="transcribe();">Create Vocals</a>
 				<span>OR</span>
-				<a class="largebutton blackbutton" onclick="loadPresets();">Load Preset</a>
+				<a class="largebutton blackbutton" onmousedown="loadPresets();">Load Preset</a>
 			</div>
 			<div id="step2" class="step">
 				<span class="steplabel">Step 2: Destination</span>
-				<a class="largebutton blackbutton" onclick="transcribe();">Create Vocals</a>
+				<a class="largebutton blackbutton" onmousedown="transcribe();">Create Vocals</a>
 			</div>
 		</div>
 		<div id="popupoverlay" onclick="closePopup();"></div>
@@ -97,7 +97,7 @@
 				<div id="transcriptbuttons">
 					<label for="transcriptupload" id="uploadbutton" class="blackbutton">Upload</label>
 					<input multiple type="file" accept="audio/*,application/json,.json,.TextGrid" id="transcriptupload" onchange="checkJson(this);">
-					<input type="image" alt="Microphone" src="icons/microphone.png" id="transcriptmicrophone" width="32" height="32" onclick="recordTranscript(this);">
+					<input type="image" alt="Microphone" src="icons/microphone.png" id="transcriptmicrophone" width="32" height="32" onmousedown="recordTranscript(this);">
 					<audio controls id="transcriptplayer"></audio>
 				</div>
 				<div class="padded">
@@ -105,7 +105,7 @@
 					<span id="interimtranscript"></span>
 				</div>
 				<textarea id="transcript" class="padded" rows="16" placeholder="Type the transcript here"></textarea>
-				<a id="submitbutton" class="blackbutton" onclick="submitTranscript();">Submit</a>
+				<a id="submitbutton" class="blackbutton" onmousedown="submitTranscript();">Submit</a>
 			</div>
 			<div id="presetmenu">
 				<div id="presets"></div>
@@ -142,7 +142,7 @@
 				<h3>New Session</h3>
 				<label for="sessionname">Session name</label>
 				<input type="text" id="sessionname" class="padded">
-				<a id="createbutton" class="blackbutton" onclick="createSession();">Create</a>
+				<a id="createbutton" class="blackbutton" onmousedown="createSession();">Create</a>
 			</div>
 		</div>
 		<div id="boxselect"></div>

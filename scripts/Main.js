@@ -114,6 +114,7 @@ function updateDownloads() {
 		contextWeight: parseFloat(document.getElementById("contextWeight").value),
 		pitchWeight: parseFloat(document.getElementById("pitchWeight").value),
 		volumeWeight: parseFloat(document.getElementById("volumeWeight").value),
+		contextDepth: parseInt(document.getElementById("contextDepth").value),
 		transferPitch: document.getElementById("transferPitch").checked,
 		transferVolume: document.getElementById("transferVolume").checked,
 		transferDuration: document.getElementById("transferDuration").checked

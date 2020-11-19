@@ -28,7 +28,6 @@ let recognition;
 let sessionName;
 let playlistArea;
 let popupOverlay;
-let navigationArea;
 let activeSession;
 let activeContext;
 let waveDetailElem;
@@ -56,7 +55,6 @@ let ignoreScroll = false;
 const wheelZoom = {};
 const tabList = [];
 const fileList = [];
-const peakScale = 0.7;
 const minCanvasWidth = 1;
 const microphoneConstraints = { audio: { autoGainControl: false, echoCancellation: false, noiseSuppression: false }, video: false };
 const requestFrame = window.requestAnimationFrame || window.webkitRequestAnimationFrame || window.mozRequestAnimationFrame || window.oRequestAnimationFrame || window.msRequestAnimationFrame || function(e) { return window.setTimeout(e, 1000 / 60); };
@@ -111,7 +109,7 @@ function ListedFile(file) {
 	this.elem.textContent = file.name;
 	this.checkForTranscript = function() {
 		if (this.file.type !== "audio/wav") return;
-		readFile(this.file, function(content) {
+		readFile(this.file).then(function(content) {
 			const vdat = content.indexOf("PLAINTEXT");
 			if (vdat !== -1) {
 				const convertMe = content.slice(vdat);
@@ -139,7 +137,7 @@ function ListedFile(file) {
 		}
 		this.select();
 	};
-	this.elem.addEventListener("click", this.clicked.bind(this));
+	this.elem.addEventListener("mousedown", this.clicked.bind(this));
 	this.doubleClick = function(e) {
 		if (this.file.type === "session") {
 			setMenu("editor");
@@ -367,30 +365,34 @@ function SessionPlayer() {
 			this.play();
 		}
 	};
-	this.decode = function(data, func, err) {
+	this.decode = function(data) {
 		this.ensureContext();
-		this.context.decodeAudioData(data, func, err);
+		return this.context.decodeAudioData(data);
 	};
 }
 
 const player = new SessionPlayer();
 
-function fileBuffer(file, func, err) {
-	const reader = new FileReader();
-	reader.onload = function() {
-		player.decode(this.result, func, err);
-	};
-	reader.onerror = err;
-	reader.readAsArrayBuffer(file);
+function fileBuffer(file) {
+	return new Promise((resolve, reject) => {
+		const reader = new FileReader();
+		reader.onload = function() {
+			player.decode(this.result).then(resolve).catch(reject);
+		};
+		reader.onerror = reject;
+		reader.readAsArrayBuffer(file);
+	});
 }
 
-function readFile(file, func, err) {
-	const reader = new FileReader();
-	reader.onload = function() {
-		func(this.result, file.name, file.type);
-	};
-	reader.onerror = err;
-	reader.readAsText(file, "UTF-8");
+function readFile(file) {
+	return new Promise((resolve, reject) => {
+		const reader = new FileReader();
+		reader.onload = function() {
+			resolve(this.result);
+		};
+		reader.onerror = reject;
+		reader.readAsText(file, "UTF-8");
+	});
 }
 
 function padTime(num, size) {
@@ -489,39 +491,6 @@ function forceTime() {
 
 function togglePlayback() {
 	player.togglePlayback();
-}
-
-function urlBuffer(url, func, err) {
-	const audioRequest = new XMLHttpRequest();
-	audioRequest.open("GET", url, true);
-	audioRequest.responseType = "arraybuffer";
-	audioRequest.onreadystatechange = function() {
-		if (this.readyState === 4) {
-			if (this.status === 200) {
-				player.decode(this.response, func, err);
-			} else if (this.status === 404 && err) {
-				err();
-			}
-		}
-	};
-	audioRequest.onerror = err;
-	audioRequest.send();
-}
-
-function urlJson(url, func, err) {
-	const jsonRequest = new XMLHttpRequest();
-	jsonRequest.open("GET", url, true);
-	jsonRequest.onreadystatechange = function() {
-		if (this.readyState === 4) {
-			if (this.status === 200) {
-				func(JSON.parse(this.responseText));
-			} else if (this.status === 404 && err) {
-				err();
-			}
-		}
-	};
-	jsonRequest.onerror = err;
-	jsonRequest.send();
 }
 
 function updateClipCanvases() {
@@ -765,13 +734,13 @@ function Clip(session) {
 			const x = k / lines * this.elem.width;
 			const y = this.elem.height * 0.5;
 			const index = this.displayWave[Math.floor(k * player.sampleRate / scale + offset)];
-			this.context.lineTo(x, y + (index || 0) * y * peakScale);
+			this.context.lineTo(x, y - (index || 0) * y);
 		}
 		this.context.stroke();
-		this.context.lineWidth = 1;
-		this.context.strokeStyle = "#00FF00";
-		drawLine(this.context, 0, 16, this.elem.width, 16);
-		drawLine(this.context, 0, this.elem.height - 16, this.elem.width, this.elem.height - 16);
+		//this.context.lineWidth = 1;
+		//this.context.strokeStyle = "#00FF00";
+		//drawLine(this.context, 0, 16, this.elem.width, 16);
+		//drawLine(this.context, 0, this.elem.height - 16, this.elem.width, this.elem.height - 16);
 		//this.drawLabel();
 	};
 	/*this.drawLabel = function() {
@@ -835,9 +804,6 @@ function Clip(session) {
 		if (!isLeftClick(e)) return;
 		e.preventDefault();
 		activeDrag = this;
-		if (!e.shiftKey) {
-			this.session.deselectClips();
-		}
 		this.select();
 	};
 	this.elem.addEventListener("mousedown", this.clicked.bind(this));
@@ -959,7 +925,7 @@ function Clip(session) {
 		this.drawLoading();
 		this.leftDragger.deny();
 		this.rightDragger.deny();
-		fileBuffer(file, this.loadedFile.bind(this), this.drawError.bind(this));
+		fileBuffer(file).then(this.loadedFile.bind(this)).catch(this.drawError.bind(this));
 	};
 	this.changeTrack = function(track) {
 		this.track.removeClip(this);
@@ -1118,7 +1084,7 @@ function FileTab(session) {
 		e.stopPropagation();
 		this.remove();
 	}.bind(this));
-	this.elem.addEventListener("click", this.activate.bind(this));
+	this.elem.addEventListener("mousedown", this.activate.bind(this));
 	fileTabs.appendChild(this.elem);
 	tabList.push(this);
 }
@@ -1637,7 +1603,6 @@ function dropFile(e) {
 }
 
 function activateContext(e) {
-	e.preventDefault();
 	if (activeContext) {
 		activeContext.classList.remove("activecontext");
 	}
@@ -1653,7 +1618,6 @@ function setup() {
 	finalTranscript = document.getElementById("finaltranscript");
 	waveDetailElem = document.getElementById("wavedetaillabel");
 	transcriptMenu = document.getElementById("transcriptmenu");
-	navigationArea = document.getElementById("navigationarea");
 	transcriptElem = document.getElementById("transcript");
 	popupOverlay = document.getElementById("popupoverlay");
 	playlistArea = document.getElementById("playlistarea");
@@ -1691,7 +1655,7 @@ function setup() {
 	playlistArea.addEventListener("scroll", navScroll);
 	playlistArea.addEventListener("wheel", navWheel);
 	playback.addEventListener("wheel", fakeNavEvents);
-	navigationArea.addEventListener("wheel", fakeNavEvents);
+	document.getElementById("navigationarea").addEventListener("wheel", fakeNavEvents);
 	timeLabel.addEventListener("keydown", preventTimeInput);
 	timeLabel.addEventListener("blur", forceTime);
 	timelineCanvas.addEventListener("mousedown", function(e) {
@@ -1705,7 +1669,7 @@ function setup() {
 			createSession();
 		}
 	});
-	timelineCanvas.addEventListener("click", movePlayhead);
+	timelineCanvas.addEventListener("mousedown", movePlayhead);
 	window.addEventListener("beforeunload", annoy);
 	window.addEventListener("contextmenu", rightClickMenu);
 	window.addEventListener("keydown", keyDown);
@@ -1714,11 +1678,11 @@ function setup() {
 			closeMenus();
 		}
 	});
-	mainNav.addEventListener("click", activateContext);
-	sideNav.addEventListener("click", activateContext);
+	mainNav.addEventListener("mousedown", activateContext);
+	sideNav.addEventListener("mousedown", activateContext);
 	mainNav.addEventListener("dragover", activateContext);
 	sideNav.addEventListener("dragover", activateContext);
-	sideNav.addEventListener("click", function(e) {
+	sideNav.addEventListener("mousedown", function(e) {
 		if (e.target === this) {
 			deselectFiles();
 		}
@@ -1736,7 +1700,7 @@ function setup() {
 			activeDrag.changeTrack(activeSession.addTrack());
 		}
 	});
-	playlistArea.addEventListener("click", function(e) {
+	playlistArea.addEventListener("mousedown", function(e) {
 		if (activeSession && e.target === this) {
 			e.preventDefault();
 			activeSession.addTrack();
@@ -1772,7 +1736,7 @@ function listPreset(name) {
 	const files = document.createElement("div");
 	files.className = "filegrouplist";
 	parent.appendChild(files);
-	preset.addEventListener("click", function() {
+	preset.addEventListener("mousedown", function() {
 		const previous = files.style.display;
 		parent.classList.toggle("open");
 		files.style.display = previous === "none" ? "block" : "none";
@@ -1785,7 +1749,13 @@ function loadPresets() {
 	if (presetsLoaded) {
 		openPopup("preset");
 	} else {
-		urlJson("presets.json", function(presets) {
+		window.fetch("presets.json").then(function(response) {
+			if (response.ok) {
+				return response.json();
+			} else {
+				throw new Error("HTTP error, status = " + response.status);
+			}
+		}).then(function(presets) {
 			presetsLoaded = true;
 			openPopup("preset");
 			for (let i = 0; i < presets.length; i++) {
@@ -1803,20 +1773,26 @@ function loadPresets() {
 				desc.className = "presetdesc";
 				desc.textContent = presets[i].description;
 				panel.appendChild(desc);
-				panel.addEventListener("click", function() {
-					urlJson(presets[i].url, function(response) {
+				panel.addEventListener("mousedown", function() {
+					window.fetch(presets[i].url).then(function(response) {
+						if (response.ok) {
+							return response.json();
+						} else {
+							throw new Error("HTTP error, status = " + response.status);
+						}
+					}).then(function(parts) {
 						closePopup();
 						setMenu("step2");
 						const elems = listPreset(presets[i].name);
-						loadParts(response, elems, -1);
-					}, function() {
-						window.alert("Couldn't load " + presets[i].name + "! Try installing a cross-origin extension.");
+						loadParts(parts, elems, -1);
+					}).catch(function(err) {
+						window.alert("Couldn't load " + presets[i].name + "! Try installing a cross-origin extension. " + err);
 					});
 				});
 				presetList.appendChild(panel);
 			}
-		}, function() {
-			window.alert("Couldn't load presets! Try installing a cross-origin extension.");
+		}).catch(function(err) {
+			window.alert("Couldn't load presets! Try installing a cross-origin extension. " + err);
 		});
 	}
 }
@@ -1827,7 +1803,7 @@ function checkJson(elem) {
 	listFile(file);
 	const lower = file.name.toLowerCase();
 	if (lower.endsWith("json") || lower.endsWith("txt")) {
-		readFile(file, function(content) {
+		readFile(file).then(function(content) {
 			transcriptElem.value = lower.endsWith("txt") ? content : JSON.parse(content).transcript;
 		});
 	} else if (file.type.startsWith("audio")) {
@@ -1867,7 +1843,8 @@ function toggleShake(elem) {
 	player.toggleShakeAnalyser(elem.checked);
 }
 
-function newSession() {
+function newSession(e) {
+	e.preventDefault();
 	openPopup("session");
 	sessionName.value = "Untitled Session";
 	sessionName.select();
@@ -1915,11 +1892,19 @@ function addDetail(details, name) {
 
 function loadPart2(json, elems, details, file, index) {
 	if (json[index].audio) {
-		urlBuffer(json[index].audio, function() {
+		window.fetch(json[index].audio).then(function(response) {
+			if (response.ok) {
+				return response.arrayBuffer();
+			} else {
+				throw new Error("HTTP error, status = " + response.status);
+			}
+		}).then(player.decode.bind(player)).then(function(sample) {
+			// todo: use sample for something
 			elems.bar.style.width = (index + 1) / json.length * 100 + "%";
 			addDetail(details, "AUDIO");
 			loadParts(json, elems, index);
-		}, function() {
+		}).catch(function(err) {
+			console.error(err);
 			elems.parent.classList.add("error");
 			file.classList.add("error");
 			addDetail(details, "ERROR");
@@ -1932,11 +1917,19 @@ function loadPart2(json, elems, details, file, index) {
 
 function loadPart1(json, elems, details, file, index) {
 	if (json[index].transcript) {
-		urlJson(json[index].transcript, function() {
+		window.fetch(json[index].transcript).then(function(response) {
+			if (response.ok) {
+				return response.json();
+			} else {
+				throw new Error("HTTP error, status = " + response.status);
+			}
+		}).then(function(result) {
+			// todo: use result for something
 			elems.bar.style.width = (index + 0.5) / json.length * 100 + "%";
 			addDetail(details, "TRANSCRIPT");
 			loadPart2(json, elems, details, file, index);
-		}, function() {
+		}).catch(function(err) {
+			console.error(err);
 			elems.parent.classList.add("error");
 			file.classList.add("error");
 			addDetail(details, "ERROR");
@@ -1959,7 +1952,7 @@ function loadParts(json, elems, index) {
 		elems.list.appendChild(file);
 		loadPart1(json, elems, details, file, newIndex);
 	} else {
-		setTimeout(function() {
+		window.setTimeout(function() {
 			elems.bar.parentNode.removeChild(elems.bar);
 		}, 100);
 	}
@@ -2006,12 +1999,12 @@ function recordTranscript(elem) {
 		if (recognition) {
 			recognition.stop();
 		}
-		elem.src = "microphone.png";
+		elem.src = "icons/microphone.png";
 	} else {
 		if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
 			navigator.mediaDevices.getUserMedia(microphoneConstraints).then(function(stream) {
 				player.startRecording(stream, false);
-				elem.src = "micactive.png";
+				elem.src = "icons/micactive.png";
 			});
 		}
 		if (!recognition) {

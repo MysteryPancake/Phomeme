@@ -2,20 +2,20 @@
 
 const triphone = (function() {
 
-	const normalizedMethods = {
-		first: function(a, b, max) {
+	const normalizedMethods = { // Maybe try normalizing to minimum as well as maximum
+		first: function(a, b, max) { // Sort by earliest to latest start time
 			return (a.start - b.start) / max.start;
 		},
-		last: function(a, b, max) {
+		last: function(a, b, max) { // Sort by latest to earliest start time
 			return (b.start - a.start) / max.start;
 		},
-		duration: function(a, b, max, target) {
+		duration: function(a, b, max, target) { // Sort by closest duration
 			return (Math.abs(target.dur - a.dur) - Math.abs(target.dur - b.dur)) / max.diff;
 		},
-		shortest: function(a, b, max) {
+		shortest: function(a, b, max) { // Sort by shortest to longest duration
 			return (a.dur - b.dur) / max.dur;
 		},
-		longest: function(a, b, max) {
+		longest: function(a, b, max) { // Sort by longest to shortest duration
 			return (b.dur - a.dur) / max.dur;
 		}
 	};
@@ -29,7 +29,7 @@ const triphone = (function() {
 		return normal;
 	}
 
-	function sequenceTotal(direction, phone, target) {
+	function sequenceTotal(direction, phone, target, params) {
 		let seqTotal = 0;
 		let sourcePhone = phone[direction];
 		let targetPhone = target[direction];
@@ -38,6 +38,10 @@ const triphone = (function() {
 		} else {
 			while (sourcePhone && targetPhone && sourcePhone.label === targetPhone.label) {
 				seqTotal++;
+				// Prevent infinite recursion
+				if (seqTotal >= params.contextDepth) {
+					break;
+				}
 				sourcePhone = sourcePhone[direction];
 				targetPhone = targetPhone[direction];
 				if (sourcePhone === undefined && targetPhone === undefined) {
@@ -56,9 +60,9 @@ const triphone = (function() {
 	}
 
 	function calculateMaxes(phone, target, params, max) {
-		phone.prevTotal = sequenceTotal("prev", phone, target);
+		phone.prevTotal = sequenceTotal("prev", phone, target, params);
 		updateMax("prevTotal", phone, max);
-		phone.nextTotal = sequenceTotal("next", phone, target);
+		phone.nextTotal = sequenceTotal("next", phone, target, params);
 		updateMax("nextTotal", phone, max);
 		switch (params.method) {
 		case "first":

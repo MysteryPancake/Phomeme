@@ -14,7 +14,9 @@ const convert = (function() {
 			if (wordObj.case === "not-found-in-audio") continue;
 			const word = wordObj.word.toLowerCase();
 			//const char = dataParts.data.transcript.charAt(wordObj.endOffset);
-			transcript.words[word] = transcript.words[word] || [];
+			if (!transcript.words.has(word)) {
+				transcript.words.set(word, []);
+			}
 			const wordData = {
 				start: wordObj.start,
 				end: wordObj.end,
@@ -29,7 +31,7 @@ const convert = (function() {
 				//prev.word.next = params.matchPunctuation && isPunctuation(char) ? char : word;
 				prev.word.next = wordData;
 			}
-			transcript.words[word].push(wordData);
+			transcript.words.get(word).push(wordData);
 			prev.word = wordData;
 			//prev.char = char;
 			if (!params.ignoreWordGaps) {
@@ -45,7 +47,9 @@ const convert = (function() {
 						phone = generalization;
 					}
 				}
-				transcript.phones[phone] = transcript.phones[phone] || [];
+				if (!transcript.phones.has(phone)) {
+					transcript.phones.set(phone, []);
+				}
 				const phoneData = {
 					start: start,
 					end: start + phoneObj.duration,
@@ -58,7 +62,7 @@ const convert = (function() {
 					prev.phone.next = phoneData;
 				}
 				wordData.phones.push(phoneData);
-				transcript.phones[phone].push(phoneData);
+				transcript.phones.get(phone).push(phoneData);
 				start += phoneObj.duration;
 				prev.phone = phoneData;
 			}
@@ -100,7 +104,9 @@ const convert = (function() {
 							text = generalization;
 						}
 					}
-					transcript[mode][text] = transcript[mode][text] || [];
+					if (!transcript[mode].has(text)) {
+						transcript[mode].set(text, []);
+					}
 					const data = {
 						start: xmin,
 						end: xmax,
@@ -112,18 +118,17 @@ const convert = (function() {
 					if (prev) {
 						prev.next = data;
 					}
-					transcript[mode][text].push(data);
+					transcript[mode].get(text).push(data);
 					if (mode === "phones") {
-						for (let word in transcript.words) {
-							if (!transcript.words.hasOwnProperty(word)) continue;
-							for (let k = 0; k < transcript.words[word].length; k++) {
-								const phone = transcript.words[word][k];
-								if (xmin >= phone.start && xmax <= phone.end) {
-									phone.phones = phone.phones || [];
-									phone.phones.push(data);
+						transcript.words.forEach((value) => {
+							for (let k = 0; k < value.length; k++) {
+								const word = value[k];
+								if (xmin >= word.start && xmax <= word.end) {
+									word.phones = word.phones || [];
+									word.phones.push(data);
 								}
 							}
-						}
+						});
 					}
 					prev = data;
 				}
@@ -147,7 +152,9 @@ const convert = (function() {
 				const wordParts = line.split(" ");
 				if (wordParts.length >= 4) {
 					const word = wordParts[1].trim().toLowerCase();
-					transcript.words[word] = transcript.words[word] || [];
+					if (!transcript.words.has(word)) {
+						transcript.words.set(word, []);
+					}
 					const wordStart = parseFloat(wordParts[2]);
 					const wordEnd = parseFloat(wordParts[3]);
 					const wordData = {
@@ -162,7 +169,7 @@ const convert = (function() {
 					if (prev.word) {
 						prev.word.next = wordData;
 					}
-					transcript.words[word].push(wordData);
+					transcript.words.get(word).push(wordData);
 					prev.word = wordData;
 					if (!params.ignoreWordGaps) {
 						prev.phone = undefined;
@@ -178,7 +185,9 @@ const convert = (function() {
 									phone = generalization;
 								}
 							}
-							transcript.phones[phone] = transcript.phones[phone] || [];
+							if (!transcript.phones.has(phone)) {
+								transcript.phones.set(phone, []);
+							}
 							const phoneStart = parseFloat(phoneParts[2]);
 							const phoneEnd = parseFloat(phoneParts[3]);
 							const phoneData = {
@@ -194,7 +203,7 @@ const convert = (function() {
 								prev.phone.next = phoneData;
 							}
 							wordData.phones.push(phoneData);
-							transcript.phones[phone].push(phoneData);
+							transcript.phones.get(phone).push(phoneData);
 							prev.phone = phoneData;
 						}
 						nextLine = lines.shift();
@@ -216,7 +225,9 @@ const convert = (function() {
 			if (phone === undefined) {
 				phone = "";
 			}
-			transcript.phones[phone] = transcript.phones[phone] || [];
+			if (!transcript.phones.has(phone)) {
+				transcript.phones.set(phone, []);
+			}
 			const phoneData = {
 				start: start,
 				label: phone,
@@ -235,7 +246,7 @@ const convert = (function() {
 				phoneData.end = end / 1000;
 				phoneData.dur = phoneData.end - phoneData.start;
 			}
-			transcript.phones[phone].push(phoneData);
+			transcript.phones.get(phone).push(phoneData);
 			prev = phoneData;
 		}
 		if (!prev.end) {
@@ -252,12 +263,14 @@ const convert = (function() {
 			let prev;
 			for (let j = 0; j < track.notes.length; j++) {
 				const note = track.notes[j];
-				transcript.phones[note.midi] = transcript.phones[note.midi] || [];
+				if (!transcript.phones.has(note.name)) {
+					transcript.phones.set(note.name, []);
+				}
 				const phoneData = {
 					start: note.time,
 					end: note.time + note.duration,
 					dur: note.duration,
-					label: note.midi.toString(), // Probably should use note.name but might cause issues with object indexing
+					label: note.name,
 					pitch: note.midi,
 					volume: note.velocity,
 					file: dataParts.file,
@@ -266,7 +279,7 @@ const convert = (function() {
 				if (prev) {
 					prev.next = phoneData;
 				}
-				transcript.phones[note.midi].push(phoneData);
+				transcript.phones.get(note.name).push(phoneData);
 				prev = phoneData;
 			}
 		}
@@ -319,8 +332,8 @@ const convert = (function() {
 
 	return function(dataParts, params) {
 		const transcript = {
-			words: {},
-			phones: {}
+			words: new Map(),
+			phones: new Map()
 		};
 		switch (dataParts.type.toLowerCase()) {
 		case "json":

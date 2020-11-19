@@ -104,6 +104,10 @@
 					<input type="checkbox" id="matchPunctuation" onchange="updateDownloads();">
 					<label for="matchPunctuation">Match punctuation (todo)</label>
 				</div>
+				<div>
+					<label for="contextDepth">Context depth</label>
+					<input type="number" id="contextDepth" min="1" value="100" step="1" onchange="updateDownloads();">
+				</div>
 				<h3>Influence</h3>
 				<div>
 					<label for="sortMethod">Sort method</label>
@@ -151,7 +155,7 @@
 				<h3>Session</h3>
 				<div>
 					<label for="sampleRate">Sample rate</label>
-					<input type="number" id="sampleRate" value="44100" step="1000" onchange="updateDownloads();">
+					<input type="number" id="sampleRate" min="1" value="44100" step="1000" onchange="updateDownloads();">
 				</div>
 				<div>
 					<label for="overlapStart">Start overlap</label>
