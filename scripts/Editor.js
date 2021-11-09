@@ -132,7 +132,7 @@ function ListedFile(file) {
 		this.elem.classList.add("active");
 	};
 	this.clicked = function(e) {
-		if (!e.shiftKey) {
+		if (!e.shiftKey && !this.elem.classList.contains("active")) {
 			deselectFiles();
 		}
 		this.select();
@@ -804,6 +804,9 @@ function Clip(session) {
 		if (!isLeftClick(e)) return;
 		e.preventDefault();
 		activeDrag = this;
+		if (!e.shiftKey && !this.parent.classList.contains("active")) {
+			this.session.deselectClips();
+		}
 		this.select();
 	};
 	this.elem.addEventListener("mousedown", this.clicked.bind(this));
@@ -1003,6 +1006,7 @@ function Track(trackSession) {
 			this.session.deselectClips();
 		}
 		let offset = 0;
+		// e.offsetX causes issues
 		const start = (e.clientX - this.elem.getBoundingClientRect().left) / this.session.pxPerSec;
 		if (e.dataTransfer.getData("text") === "side") {
 			for (let file of selectedFiles) {
@@ -1011,6 +1015,7 @@ function Track(trackSession) {
 					offset++;
 				}
 			}
+			deselectFiles();
 		} else if (e.dataTransfer.files) {
 			for (let i = 0; i < e.dataTransfer.files.length; i++) {
 				const file = e.dataTransfer.files[i];
@@ -1325,6 +1330,7 @@ function closeMenus() {
 function movePlayhead(e) {
 	if (player.recordingClip) return;
 	player.pauseIfPlaying();
+	// Causes issues with e.offsetX
 	activeSession.setPlayhead(Math.max(0, (e.clientX - playlist.getBoundingClientRect().left) / activeSession.pxPerSec), true);
 }
 
@@ -1567,6 +1573,7 @@ function navWheel(e) {
 		}, 250);
 		const newZoom = activeSession.pxPerSec - (e.deltaY * activeSession.pxPerSec * pinchZoomFactor * 0.01);
 		if (!wheelZoom.distance) {
+			// Causes issues with e.offsetX
 			wheelZoom.distance = (e.clientX - playlist.getBoundingClientRect().left) - (activeSession.scroll * activeSession.pxPerSec);
 		}
 		const newScroll = activeSession.scroll + (wheelZoom.distance / activeSession.pxPerSec) - (wheelZoom.distance / newZoom);

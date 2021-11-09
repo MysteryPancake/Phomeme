@@ -133,7 +133,7 @@ function microphone(element) {
 			element.recorder.stop();
 		}
 		transcript.setAttribute("contenteditable", true);
-		element.src = "microphone.png";
+		element.src = "icons/microphone.png";
 		element.active = false;
 	} else {
 		const Speech = window.SpeechRecognition || window.webkitSpeechRecognition || window.mozSpeechRecognition || window.oSpeechRecognition || window.msSpeechRecognition;
@@ -177,7 +177,7 @@ function microphone(element) {
 				element.recorder.start();
 			}).catch(console.error);
 		}
-		element.src = "micactive.png";
+		element.src = "icons/micactive.png";
 		element.active = true;
 	}
 	return false;

@@ -76,7 +76,7 @@ const convert = (function() {
 		let intervals = 0;
 		let size = 2;
 		let prev;
-		while (lines.length > 0) {
+		while (lines.length) {
 			const line = lines.shift().trim();
 			if (line.endsWith("<exists>")) {
 				size = parseInt(lines.shift().split("=").pop().trim());
@@ -143,7 +143,7 @@ const convert = (function() {
 	function convertVdat(transcript, dataParts, params) {
 		const lines = dataParts.data.split("\n");
 		const prev = {};
-		while (lines.length > 0) {
+		while (lines.length) {
 			const line = lines.shift().trim();
 			if (line.startsWith("PLAINTEXT")) {
 				lines.shift();

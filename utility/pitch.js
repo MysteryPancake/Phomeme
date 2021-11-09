@@ -64,8 +64,7 @@ function autoCorrelate(buffer, sampleRate) {
 const noteStrings = ["C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B"];
 
 function noteFromPitch(frequency) {
-	const noteNum = 12 * (Math.log(frequency / 440) / Math.log(2));
-	return Math.round(noteNum) + 69;
+	return Math.round(12 * Math.log2(frequency / 440)) + 69;
 }
 
 const sampleSize = 1024;
