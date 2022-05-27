@@ -51,7 +51,7 @@ const bufferToFile = (function() {
 		view.setUint16(32, blockAlign, true);
 		view.setUint16(34, bitDepth, true);
 		writeString(view, 36, "data");
-		view.setUint32(40, samples.length * bytesPerSample, true);
+		view.setUint32(40, samples.length * blockAlign, true);
 		if (format === 1) {
 			floatTo16Bit(view, 44, samples);
 		} else {
